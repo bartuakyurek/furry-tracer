@@ -249,9 +249,6 @@ pub fn deserialize_ambient_light<'de, D>(deserializer: D) -> Result<Vec<Vector3>
 where
     D: Deserializer<'de>,
 {
-    use serde::de::{self, Unexpected, Visitor};
-    use std::fmt;
-
     struct AmbientLightVisitor;
 
     impl<'de> Visitor<'de> for AmbientLightVisitor {
