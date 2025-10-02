@@ -33,13 +33,21 @@ pub struct Scene {
     #[serde(deserialize_with = "deser_float")]
     IntersectionTestEpsilon: Float,
 
+    #[serde(rename = "Cameras")]
+    cameras: Cameras,
+}
 
-    //Cameras: Cameras,
+
+#[derive(Debug, Deserialize)]
+struct Cameras {
+    #[serde(rename = "Camera")]
+    camera: Camera, // I assumed Vec<Camera> but JSON file does not have array currently
 }
 
 #[derive(Debug, Deserialize)]
-struct Cameras {}
+struct Camera {
 
-#[derive(Debug, Deserialize)]
-struct Camera {}
+    #[serde(rename = "_id", deserialize_with = "deser_int")]
+    id: Int,
+}
 
