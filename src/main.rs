@@ -9,9 +9,11 @@ A simple ray tracer for CENG 795 course.
 use tracing::{info, debug, error, warn};
 use tracing_subscriber;
 
-mod camera;
+
 mod scene;
+mod camera;
 mod numeric;
+mod material;
 mod json_parser;
 use crate::json_parser::{parse_json795};
 

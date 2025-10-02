@@ -11,7 +11,9 @@ CENG 795's JSON file formats.
 */
 
 use serde::{Deserialize};
+use serde_json::{Value};
 
+use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
 use crate::camera::{Cameras};
 use crate::numeric::{RGBColor, Int, Float, Vector3};
 use crate::json_parser::*;
@@ -41,6 +43,9 @@ pub struct Scene {
 
     #[serde(rename = "Lights")]
     lights: SceneLights,
+
+    #[serde(rename = "Materials")]
+    materials: SceneMaterials,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -70,4 +75,29 @@ pub struct PointLight {
 
     #[serde(rename = "Intensity", deserialize_with = "deser_dvec3")]
     pub intensity: Vector3,
+}
+
+
+#[derive(Debug, Deserialize)]
+pub struct SceneMaterials {
+    #[serde(rename = "Material")]
+    pub raw_materials: Vec<Value>, // keep JSON nodes as-is for postprocessing
+}
+
+impl SceneMaterials {
+    pub fn into_materials(self) -> Vec<Box<dyn Material>> {
+        self.raw_materials
+            .into_iter()
+            .map(|val| {
+                if let Some(t) = val.get("_type") {
+                    match t.as_str().unwrap() {
+                        "mirror" => Box::new(serde_json::from_value::<MirrorMaterial>(val).unwrap()) as Box<dyn Material>,
+                        other => panic!("Unknown material type: {}", other),
+                    }
+                } else {
+                    Box::new(serde_json::from_value::<DiffuseMaterial>(val).unwrap()) as Box<dyn Material>
+                }
+            })
+            .collect()
+    }
 }

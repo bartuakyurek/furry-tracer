@@ -293,3 +293,4 @@ fn parse_vec3(s: &str) -> Result<Vector3, String> {
     let z = parts[2].parse::<f64>().map_err(|e| e.to_string())?;
     Ok(Vector3::new(x, y, z))
 }
+
