@@ -18,22 +18,23 @@ use crate::json_parser::*;
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
-    Scene: Scene,
+    #[serde(rename = "Scene")]
+    scene: Scene,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Scene {
-    #[serde(deserialize_with = "deser_int")]
-    MaxRecursionDepth: Int,
+    #[serde(rename = "MaxRecursionDepth", deserialize_with = "deser_int")]
+    max_recursion_depth: Int,
 
-    #[serde(deserialize_with = "deser_vec3")]
-    BackgroundColor: RGBColor,
+    #[serde(rename = "BackgroundColor", deserialize_with = "deser_vec3")]
+    background_color: RGBColor,
 
-    #[serde(deserialize_with = "deser_float")]
-    ShadowRayEpsilon: Float,
+    #[serde(rename = "ShadowRayEpsilon", deserialize_with = "deser_float")]
+    shadow_ray_epsilon: Float,
 
-    #[serde(deserialize_with = "deser_float")]
-    IntersectionTestEpsilon: Float,
+    #[serde(rename = "IntersectionTestEpsilon", deserialize_with = "deser_float")]
+    intersection_test_epsilon: Float,
 
     #[serde(rename = "Cameras")]
     cameras: Cameras,
