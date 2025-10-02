@@ -47,8 +47,8 @@ pub struct SceneLights {
     #[serde(rename = "AmbientLight")]
     pub ambient_lights: AmbientLights,
 
-    //#[serde(rename = "PointLight")]
-    //pub point_lights: Vec<PointLight>, // assuming you have a PointLight struct
+    #[serde(rename = "PointLight")]
+    pub point_lights: Vec<PointLight>, 
 }
 
 
@@ -58,3 +58,15 @@ pub struct AmbientLights(
     #[serde(deserialize_with = "deserialize_ambient_light")]
     pub Vec<Vector3>
 );
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct PointLight {
+    #[serde(rename = "_id", deserialize_with = "deser_int")]
+    pub id: Int, // or String if you prefer
+
+    #[serde(rename = "Position", deserialize_with = "deser_dvec3")]
+    pub position: Vector3,
+
+    #[serde(rename = "Intensity", deserialize_with = "deser_dvec3")]
+    pub intensity: Vector3,
+}
