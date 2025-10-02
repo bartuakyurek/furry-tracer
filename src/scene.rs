@@ -12,7 +12,7 @@ CENG 795's JSON file formats.
 
 use serde::{Deserialize};
 use crate::numeric::{RGBColor, Int, Float, Vector3};
-use crate::json_parser::{deser_int, deser_float, deser_vec3, deser_dvec3};
+use crate::json_parser::*;
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
@@ -71,5 +71,35 @@ struct Camera {
     #[serde(rename = "Position", deserialize_with = "deser_dvec3")]
     position: Vector3,
 
+    #[serde(rename = "Gaze", deserialize_with = "deser_dvec3")]
+    gaze: Vector3,
+
+    #[serde(rename = "Up", deserialize_with = "deser_dvec3")]
+    up: Vector3,
+
+    #[serde(rename = "NearPlane", deserialize_with = "deser_nearplane")]
+    nearplane: NearPlane,
+
+    // NOTE: Skipping near distance as nearplane already contains it
+
+    #[serde(rename = "ImageResolution", deserialize_with = "deser_vec2")]
+    image_resolution: [Int; 2],
+
+    #[serde(rename = "ImageName")]
+    image_name: String,
+
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub(crate) struct NearPlane {
+    #[serde(deserialize_with = "deser_float")]
+    pub(crate) left: Float,
+    #[serde(deserialize_with = "deser_float")]
+    pub(crate) right: Float,
+    #[serde(deserialize_with = "deser_float")]
+    pub(crate) bottom: Float,
+    #[serde(deserialize_with = "deser_float")]
+    pub(crate) top: Float,
+    #[serde(deserialize_with = "deser_float")]
+    pub(crate) near_distance: Float,
+}

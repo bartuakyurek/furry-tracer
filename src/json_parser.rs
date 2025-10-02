@@ -29,7 +29,7 @@ use std::io::BufReader;
 use serde::Deserialize;
 use serde::de::{self, Visitor, SeqAccess, Deserializer};
 use tracing::{debug};
-use crate::scene::{RootScene};
+use crate::scene::{RootScene, NearPlane};
 use crate::numeric::{Int, Float};
 
 pub fn parse_json795(path: &str) -> Result<RootScene, Box<dyn std::error::Error>> {
@@ -179,4 +179,66 @@ where
     }
 
     deserializer.deserialize_any(Vec3Visitor)
+}
+
+
+pub fn deser_vec2<'de, D>(deserializer: D) -> Result<[Int; 2], D::Error>
+where
+    D: Deserializer<'de>,
+{
+    // String "720 720" or array [720, 720] both accepted
+    struct Vec2Visitor;
+
+    impl<'de> serde::de::Visitor<'de> for Vec2Visitor {
+        type Value = [Int; 2];
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("an array of 2 integers or a string 'w h'")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<[Int; 2], E>
+        where
+            E: de::Error,
+        {
+            let parts: Vec<&str> = value.split_whitespace().collect();
+            if parts.len() != 2 {
+                return Err(E::custom("Expected 2 components for Vec2 string"));
+            }
+            let x = parts[0].parse::<Int>().map_err(|_| E::custom("Failed parsing width"))?;
+            let y = parts[1].parse::<Int>().map_err(|_| E::custom("Failed parsing height"))?;
+            Ok([x, y])
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<[Int; 2], A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let x: Int = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 2 elements"))?;
+            let y: Int = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 2 elements"))?;
+            if seq.next_element::<Int>()?.is_some() {
+                return Err(de::Error::custom("Expected only 2 elements"));
+            }
+            Ok([x, y])
+        }
+    }
+
+    deserializer.deserialize_any(Vec2Visitor)
+}
+
+pub fn deser_nearplane<'de, D>(deserializer: D) -> Result<NearPlane, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    let parts: Vec<&str> = s.split_whitespace().collect();
+    if parts.len() != 5 {
+        return Err(de::Error::custom("Expected 5 elements for NearPlane"));
+    }
+    Ok(NearPlane {
+        left: parts[0].parse().map_err(|_| de::Error::custom("Failed parsing left"))?,
+        right: parts[1].parse().map_err(|_| de::Error::custom("Failed parsing right"))?,
+        bottom: parts[2].parse().map_err(|_| de::Error::custom("Failed parsing bottom"))?,
+        top: parts[3].parse().map_err(|_| de::Error::custom("Failed parsing top"))?,
+        near_distance: parts[4].parse().map_err(|_| de::Error::custom("Failed parsing near_distance"))?,
+    })
 }
