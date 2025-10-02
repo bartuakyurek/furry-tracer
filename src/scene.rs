@@ -38,16 +38,36 @@ pub struct Scene {
 }
 
 
-#[derive(Debug, Deserialize)]
-struct Cameras {
-    #[serde(rename = "Camera")]
-    camera: Camera, // I assumed Vec<Camera> but JSON file does not have array currently
+// To handle JSON file having a single camera
+// or an array of Cameras 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(untagged)]
+enum CameraSingleOrVec {
+    Single(Camera),
+    Multiple(Vec<Camera>),
 }
 
 #[derive(Debug, Deserialize)]
-struct Camera {
+struct Cameras {
+    #[serde(rename = "Camera")]
+    camera: CameraSingleOrVec, // Allow either single cam (as in test.json) or multiple cams
+}
 
+impl Cameras {
+    /// Always returns a Vec<Camera> regardless of JSON being a single object or array
+    fn all(&self) -> Vec<Camera> {
+        match &self.camera {
+            CameraSingleOrVec::Single(cam) => vec![cam.clone()],
+            CameraSingleOrVec::Multiple(vec) => vec.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct Camera {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     id: Int,
+
+
 }
 
