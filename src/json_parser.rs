@@ -31,7 +31,7 @@ use serde::de::{self, Visitor, SeqAccess, Deserializer};
 use tracing::{debug};
 use crate::scene::{RootScene};
 use crate::camera::{NearPlane};
-use crate::numeric::{Int, Float};
+use crate::numeric::{Int, Float, Vector3};
 
 pub fn parse_json795(path: &str) -> Result<RootScene, Box<dyn std::error::Error>> {
     /*
@@ -88,6 +88,7 @@ where
         _ => Err(de::Error::custom("Expected float or string")),
     }
 }
+
 pub fn deser_vec3<'de, D>(deserializer: D) -> Result<Vec3, D::Error>
 where
     D: Deserializer<'de>,
@@ -242,4 +243,56 @@ where
         top: parts[3].parse().map_err(|_| de::Error::custom("Failed parsing top"))?,
         near_distance: parts[4].parse().map_err(|_| de::Error::custom("Failed parsing near_distance"))?,
     })
+}
+
+pub fn deserialize_ambient_light<'de, D>(deserializer: D) -> Result<Vec<Vector3>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::{self, Unexpected, Visitor};
+    use std::fmt;
+
+    struct AmbientLightVisitor;
+
+    impl<'de> Visitor<'de> for AmbientLightVisitor {
+        type Value = Vec<Vector3>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string 'r g b' or an array of such strings")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(vec![parse_vec3(v).map_err(de::Error::custom)?])
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let mut vec = Vec::new();
+            while let Some(elem) = seq.next_element::<String>()? {
+                vec.push(parse_vec3(&elem).map_err(de::Error::custom)?);
+            }
+            Ok(vec)
+        }
+    }
+
+    deserializer.deserialize_any(AmbientLightVisitor)
+}
+
+/// Helper function: parse a string like "25 25 25" into Vector3
+/// TODO: Use it in other deserializers 
+/// TODO: Make f64 flexible for f32 as well
+fn parse_vec3(s: &str) -> Result<Vector3, String> {
+    let parts: Vec<&str> = s.split_whitespace().collect();
+    if parts.len() != 3 {
+        return Err(format!("Expected 3 values, got {}", parts.len()));
+    }
+    let x = parts[0].parse::<f64>().map_err(|e| e.to_string())?;
+    let y = parts[1].parse::<f64>().map_err(|e| e.to_string())?;
+    let z = parts[2].parse::<f64>().map_err(|e| e.to_string())?;
+    Ok(Vector3::new(x, y, z))
 }
