@@ -29,7 +29,8 @@ use std::io::BufReader;
 use serde::Deserialize;
 use serde::de::{self, Visitor, SeqAccess, Deserializer};
 use tracing::{debug};
-use crate::scene::{RootScene, NearPlane};
+use crate::scene::{RootScene};
+use crate::camera::{NearPlane};
 use crate::numeric::{Int, Float};
 
 pub fn parse_json795(path: &str) -> Result<RootScene, Box<dyn std::error::Error>> {
