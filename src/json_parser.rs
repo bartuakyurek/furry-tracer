@@ -227,6 +227,19 @@ where
     deserializer.deserialize_any(Vec2Visitor)
 }
 
+pub fn deser_int_vec<'de, D>(deserializer: D) -> Result<Vec<Int>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    let numbers = s
+        .split_whitespace()
+        .map(|x| x.parse::<Int>().map_err(serde::de::Error::custom))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(numbers)
+}
+
+
 pub fn deser_nearplane<'de, D>(deserializer: D) -> Result<NearPlane, D::Error>
 where
     D: Deserializer<'de>,
@@ -294,3 +307,24 @@ fn parse_vec3(s: &str) -> Result<Vector3, String> {
     Ok(Vector3::new(x, y, z))
 }
 
+
+pub fn deser_vertex_data<'de, D>(deserializer: D) -> Result<Vec<Vector3>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    let nums: Vec<Float> = s
+        .split_whitespace()
+        .map(|x| x.parse::<Float>().map_err(serde::de::Error::custom))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    if nums.len() % 3 != 0 {
+        return Err(serde::de::Error::custom("VertexData must have multiples of 3 floats"));
+    }
+
+    let mut vertices = Vec::with_capacity(nums.len() / 3);
+    for chunk in nums.chunks(3) {
+        vertices.push(Vector3::new(chunk[0], chunk[1], chunk[2]));
+    }
+    Ok(vertices)
+}

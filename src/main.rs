@@ -12,6 +12,7 @@ use tracing_subscriber;
 
 mod scene;
 mod camera;
+mod shapes;
 mod numeric;
 mod material;
 mod json_parser;

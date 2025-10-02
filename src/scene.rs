@@ -14,8 +14,9 @@ use serde::{Deserialize};
 use serde_json::{Value};
 
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
-use crate::camera::{Cameras};
 use crate::numeric::{RGBColor, Int, Float, Vector3};
+use crate::shapes::{Triangle, Sphere};
+use crate::camera::{Cameras};
 use crate::json_parser::*;
 
 #[derive(Debug, Deserialize)]
@@ -46,6 +47,12 @@ pub struct Scene {
 
     #[serde(rename = "Materials")]
     materials: SceneMaterials,
+
+    #[serde(rename = "VertexData", deserialize_with = "deser_vertex_data")]
+    vertex_data: Vec<Vector3>, 
+    
+    #[serde(rename = "Objects")]
+    objects: SceneObjects,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -100,4 +107,13 @@ impl SceneMaterials {
             })
             .collect()
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SceneObjects {
+    #[serde(rename = "Triangle", default)]
+    pub triangles: Vec<Triangle>,
+
+    #[serde(rename = "Sphere", default)]
+    pub spheres: Vec<Sphere>,
 }
