@@ -274,8 +274,6 @@ where
 }
 
 /// Helper function: parse a string like "25 25 25" into Vector3
-/// TODO: Use it in other deserializers 
-/// TODO: Make f64 flexible for f32 as well
 fn parse_vec3_str<V, F>(s: &str) -> Result<V, String> 
 where 
     F: FromStr,
