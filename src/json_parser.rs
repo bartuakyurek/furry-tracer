@@ -166,7 +166,7 @@ where
 
 
 
-pub fn deser_vec2<'de, D>(deserializer: D) -> Result<[Int; 2], D::Error>
+pub fn deser_arr2<'de, D>(deserializer: D) -> Result<[Int; 2], D::Error>
 where
     D: Deserializer<'de>,
 {

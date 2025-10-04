@@ -54,7 +54,7 @@ struct Camera {
 
     // NOTE: Skipping near distance as nearplane already contains it
 
-    #[serde(rename = "ImageResolution", deserialize_with = "deser_vec2")]
+    #[serde(rename = "ImageResolution", deserialize_with = "deser_arr2")]
     image_resolution: [Int; 2],
 
     #[serde(rename = "ImageName")]
