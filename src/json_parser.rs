@@ -127,20 +127,15 @@ where
             formatter.write_str("a Vec3 as a string 'x y z' or an array [x, y, z]")
         }
 
+        // Given "X Y Z"
         fn visit_str<E>(self, value: &str) -> Result<V, E>
         where
             E: de::Error,
         {
-            let parts: Vec<&str> = value.split_whitespace().collect();
-            if parts.len() != 3 {
-                return Err(E::custom("Expected 3 components for Vec3 string"));
-            }
-            let x = parts[0].parse::<F>().map_err(|e| E::custom(e.to_string()))?;
-            let y = parts[1].parse::<F>().map_err(|e| E::custom(e.to_string()))?;
-            let z = parts[2].parse::<F>().map_err(|e| E::custom(e.to_string()))?;
-            Ok(V::new(x, y, z))
+            Ok(parse_vec3_str(value).map_err(de::Error::custom)?)
         }
 
+        // Given [X, Y, Z]
         fn visit_seq<A>(self, mut seq: A) -> Result<V, A::Error>
         where
             A: SeqAccess<'de>,
@@ -260,7 +255,7 @@ where
         where
             E: de::Error,
         {
-            Ok(vec![parse_vec3(v).map_err(de::Error::custom)?])
+            Ok(vec![parse_vec3_str(v).map_err(de::Error::custom)?])
         }
 
         fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -269,7 +264,7 @@ where
         {
             let mut vec = Vec::new();
             while let Some(elem) = seq.next_element::<String>()? {
-                vec.push(parse_vec3(&elem).map_err(de::Error::custom)?);
+                vec.push(parse_vec3_str(&elem).map_err(de::Error::custom)?);
             }
             Ok(vec)
         }
@@ -281,15 +276,20 @@ where
 /// Helper function: parse a string like "25 25 25" into Vector3
 /// TODO: Use it in other deserializers 
 /// TODO: Make f64 flexible for f32 as well
-fn parse_vec3(s: &str) -> Result<Vector3, String> {
+fn parse_vec3_str<V, F>(s: &str) -> Result<V, String> 
+where 
+    F: FromStr,
+    F::Err: fmt::Display,
+    V: From3<F>,
+{
     let parts: Vec<&str> = s.split_whitespace().collect();
     if parts.len() != 3 {
         return Err(format!("Expected 3 values, got {}", parts.len()));
     }
-    let x = parts[0].parse::<f64>().map_err(|e| e.to_string())?;
-    let y = parts[1].parse::<f64>().map_err(|e| e.to_string())?;
-    let z = parts[2].parse::<f64>().map_err(|e| e.to_string())?;
-    Ok(Vector3::new(x, y, z))
+    let x = parts[0].parse::<F>().map_err(|e| e.to_string())?;
+    let y = parts[1].parse::<F>().map_err(|e| e.to_string())?;
+    let z = parts[2].parse::<F>().map_err(|e| e.to_string())?;
+    Ok(V::new(x, y, z))
 }
 
 
