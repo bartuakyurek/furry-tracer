@@ -68,7 +68,7 @@ pub struct SceneLights {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(transparent)] // treat AmbientLights as directly wrapping Vec<Vector3>
 pub struct AmbientLights(
-    #[serde(deserialize_with = "deserialize_ambient_light")]
+    #[serde(deserialize_with = "deser_vecvec3")]
     pub Vec<Vector3>
 );
 

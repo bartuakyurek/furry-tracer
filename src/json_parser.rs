@@ -240,17 +240,20 @@ where
     })
 }
 
-pub fn deserialize_ambient_light<'de, D>(deserializer: D) -> Result<Vec<Vector3>, D::Error>
+pub fn deser_vecvec3<'de, D>(deserializer: D) -> Result<Vec<Vector3>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    struct AmbientLightVisitor;
+    // Deserialize a vector of Vector3
+    // given either string of "X Y Z" or 
+    // array of strings ["X1 Y1 Z1", "X2 Y2 Z2", ...]
+    struct VecVec3Visitor;
 
-    impl<'de> Visitor<'de> for AmbientLightVisitor {
+    impl<'de> Visitor<'de> for VecVec3Visitor {
         type Value = Vec<Vector3>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a string 'r g b' or an array of such strings")
+            formatter.write_str("a string 'X Y Z' or an array of such strings")
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -272,7 +275,7 @@ where
         }
     }
 
-    deserializer.deserialize_any(AmbientLightVisitor)
+    deserializer.deserialize_any(VecVec3Visitor)
 }
 
 /// Helper function: parse a string like "25 25 25" into Vector3
