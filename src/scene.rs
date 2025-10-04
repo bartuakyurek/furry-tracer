@@ -14,7 +14,7 @@ use serde::{Deserialize};
 use serde_json::{Value};
 
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
-use crate::numeric::{RGBColor, Int, Float, Vector3};
+use crate::numeric::{RGB, Int, Float, Vector3};
 use crate::shapes::{Triangle, Sphere};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
@@ -31,7 +31,7 @@ pub struct Scene {
     max_recursion_depth: Int,
 
     #[serde(rename = "BackgroundColor", deserialize_with = "deser_vec3")]
-    background_color: RGBColor,
+    background_color: Vector3,
 
     #[serde(rename = "ShadowRayEpsilon", deserialize_with = "deser_float")]
     shadow_ray_epsilon: Float,
@@ -77,10 +77,10 @@ pub struct PointLight {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     pub id: Int, // or String if you prefer
 
-    #[serde(rename = "Position", deserialize_with = "deser_dvec3")]
+    #[serde(rename = "Position", deserialize_with = "deser_vec3")]
     pub position: Vector3,
 
-    #[serde(rename = "Intensity", deserialize_with = "deser_dvec3")]
+    #[serde(rename = "Intensity", deserialize_with = "deser_vec3")]
     pub intensity: Vector3,
 }
 

@@ -6,9 +6,11 @@ Declare numeric types used throughout this repo.
 @author: Bartu
 */
 
-use bevy_math::{DVec3, Vec3};
+use bevy_math::{DVec3, I8Vec3};
 
-pub type RGBColor = Vec3; // f32, Distinguish from RGBA and CMYK profiles 
+pub type RGB = I8Vec3;  // For final RGB colors
 pub type Int = i32;
 pub type Float = f64;
 pub type Vector3 = DVec3; // f64
+
+

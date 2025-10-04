@@ -1,13 +1,13 @@
-use crate::numeric::{RGBColor, Float, Int, Vector3};
+use crate::numeric::{Float, Int, Vector3};
 
 pub trait Material {
-    fn ambient(&self) -> RGBColor;
-    fn diffuse(&self) -> RGBColor;
-    fn specular(&self) -> RGBColor;
+    fn ambient(&self) -> Vector3;
+    fn diffuse(&self) -> Vector3;
+    fn specular(&self) -> Vector3;
     fn phong_exponent(&self) -> Float;
 
     // optional: extend with reflection/refraction later
-    fn mirror_reflectance(&self) -> Option<RGBColor> {
+    fn mirror_reflectance(&self) -> Option<Vector3> {
         None
     }
 }
@@ -22,22 +22,22 @@ pub struct DiffuseMaterial {
     pub id: Int,
 
     #[serde(rename = "AmbientReflectance", deserialize_with = "deser_vec3")]
-    pub ambient: RGBColor,
+    pub ambient: Vector3,
 
     #[serde(rename = "DiffuseReflectance", deserialize_with = "deser_vec3")]
-    pub diffuse: RGBColor,
+    pub diffuse: Vector3,
 
     #[serde(rename = "SpecularReflectance", deserialize_with = "deser_vec3")]
-    pub specular: RGBColor,
+    pub specular: Vector3,
 
     #[serde(rename = "PhongExponent", deserialize_with = "deser_float")]
     pub phong_exp: Float,
 }
 
 impl Material for DiffuseMaterial {
-    fn ambient(&self) -> RGBColor { self.ambient }
-    fn diffuse(&self) -> RGBColor { self.diffuse }
-    fn specular(&self) -> RGBColor { self.specular }
+    fn ambient(&self) -> Vector3 { self.ambient }
+    fn diffuse(&self) -> Vector3 { self.diffuse }
+    fn specular(&self) -> Vector3 { self.specular }
     fn phong_exponent(&self) -> Float { self.phong_exp }
 }
 
@@ -52,27 +52,27 @@ pub struct MirrorMaterial {
     pub id: Int,
 
     #[serde(rename = "AmbientReflectance", deserialize_with = "deser_vec3")]
-    pub ambient: RGBColor,
+    pub ambient: Vector3,
 
     #[serde(rename = "DiffuseReflectance", deserialize_with = "deser_vec3")]
-    pub diffuse: RGBColor,
+    pub diffuse: Vector3,
 
     #[serde(rename = "SpecularReflectance", deserialize_with = "deser_vec3")]
-    pub specular: RGBColor,
+    pub specular: Vector3,
 
     #[serde(rename = "PhongExponent", deserialize_with = "deser_float")]
     pub phong_exp: Float,
 
     #[serde(rename = "MirrorReflectance", deserialize_with = "deser_vec3")]
-    pub mirror: RGBColor,
+    pub mirror: Vector3,
 }
 
 impl Material for MirrorMaterial {
-    fn ambient(&self) -> RGBColor { self.ambient }
-    fn diffuse(&self) -> RGBColor { self.diffuse }
-    fn specular(&self) -> RGBColor { self.specular }
+    fn ambient(&self) -> Vector3 { self.ambient }
+    fn diffuse(&self) -> Vector3 { self.diffuse }
+    fn specular(&self) -> Vector3 { self.specular }
     fn phong_exponent(&self) -> Float { self.phong_exp }
-    fn mirror_reflectance(&self) -> Option<RGBColor> { Some(self.mirror) }
+    fn mirror_reflectance(&self) -> Option<Vector3> { Some(self.mirror) }
 }
 
 pub type BoxedMaterial = Box<dyn Material>;

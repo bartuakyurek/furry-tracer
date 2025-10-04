@@ -40,13 +40,13 @@ struct Camera {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     id: Int,
     
-    #[serde(rename = "Position", deserialize_with = "deser_dvec3")]
+    #[serde(rename = "Position", deserialize_with = "deser_vec3")]
     position: Vector3,
 
-    #[serde(rename = "Gaze", deserialize_with = "deser_dvec3")]
+    #[serde(rename = "Gaze", deserialize_with = "deser_vec3")]
     gaze: Vector3,
 
-    #[serde(rename = "Up", deserialize_with = "deser_dvec3")]
+    #[serde(rename = "Up", deserialize_with = "deser_vec3")]
     up: Vector3,
 
     #[serde(rename = "NearPlane", deserialize_with = "deser_nearplane")]

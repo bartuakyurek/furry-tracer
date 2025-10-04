@@ -23,7 +23,8 @@
 */
 
 use std::fmt;
-use bevy_math::{DVec3, Vec3};
+use std::marker::PhantomData;
+use std::str::FromStr;
 use std::fs::File;
 use std::io::BufReader;
 use serde::Deserialize;
@@ -89,99 +90,80 @@ where
     }
 }
 
-pub fn deser_vec3<'de, D>(deserializer: D) -> Result<Vec3, D::Error>
+pub trait From3<T>: Sized {
+    fn new(x: T, y: T, z: T) -> Self;
+}
+
+impl From3<f32> for bevy_math::Vec3 {
+    fn new(x: f32, y: f32, z: f32) -> Self {
+        Self::new(x, y, z)
+    }
+}
+
+impl From3<f64> for bevy_math::DVec3 {
+    fn new(x: f64, y: f64, z: f64) -> Self {
+        Self::new(x, y, z)
+    }
+}
+
+pub fn deser_vec3<'de, D, V, F>(deserializer: D) -> Result<V, D::Error>
 where
     D: Deserializer<'de>,
+    F: Deserialize<'de> + FromStr,
+    F::Err: fmt::Display,
+    V: From3<F>,
 {
-    struct Vec3Visitor;
+    struct Vec3Visitor<V, F>(PhantomData<(V, F)>);
 
-    impl<'de> Visitor<'de> for Vec3Visitor {
-        type Value = Vec3;
+    impl<'de, V, F> Visitor<'de> for Vec3Visitor<V, F>
+    where
+        F: Deserialize<'de> + FromStr,
+        F::Err: fmt::Display,
+        V: From3<F>,
+    {
+        type Value = V;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             formatter.write_str("a Vec3 as a string 'x y z' or an array [x, y, z]")
         }
 
-        fn visit_str<E>(self, value: &str) -> Result<Vec3, E>
+        fn visit_str<E>(self, value: &str) -> Result<V, E>
         where
             E: de::Error,
         {
-            // Use your existing logic for string
             let parts: Vec<&str> = value.split_whitespace().collect();
             if parts.len() != 3 {
                 return Err(E::custom("Expected 3 components for Vec3 string"));
             }
-            let x = parts[0].parse::<f32>().map_err(|_| E::custom("Failed to parse Vec3 x component"))?;
-            let y = parts[1].parse::<f32>().map_err(|_| E::custom("Failed to parse Vec3 y component"))?;
-            let z = parts[2].parse::<f32>().map_err(|_| E::custom("Failed to parse Vec3 z component"))?;
-            Ok(Vec3::new(x, y, z))
+            let x = parts[0].parse::<F>().map_err(|e| E::custom(e.to_string()))?;
+            let y = parts[1].parse::<F>().map_err(|e| E::custom(e.to_string()))?;
+            let z = parts[2].parse::<F>().map_err(|e| E::custom(e.to_string()))?;
+            Ok(V::new(x, y, z))
         }
 
-        fn visit_seq<A>(self, mut seq: A) -> Result<Vec3, A::Error>
+        fn visit_seq<A>(self, mut seq: A) -> Result<V, A::Error>
         where
             A: SeqAccess<'de>,
         {
-            // Deserialize from an array [x, y, z]
-            let x: f32 = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
-            let y: f32 = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
-            let z: f32 = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
-            if seq.next_element::<f32>()?.is_some() {
+            let x: F = seq
+                .next_element()?
+                .ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
+            let y: F = seq
+                .next_element()?
+                .ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
+            let z: F = seq
+                .next_element()?
+                .ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
+            if seq.next_element::<F>()?.is_some() {
                 return Err(de::Error::custom("Expected only 3 elements in Vec3 array"));
             }
-            Ok(Vec3::new(x, y, z))
+            Ok(V::new(x, y, z))
         }
     }
 
-    deserializer.deserialize_any(Vec3Visitor)
+    deserializer.deserialize_any(Vec3Visitor(PhantomData))
 }
 
-
-
-pub fn deser_dvec3<'de, D>(deserializer: D) -> Result<DVec3, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct Vec3Visitor;
-
-    impl<'de> Visitor<'de> for Vec3Visitor {
-        type Value = DVec3;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a Vec3 as a string 'x y z' or an array [x, y, z]")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<DVec3, E>
-        where
-            E: de::Error,
-        {
-            // Use your existing logic for string
-            let parts: Vec<&str> = value.split_whitespace().collect();
-            if parts.len() != 3 {
-                return Err(E::custom("Expected 3 components for Vec3 string"));
-            }
-            let x = parts[0].parse::<f64>().map_err(|_| E::custom("Failed to parse Vec3 x component"))?;
-            let y = parts[1].parse::<f64>().map_err(|_| E::custom("Failed to parse Vec3 y component"))?;
-            let z = parts[2].parse::<f64>().map_err(|_| E::custom("Failed to parse Vec3 z component"))?;
-            Ok(DVec3::new(x, y, z))
-        }
-
-        fn visit_seq<A>(self, mut seq: A) -> Result<DVec3, A::Error>
-        where
-            A: SeqAccess<'de>,
-        {
-            // Deserialize from an array [x, y, z]
-            let x: f64 = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
-            let y: f64 = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
-            let z: f64 = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
-            if seq.next_element::<f32>()?.is_some() {
-                return Err(de::Error::custom("Expected only 3 elements in Vec3 array"));
-            }
-            Ok(DVec3::new(x, y, z))
-        }
-    }
-
-    deserializer.deserialize_any(Vec3Visitor)
-}
 
 
 pub fn deser_vec2<'de, D>(deserializer: D) -> Result<[Int; 2], D::Error>
