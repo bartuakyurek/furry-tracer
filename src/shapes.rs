@@ -1,7 +1,7 @@
 
 
 use serde::{Deserialize};
-use crate::numeric::{Int, Float};
+use crate::numeric::{Int, Float, Vector3};
 use crate::json_parser::*;
 
 
@@ -15,7 +15,11 @@ pub struct Triangle {
 
     #[serde(rename = "Material", deserialize_with = "deser_int")]
     pub material: Int,
+
+    #[serde(skip)]
+    pub normal: Vector3,
 }
+
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Sphere {
