@@ -160,7 +160,6 @@ where
 }
 
 
-
 pub fn deser_arr2<'de, D>(deserializer: D) -> Result<[Int; 2], D::Error>
 where
     D: Deserializer<'de>,
@@ -204,16 +203,39 @@ where
     deserializer.deserialize_any(Vec2Visitor)
 }
 
+pub fn deser_numeric_vec<'de, D, N>(deserializer: D) -> Result<Vec<N>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    N: FromStr, 
+    N::Err: fmt::Display,
+{
+    // Deserialize string of numbers separated by whitespace
+    // into a vector of numbers, e.g. "0 2 3" in .json is deserialized
+    // to Vec<N> where N is number-like (see deser_usize_vec and deser_int_vec 
+    // wrappers for usize and Int (which is defined in numeric.rs) types.
+    let s: String = Deserialize::deserialize(deserializer)?;
+    let numbers = s
+        .split_whitespace()
+        .map(|x| x.parse::<N>().map_err(serde::de::Error::custom))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(numbers)
+}
+
+// Wrapper for deser_numeric_vec<usize>
+pub fn deser_usize_vec<'de, D>(deserializer: D) -> Result<Vec<usize>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    deser_numeric_vec::<D, usize>(deserializer)
+}
+
+
+// Wrapper for deser_numeric_vec<Int>
 pub fn deser_int_vec<'de, D>(deserializer: D) -> Result<Vec<Int>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let s: String = Deserialize::deserialize(deserializer)?;
-    let numbers = s
-        .split_whitespace()
-        .map(|x| x.parse::<Int>().map_err(serde::de::Error::custom))
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(numbers)
+    deser_numeric_vec::<D, Int>(deserializer)
 }
 
 
