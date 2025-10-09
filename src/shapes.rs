@@ -21,7 +21,17 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    fn compute_normal(&mut self, vertices: &Vec<Vector3>) -> Vector3 {
+    //fn new(i1: usize, i2: usize, i3: usize) -> Triangle {
+    //    let tri = Triangle { id: 0, 
+    //                indices: vec![i1, i2, i3], 
+    //                material: 0, 
+    //                normal: Vector3::new(0., 0., 0.) 
+    //            }
+    //    
+    //    
+    //}
+
+    fn compute_normal_naive(&mut self, vertices: &Vec<Vector3>) -> Vector3 {
         // WARNING: Assumes triangle indices are given in counter clockwise order 
         //
         //    v1
@@ -73,4 +83,27 @@ pub struct Sphere {
 
     #[serde(rename = "Material", deserialize_with = "deser_int")]
     pub material: Int,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*; // access to the outer scope
+
+    #[test]
+    fn test_normals() {
+        // WARNING: A simple test is provided, does not
+        // check degenerate cases at this point.
+        let verts: Vec<Vector3> = vec![
+                Vector3::new(0., 0., 0.),
+                Vector3::new(1., 0., 0.),
+                Vector3::new(0.5, 0.5, 0.),
+        ];
+        let mut tri = Triangle { id: 0, 
+                    indices: vec![0, 1, 2], 
+                    material: 0, 
+                    normal: Vector3::new(0., 0., 0.) 
+                };
+
+        assert_eq!(tri.compute_normal_naive(&verts), Vector3::new(0., 0., 1.));
+    }
 }
