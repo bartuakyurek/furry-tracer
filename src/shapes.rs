@@ -124,13 +124,10 @@ mod tests {
                     material: 0, 
                 };
 
-        let triangles = vec![tri; 2];
-        let tri_normals = CoordLike::tri_normals(&triangles, &verts);
-        assert_eq!(tri_normals.xs[0], 0.);
-        assert_eq!(tri_normals.ys[0], 0.);
-        assert_eq!(tri_normals.zs[0], 1.);
-        assert_eq!(tri_normals.xs[1], 0.);
-        assert_eq!(tri_normals.ys[1], 0.);
-        assert_eq!(tri_normals.zs[1], 1.);
+        let n_tri: usize = 2;
+        let triangles = vec![tri; n_tri];
+        let tri_normals_soa = CoordLike::tri_normals(&triangles, &verts);
+        let tri_normals_aos = tri_normals_soa.vectorize();
+        assert_eq!(tri_normals_aos, vec![Vector3::new(0.,0.,1.); n_tri]);
     }
 }
