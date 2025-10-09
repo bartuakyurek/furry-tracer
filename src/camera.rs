@@ -1,9 +1,10 @@
 /*
 
-
-
+    Declare Camera and its related structs like NearPlane
+    
+    @date: Oct, 2025
+    @author: bartu
 */
-
 
 
 use serde::{Deserialize};
@@ -55,7 +56,7 @@ struct Camera {
     // NOTE: Skipping near distance as nearplane already contains it
 
     #[serde(rename = "ImageResolution", deserialize_with = "deser_arr2")]
-    image_resolution: [Int; 2],
+    image_resolution: [Int; 2], // TODO: Should be usize instead of Int but deserialization needs modification to handle Int for i32, usized etc. 
 
     #[serde(rename = "ImageName")]
     image_name: String,

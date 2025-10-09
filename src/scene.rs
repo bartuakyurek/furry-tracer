@@ -1,13 +1,13 @@
 /*
 
-Declare Scene consisting of all cameras, lights,
-materials, vertex data, and objects to be rendered.
+    Declare Scene consisting of all cameras, lights,
+    materials, vertex data, and objects to be rendered.
 
-This declaration is meant to be compatible with 
-CENG 795's JSON file formats.
+    This declaration is meant to be compatible with 
+    CENG 795's JSON file formats.
 
-@date: 2 Oct, 2025
-@author: Bartu
+    @date: 2 Oct, 2025
+    @author: Bartu
 */
 
 use serde::{Deserialize};

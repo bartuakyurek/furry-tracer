@@ -1,12 +1,12 @@
 /*
 
-A simple ray tracer for CENG 795 course.
+    A simple ray tracer implemented for CENG 795 course.
 
-@date: 2 Oct, 2025
-@author: Bartu
+    @date: Oct, 2025
+    @author: Bartu
+
 */
 
-use bevy_math::VectorSpace;
 use tracing::{info, debug, error, warn};
 use tracing_subscriber;
 
@@ -19,7 +19,6 @@ mod material;
 mod json_parser;
 mod geometry_processing;
 use crate::{json_parser::parse_json795, scene::Scene, numeric::{Vector3}};
-
 
 
 struct ImageData {
@@ -68,5 +67,5 @@ fn main() {
     // Write image data to file
     // ...
     warn!("Don't forget to write image data to a file.");
-    info!("Furry tracer finished execution.");
+    info!("Finished execution.");
 }

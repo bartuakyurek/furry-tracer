@@ -1,3 +1,10 @@
+/*
+
+    Declare primitives: Triangle, Sphere
+    
+    @date: Oct, 2025
+    @author: bartu
+*/
 
 
 use serde::{Deserialize};
