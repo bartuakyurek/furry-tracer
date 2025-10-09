@@ -17,6 +17,7 @@ mod shapes;
 mod numeric;
 mod material;
 mod json_parser;
+mod geometry_processing;
 use crate::{json_parser::parse_json795, scene::Scene, numeric::{Vector3}};
 
 
