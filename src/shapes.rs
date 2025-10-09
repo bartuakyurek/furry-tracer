@@ -28,21 +28,26 @@ fn get_tri_normal(v1: &Vector3, v2: &Vector3, v3: &Vector3) -> Vector3{
     normal
 }
 
-trait Vector3StructofArrays {
-    fn vectorize(&self) -> Vec<Vector3>; // Convert to AoS
+trait StructofArrays {
+    type Item;
+
+    fn vectorize(&self) -> Vec<Self::Item>; // Convert to AoS
     fn len(&self) -> usize;
 }
 
 pub struct CoordLike {
     // Struct of Arrays for 3D coordinates-like data
     // Useful for holding vertex coordinates or face normals etc.
+    // WARNING: Assumes all fields have equal length
     xs: Vec<Float>,
     ys: Vec<Float>,
     zs: Vec<Float>,
 }
 
-impl Vector3StructofArrays for CoordLike {
-    fn vectorize(&self) -> Vec<Vector3> {
+impl StructofArrays for CoordLike {
+    type Item = Vector3;
+
+    fn vectorize(&self) -> Vec<Self::Item> {
         (0..self.len()).map(|i| Vector3::new(self.xs[i], self.ys[i], self.zs[i])).collect()
     }
 
