@@ -7,8 +7,10 @@
 */
 
 
+use bevy_math::NormedVectorSpace;
 use serde::{Deserialize};
-use crate::numeric::{Int, Float, Vector3};
+use tracing::{info, debug, error, warn};
+use crate::numeric::{Int, Float, Vector3, approx_zero};
 use crate::json_parser::*;
 
 // To handle JSON file having a single camera
@@ -28,7 +30,7 @@ pub struct Cameras {
 
 impl Cameras {
     /// Always returns a Vec<Camera> regardless of JSON being a single object or array
-    fn all(&self) -> Vec<Camera> {
+    pub fn all(&self) -> Vec<Camera> {
         match &self.camera {
             CameraSingleOrVec::Single(cam) => vec![cam.clone()],
             CameraSingleOrVec::Multiple(vec) => vec.clone(),
@@ -37,7 +39,7 @@ impl Cameras {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-struct Camera {
+pub struct Camera {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     id: Int,
     
@@ -61,6 +63,53 @@ struct Camera {
     #[serde(rename = "ImageName")]
     image_name: String,
 
+    #[serde(skip)]
+    w : Vector3,
+
+    #[serde(skip)]
+    v : Vector3,
+
+    #[serde(skip)]
+    u : Vector3,
+
+}
+
+impl Camera {
+    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, image_resolution: [Int; 2], image_name: String) -> Self {
+        let mut cam = Camera {
+            id,
+            position,
+            gaze,
+            up,
+            nearplane,
+            image_resolution,
+            image_name,
+            w : Vector3::NAN,
+            v : Vector3::NAN,
+            u : Vector3::NAN,
+        };
+        cam.setup();
+        return cam;
+    }
+    pub fn setup(&mut self) {
+        // Compute w, v, u vectors
+        // assumes Gaze and Up is already provided during creation
+        // corrects Up vector if given Up was not perpendicular to
+        // Gaze vector.
+
+        self.w = - self.gaze.normalize();
+        self.v = self.up.normalize();
+        self.u = self.v.cross(self.w);
+
+        if !approx_zero(self.up.dot(self.gaze)) {
+            info!("Gaze and Up vectors are not perpendicular, correcting v...");
+            self.v = self.w.cross(self.u);
+        }
+        debug!("Camera w: {}, v: {}, u: {}", self.w, self.v, self.u);    
+        debug_assert!(approx_zero(self.u.dot(self.w))); 
+        debug_assert!(approx_zero(self.v.dot(self.w))); 
+        debug_assert!(approx_zero(self.v.dot(self.u))); 
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -75,4 +124,42 @@ pub(crate) struct NearPlane {
     pub(crate) top: Float,
     #[serde(deserialize_with = "deser_float")]
     pub(crate) near_distance: Float,
+}
+
+impl NearPlane {
+    pub fn new(left: Float, right: Float, bottom: Float, top: Float, near_distance: Float) -> Self {
+        NearPlane { 
+            left,
+            right,
+            bottom,
+            top,
+            near_distance,
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*; // access to the outer scope
+
+    #[test]
+    fn test_setup() {
+
+        let cam = Camera::new(
+            1,
+            Vector3::new(0., 0., 0.),
+            Vector3::new(0., 0.2, -10.), // Not perpendicular to up
+            Vector3::new(0., 1., 0.),
+            NearPlane::new(-1., 1., -1., 1., 10.),
+            [720, 720],
+            "test.png".to_string(),
+        );
+        assert!(approx_zero(cam.u.dot(cam.v))); 
+        assert!(approx_zero(cam.v.dot(cam.w))); 
+        assert!(approx_zero(cam.w.dot(cam.u))); 
+        // These asserts are redundant with debug_asserts in new( )
+        // but keeping them here just for sanity checks.
+
+    }
 }

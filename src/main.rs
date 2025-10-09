@@ -29,8 +29,13 @@ struct ImageData {
 
 fn render(scene: Scene) -> Result<ImageData, Box<dyn std::error::Error>>
 {
-    warn!("Assuming single camera...");
-
+    
+    for mut cam in scene.cameras.all(){
+        cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
+        debug!("{:?}", cam);
+    }
+    
+    // TODO: Return Vec<ImageData>
     let width= 640;
     let height =  640;
     warn!("Use Camera.ImageResolution for width and Height.");

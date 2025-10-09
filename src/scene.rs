@@ -40,7 +40,7 @@ pub struct Scene {
     intersection_test_epsilon: Float,
 
     #[serde(rename = "Cameras")]
-    cameras: Cameras,
+    pub cameras: Cameras,
 
     #[serde(rename = "Lights")]
     lights: SceneLights,

@@ -22,3 +22,6 @@ pub type Float = f64;
 pub type Vector3 = DVec3; // f64
 
 
+pub fn approx_zero(x: Float) -> bool {
+    x.abs() < 1e-8
+}
