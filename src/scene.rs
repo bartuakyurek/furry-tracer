@@ -22,7 +22,7 @@ use crate::json_parser::*;
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
     #[serde(rename = "Scene")]
-    scene: Scene,
+    pub scene: Scene,
 }
 
 #[derive(Debug, Deserialize)]
@@ -58,7 +58,7 @@ pub struct Scene {
 #[derive(Debug, Deserialize, Clone)]
 pub struct SceneLights {
     #[serde(rename = "AmbientLight")]
-    pub ambient_lights: AmbientLights,
+    pub ambient_light: AmbientLight,
 
     #[serde(rename = "PointLight")]
     pub point_lights: Vec<PointLight>, 
@@ -67,9 +67,9 @@ pub struct SceneLights {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(transparent)] // treat AmbientLights as directly wrapping Vec<Vector3>
-pub struct AmbientLights(
-    #[serde(deserialize_with = "deser_vecvec3")]
-    pub Vec<Vector3>
+pub struct AmbientLight(
+    #[serde(deserialize_with = "deser_vec3")]
+    pub Vector3
 );
 
 #[derive(Debug, Deserialize, Clone)]
