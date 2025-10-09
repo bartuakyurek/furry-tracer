@@ -17,15 +17,7 @@ pub struct Triangle {
     pub material: Int,
 }
 
-
-//trait StructofArrays_3D {
-//    fn get_vec() -> Vec<Vector3> {
-//        // Return list of (x, y, z) coordinates
-//        // i.e. convert to array of structs 
-//    }
-//}
-
-fn get_tri_normal(v1: Vector3, v2: Vector3, v3: Vector3) -> Vector3{
+fn get_tri_normal(v1: &Vector3, v2: &Vector3, v3: &Vector3) -> Vector3{
 
     let left = v1 - v2;
     let right = v3 - v2;
@@ -36,17 +28,38 @@ fn get_tri_normal(v1: Vector3, v2: Vector3, v3: Vector3) -> Vector3{
     normal
 }
 
-pub struct TriangleNormals {
-
-    pub xs: Vec<Float>,
-    pub ys: Vec<Float>,
-    pub zs: Vec<Float>,
+trait Vector3StructofArrays {
+    fn vectorize(&self) -> Vec<Vector3>; // Convert to AoS
+    fn len(&self) -> usize;
 }
 
+pub struct CoordLike {
+    // Struct of Arrays for 3D coordinates-like data
+    // Useful for holding vertex coordinates or face normals etc.
+    xs: Vec<Float>,
+    ys: Vec<Float>,
+    zs: Vec<Float>,
+}
 
-impl TriangleNormals {
+impl Vector3StructofArrays for CoordLike {
+    fn vectorize(&self) -> Vec<Vector3> {
+        (0..self.len()).map(|i| Vector3::new(self.xs[i], self.ys[i], self.zs[i])).collect()
+    }
+
+    fn len(&self) -> usize{
+        // Check if all vectors have same size
+        // Return length of the struct
+        assert_eq!(self.xs.len(), self.ys.len());
+        assert_eq!(self.xs.len(), self.zs.len());
+        assert_eq!(self.ys.len(), self.zs.len());
+
+        self.xs.len()
+    }
+}
+
+impl CoordLike {
    
-    fn compute(triangles: &Vec<Triangle>, vertices: &Vec<Vector3>) -> TriangleNormals {
+    fn tri_normals(triangles: &Vec<Triangle>, vertices: &Vec<Vector3>) -> CoordLike {
         // WARNING: Assumes triangle indices are given in counter clockwise order 
         //
         //    v1
@@ -63,11 +76,11 @@ impl TriangleNormals {
             let v2 =  vertices[tri.indices[1]];
             let v3 = vertices[tri.indices[2]];
 
-            let n = get_tri_normal(v1, v2, v3);
+            let n = get_tri_normal(&v1, &v2, &v3);
             (xs[i], ys[i], zs[i]) = (n[0], n[1], n[2]);
         }
        
-        TriangleNormals { xs, ys, zs }
+        CoordLike { xs, ys, zs }
     }
     
 }
@@ -107,7 +120,7 @@ mod tests {
                 };
 
         let triangles = vec![tri; 2];
-        let tri_normals = TriangleNormals::compute(&triangles, &verts);
+        let tri_normals = CoordLike::tri_normals(&triangles, &verts);
         assert_eq!(tri_normals.xs[0], 0.);
         assert_eq!(tri_normals.ys[0], 0.);
         assert_eq!(tri_normals.zs[0], 1.);
