@@ -7,6 +7,7 @@
 
 */
 
+use std::{env, process};
 use tracing::{info, debug, error, warn};
 use tracing_subscriber;
 
@@ -46,12 +47,24 @@ fn render(scene: Scene) -> Result<ImageData, Box<dyn std::error::Error>>
 }
 
 fn main() {
-    
+
     // Logging 
     tracing_subscriber::fmt::init(); // logs to console
-  
+
+    // Parse args
+    let args: Vec<String> = env::args().collect();
+    let json_path: &String = if args.len() == 1 {
+        debug!("No arguments were provided, setting default scene path...");
+        &String::from("./assets/test.json")
+    } else if args.len() == 2 {
+        &args[1]
+    } else {
+        error!("Usage: {} <filename>.json", args[0]);
+        std::process::exit(1);
+    };
+    
     // Parse JSON
-    let json_path: &str = "./assets/test.json";
+    info!("Loading scene from {}...", json_path);
     let root =  match parse_json795(json_path) {
         Ok(root) => {
             info!("Scene loaded successfully.\n {:#?}", root);
