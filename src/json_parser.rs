@@ -132,7 +132,7 @@ where
         where
             E: de::Error,
         {
-            Ok(parse_vec3_str(value).map_err(de::Error::custom)?)
+            parse_vec3_str(value).map_err(de::Error::custom)
         }
 
         // Given [X, Y, Z]

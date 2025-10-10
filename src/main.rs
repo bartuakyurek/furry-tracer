@@ -42,7 +42,7 @@ fn render(scene: Scene) -> Result<ImageData, Box<dyn std::error::Error>>
 
     let pixels = vec![vec![Vector3::ZERO; width]; height];
     let im = ImageData { pixels, width, height };
-    return Ok(im);
+    Ok(im)
 }
 
 fn main() {

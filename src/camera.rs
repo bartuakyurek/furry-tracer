@@ -89,7 +89,7 @@ impl Camera {
             u : Vector3::NAN,
         };
         cam.setup();
-        return cam;
+        cam
     }
     pub fn setup(&mut self) {
         // Compute w, v, u vectors
