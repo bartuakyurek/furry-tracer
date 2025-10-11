@@ -160,7 +160,7 @@ where
 }
 
 
-pub fn deser_arr2<'de, D, T>(deserializer: D) -> Result<[T; 2], D::Error>
+pub fn deser_pair<'de, D, T>(deserializer: D) -> Result<[T; 2], D::Error>
 where
     D: Deserializer<'de>,
     T: Deserialize<'de> + FromStr,
