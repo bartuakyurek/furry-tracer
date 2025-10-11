@@ -58,7 +58,7 @@ pub struct Camera {
     // NOTE: Skipping near distance as nearplane already contains it
 
     #[serde(rename = "ImageResolution", deserialize_with = "deser_arr2")]
-    image_resolution: [Int; 2], // TODO: Should be usize instead of Int but deserialization needs modification to handle Int for i32, usized etc. 
+    image_resolution: [usize; 2], // TODO: Should be usize instead of Int but deserialization needs modification to handle Int for i32, usized etc. 
 
     #[serde(rename = "ImageName")]
     image_name: String,
@@ -75,7 +75,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, image_resolution: [Int; 2], image_name: String) -> Self {
+    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, image_resolution: [usize; 2], image_name: String) -> Self {
         let mut cam = Camera {
             id,
             position,

@@ -160,21 +160,26 @@ where
 }
 
 
-pub fn deser_arr2<'de, D>(deserializer: D) -> Result<[Int; 2], D::Error>
+pub fn deser_arr2<'de, D, T>(deserializer: D) -> Result<[T; 2], D::Error>
 where
     D: Deserializer<'de>,
+    T: Deserialize<'de> + FromStr,
+    T::Err: fmt::Display,
 {
-    // String "720 720" or array [720, 720] both accepted
-    struct Vec2Visitor;
+    struct Vec2Visitor<T>(PhantomData<T>);
 
-    impl<'de> serde::de::Visitor<'de> for Vec2Visitor {
-        type Value = [Int; 2];
+    impl<'de, T> Visitor<'de> for Vec2Visitor<T>
+    where
+        T: Deserialize<'de> + FromStr,
+        T::Err: fmt::Display,
+    {
+        type Value = [T; 2];
 
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("an array of 2 integers or a string 'w h'")
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("an array of 2 numbers or a string e.g. 'width height'")
         }
 
-        fn visit_str<E>(self, value: &str) -> Result<[Int; 2], E>
+        fn visit_str<E>(self, value: &str) -> Result<[T; 2], E>
         where
             E: de::Error,
         {
@@ -182,25 +187,29 @@ where
             if parts.len() != 2 {
                 return Err(E::custom("Expected 2 components for Vec2 string"));
             }
-            let x = parts[0].parse::<Int>().map_err(|_| E::custom("Failed parsing width"))?;
-            let y = parts[1].parse::<Int>().map_err(|_| E::custom("Failed parsing height"))?;
+            let x = parts[0]
+                .parse::<T>()
+                .map_err(|_| E::custom("Failed parsing first component"))?;
+            let y = parts[1]
+                .parse::<T>()
+                .map_err(|_| E::custom("Failed parsing second component"))?;
             Ok([x, y])
         }
 
-        fn visit_seq<A>(self, mut seq: A) -> Result<[Int; 2], A::Error>
+        fn visit_seq<A>(self, mut seq: A) -> Result<[T; 2], A::Error>
         where
-            A: serde::de::SeqAccess<'de>,
+            A: SeqAccess<'de>,
         {
-            let x: Int = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 2 elements"))?;
-            let y: Int = seq.next_element()?.ok_or_else(|| de::Error::custom("Expected 2 elements"))?;
-            if seq.next_element::<Int>()?.is_some() {
-                return Err(de::Error::custom("Expected only 2 elements"));
+            let x: T = seq.next_element()?.ok_or_else(|| de::Error::custom("expected 2 elements"))?;
+            let y: T = seq.next_element()?.ok_or_else(|| de::Error::custom("expected 2 elements"))?;
+            if seq.next_element::<T>()?.is_some() {
+                return Err(de::Error::custom("expected only 2 elements"));
             }
             Ok([x, y])
         }
     }
 
-    deserializer.deserialize_any(Vec2Visitor)
+    deserializer.deserialize_any(Vec2Visitor::<T>(PhantomData))
 }
 
 pub fn deser_numeric_vec<'de, D, N>(deserializer: D) -> Result<Vec<N>, D::Error>
