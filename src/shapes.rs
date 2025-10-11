@@ -8,8 +8,18 @@
 
 
 use serde::{Deserialize};
-use crate::numeric::{Int, Float};
+use crate::numeric::{Int, Float, Vector3};
 use crate::json_parser::*;
+
+pub struct Ray {
+    origin: Vector3,
+    direction: Vector3,
+}
+
+
+pub trait Intersectable {
+    fn intersects_with(ray: Ray) -> bool;
+}
 
 
 #[derive(Debug, Deserialize, Clone)]
