@@ -7,44 +7,20 @@
 
 */
 
-use std::{env, process};
+use std::{self, env};
 use tracing::{info, debug, error, warn};
 use tracing_subscriber;
-
 
 mod scene;
 mod camera;
 mod shapes;
 mod numeric;
 mod material;
+mod renderer;
 mod json_parser;
 mod geometry_processing;
-use crate::{json_parser::parse_json795, scene::Scene, numeric::{Vector3}};
+use crate::{json_parser::parse_json795, numeric::{Vector3}};
 
-
-struct ImageData {
-    pixels : Vec<Vec<Vector3>>,
-    width : usize,
-    height: usize,
-}
-
-fn render(scene: Scene) -> Result<ImageData, Box<dyn std::error::Error>>
-{
-    
-    for mut cam in scene.cameras.all(){
-        cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
-        debug!("{:?}", cam);
-    }
-    
-    // TODO: Return Vec<ImageData>
-    let width= 640;
-    let height =  640;
-    warn!("Use Camera.ImageResolution for width and Height.");
-
-    let pixels = vec![vec![Vector3::ZERO; width]; height];
-    let im = ImageData { pixels, width, height };
-    Ok(im)
-}
 
 fn main() {
 
@@ -77,7 +53,7 @@ fn main() {
     };
 
     // Render image and return array of RGB
-    let image_data = match render(root.scene) {
+    let image_data = match renderer::render(root.scene) {
         Ok(image_data) => {info!("Render completed."); image_data}
         Err(e) => {error!("Failed to render scene: {}", e); return;}
     };
