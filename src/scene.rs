@@ -114,6 +114,9 @@ pub struct SceneObjects {
 
     #[serde(rename = "Plane", default)]
     pub planes: Vec<Plane>,
+
+    #[serde(rename = "Mesh", default)]
+    pub meshes: SingleOrVec<Mesh>,
 }
 
 
@@ -123,7 +126,16 @@ struct DataField<T> {
     _data: Vec<T>,
     _type: String,
 }
-// TODO: VertexDataField is DataField<Vector3> and Face <Index>
+
+
+impl<'de> Deserialize<'de> for DataField<Vector3> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // todo...
+    }
+}
 
 struct Mesh {
     _id: Int,
