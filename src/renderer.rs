@@ -68,7 +68,7 @@ impl ImageData {
         }
     }
 
-    pub fn save_png(self, path: &str) -> Result<_>{
+    pub fn save_png(self, path: &str) -> Result<(), Box<dyn std::error::Error>>{
         // Path is either a folder name or
         // full path including <imagename>.png
         // If full path is not provided it will use 
@@ -100,7 +100,9 @@ impl ImageData {
         let mut writer = encoder.write_header().unwrap();
 
         let data = self.to_rgb();
-        writer.write_image_data(&data).unwrap(); // Save
+        writer.write_image_data(&data)?; // Save
+        
+        Ok(())
     }
 }
 
