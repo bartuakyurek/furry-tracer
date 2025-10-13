@@ -20,6 +20,7 @@ pub type RGB = U8Vec3;  // For final RGB colors
 pub type Int = i32;
 pub type Float = f64;
 pub type Vector3 = DVec3; // f64
+pub type Index = usize;
 
 
 pub fn approx_zero(x: Float) -> bool {

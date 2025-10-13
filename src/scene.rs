@@ -15,7 +15,7 @@ use serde_json::{Value};
 
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
-use crate::shapes::{TriangleSerde, Sphere};
+use crate::shapes::{TriangleSerde, Sphere, Plane};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 
@@ -108,4 +108,7 @@ pub struct SceneObjects {
 
     #[serde(rename = "Sphere", default)]
     pub spheres: Vec<Sphere>,
+
+    #[serde(rename = "Plane", default)]
+    pub planes: Vec<Plane>,
 }

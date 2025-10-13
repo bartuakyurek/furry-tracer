@@ -53,6 +53,27 @@ pub fn parse_json795(path: &str) -> Result<RootScene, Box<dyn std::error::Error>
 }
 
 
+
+pub fn deser_usize<'de, D>(deserializer: D) -> Result<usize, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    /*
+        Deserialize usize type given as either string or number in JSON
+        TODO: This is code duplication, use generics to combine
+        deser_float, deser_int, deser_usize
+    */
+    let s: serde_json::Value = Deserialize::deserialize(deserializer)?;
+    match s {
+        serde_json::Value::Number(n) => n.as_i64()
+            .map(|v| v as usize)
+            .ok_or_else(|| de::Error::custom("Invalid integer")),
+        serde_json::Value::String(s) => s.parse::<usize>()
+            .map_err(|_| de::Error::custom("Failed to parse integer from string")),
+        _ => Err(de::Error::custom("Expected int or string")),
+    }
+}
+
 pub fn deser_int<'de, D>(deserializer: D) -> Result<Int, D::Error>
 where
     D: Deserializer<'de>,

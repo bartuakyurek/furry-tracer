@@ -8,7 +8,7 @@
 
 
 use serde::{Deserialize};
-use crate::numeric::{Int, Float, Vector3};
+use crate::numeric::{Int, Float, Vector3, Index};
 use crate::json_parser::*;
 
 pub struct Ray {
@@ -42,9 +42,9 @@ pub struct Sphere {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     pub id: Int,
 
-    // JSON uses a *vertex index* instead of a raw vector
-    #[serde(rename = "Center", deserialize_with = "deser_int")]
-    pub center: Int,
+    // JSON uses a *vertex index* instead of a 3D vector for center
+    #[serde(rename = "Center", deserialize_with = "deser_usize")]
+    pub center: Index,
 
     #[serde(rename = "Radius", deserialize_with = "deser_float")]
     pub radius: Float,
@@ -53,3 +53,17 @@ pub struct Sphere {
     pub material: Int,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct Plane {
+    #[serde(rename = "_id", deserialize_with = "deser_int")]
+    pub id: Int,
+
+    #[serde(rename = "Point", deserialize_with = "deser_usize")]
+    pub point: Index,
+
+    #[serde(rename = "Normal", deserialize_with = "deser_vec3")]
+    pub normal: Vector3,
+
+    #[serde(rename = "Material", deserialize_with = "deser_int")]
+    pub material: Int,
+}
