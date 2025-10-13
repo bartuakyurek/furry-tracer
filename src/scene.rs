@@ -10,14 +10,15 @@
     @author: Bartu
 */
 
+use serde_json;
 use serde::{Deserialize};
-use serde_json::{Value};
 
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
 use crate::shapes::{TriangleSerde, Sphere, Plane};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
+use crate::dataforms::{SingleOrVec};
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
@@ -61,7 +62,7 @@ pub struct SceneLights {
     pub ambient_light: Vector3,
 
     #[serde(rename = "PointLight")]
-    pub point_lights: Vec<PointLight>, 
+    pub point_lights: SingleOrVec<PointLight>, 
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -80,12 +81,13 @@ pub struct PointLight {
 #[derive(Debug, Deserialize)]
 pub struct SceneMaterials {
     #[serde(rename = "Material")]
-    pub raw_materials: Vec<Value>, // keep JSON nodes as-is for postprocessing
+    pub raw_materials: SingleOrVec<serde_json::Value>, // keep json value as-is for postprocessing
 }
 
 impl SceneMaterials {
     pub fn into_materials(self) -> Vec<Box<dyn Material>> {
         self.raw_materials
+            .all()
             .into_iter()
             .map(|val| {
                 if let Some(t) = val.get("_type") {
