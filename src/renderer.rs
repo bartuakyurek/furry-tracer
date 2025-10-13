@@ -49,12 +49,12 @@ impl ImageData {
         path.extension().unwrap().to_str().unwrap() == extension
     }
 
-    pub fn png_filepath(self, path: &str) -> &str {
+    pub fn get_fullpath(self, path: &str) -> PathBuf {
         // Check if provided path is a folder 
         // if so, create a .png under this folder
         // otherwise use the provided path as is
         let extension = "png";
-        let pngpath = {
+        {
             let path = Path::new(path);
             let mut finalpath: PathBuf = path.to_path_buf();
             if path.is_dir() {
@@ -64,9 +64,8 @@ impl ImageData {
             if finalpath.set_extension(extension) {
                 warn!("Extension changed to .{}", extension);
             }
-            finalpath.to_str().unwrap()
-        };
-        pngpath
+            finalpath
+        }
     }
 
     pub fn save_png(self, path: &str) -> Result<_>{
@@ -80,7 +79,7 @@ impl ImageData {
         // extension it will be silently converted to .png
         //
         // DISCLAIMER: This function is based on https://docs.rs/png/0.18.0/png/
-        let path = self.png_filepath(path);
+        let path: PathBuf = self.get_fullpath(path);
 
         let file = File::create(path).unwrap();
         let ref mut w = BufWriter::new(file);
