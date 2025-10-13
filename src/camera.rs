@@ -58,10 +58,10 @@ pub struct Camera {
     // NOTE: Skipping near distance as nearplane already contains it
 
     #[serde(rename = "ImageResolution", deserialize_with = "deser_pair")]
-    image_resolution: [usize; 2], // TODO: Should be usize instead of Int but deserialization needs modification to handle Int for i32, usized etc. 
+    pub image_resolution: [usize; 2], // TODO: Should be usize instead of Int but deserialization needs modification to handle Int for i32, usized etc. 
 
     #[serde(rename = "ImageName")]
-    image_name: String,
+    pub image_name: String,
 
     #[serde(skip)]
     w : Vector3,

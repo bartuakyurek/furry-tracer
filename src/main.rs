@@ -53,14 +53,19 @@ fn main() {
     };
 
     // Render image and return array of RGB
-    let image_data = match renderer::render(root.scene) {
+    let images = match renderer::render(root.scene) {
         Ok(image_data) => {info!("Render completed."); image_data}
         Err(e) => {error!("Failed to render scene: {}", e); return;}
     };
 
-    // Write image data to file
-    let path: &str = r"./result.png";
-    image_data.save_png(path);
+  
+    for im in images.iter() {
+        let imagefolder = "./"; // Save to current folder 
+        if let Err(e) = im.save_png(&imagefolder) {
+            eprintln!("Failed to save {}: {}", imagefolder, e);
+        }
+    }
+
 
     warn!("Don't forget to write image data to a file.");
     info!("Finished execution.");
