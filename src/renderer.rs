@@ -15,6 +15,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::BufWriter;
 use tracing::{info, debug, error, warn};
+use tracing_subscriber::fmt::format::Format;
 
 use crate::scene::{Scene};
 use crate::numeric::{Vector3, Float};
@@ -44,15 +45,37 @@ impl ImageData {
         rgb_vec
     } 
 
+    pub fn check_extension(self, path: &PathBuf, extension: &str) -> bool {
+        path.extension().unwrap().to_str().unwrap() == extension
+    }
+
     pub fn png_filepath(self, path: &str) -> &str {
         // Check if provided path is a folder 
         // 
-        let extension = ".png";
+        let extension = "png";
         let pngpath = {
             let path = Path::new(path);
             let mut finalpath: PathBuf = path.to_path_buf();
-            if path.ends_with(extension) {
-                debug!("File path already includes {} extension, no modification needed.", extension);
+            if path.is_dir() {
+                // Provided path is a directory
+                // Create <imagename>.png under this directory 
+                finalpath = path.join(self.name);
+                if !self.check_extension(&finalpath, extension) {
+
+                }
+            } 
+            else {
+                if self.check_extension(&finalpath, extension) {
+                    // Path ends with .png
+                    debug!("File path already includes {} extension, no modification needed.", extension);
+                } 
+                else {
+                    // Modify to match expected extension
+                    warn!("Extension changed to .{}", extension);
+                    finalpath.set_extension(extension);
+                    #let fname = finalpath.file_name().unwrap().to_str().unwrap();
+                    #finalpath = finalpath.parent().unwrap().join(format!("{}.{}", fname, extension));
+                }
             }
 
             if !finalpath.ends_with(extension) {
