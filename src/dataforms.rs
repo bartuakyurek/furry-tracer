@@ -10,6 +10,15 @@
 use serde::{Deserialize};
 
 
+// To be used for VertexData and Faces in JSON files
+#[derive(Debug)]
+pub struct DataField<T> {
+    
+    pub(crate) _data: Vec<T>,
+    pub(crate) _type: String,
+}
+
+
 // To handle JSON file having a single <object>
 // or an array of <object>s 
 #[derive(Debug, Deserialize, Clone)]

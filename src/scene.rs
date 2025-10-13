@@ -11,15 +11,14 @@
 */
 
 use serde_json;
-use serde::{Deserialize};
-use tracing_subscriber::registry::Data;
+use serde::{Deserialize, de::{Deserializer}};
 
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3, Index};
 use crate::shapes::{TriangleSerde, Sphere, Plane};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
-use crate::dataforms::{SingleOrVec};
+use crate::dataforms::{SingleOrVec, DataField};
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
@@ -50,7 +49,7 @@ pub struct Scene {
     #[serde(rename = "Materials")]
     materials: SceneMaterials,
 
-    #[serde(rename = "VertexData", deserialize_with = "deser_vertex_data")]
+    #[serde(rename = "VertexData")]
     vertex_data: DataField<Vector3>, 
     
     #[serde(rename = "Objects")]
@@ -115,16 +114,8 @@ pub struct SceneObjects {
     #[serde(rename = "Plane", default)]
     pub planes: Vec<Plane>,
 
-    #[serde(rename = "Mesh", default)]
+    #[serde(rename = "Mesh")]
     pub meshes: SingleOrVec<Mesh>,
-}
-
-
-#[derive(Debug, Deserialize)]
-struct DataField<T> {
-    
-    _data: Vec<T>,
-    _type: String,
 }
 
 
@@ -133,10 +124,45 @@ impl<'de> Deserialize<'de> for DataField<Vector3> {
     where
         D: Deserializer<'de>,
     {
-        // todo...
+        #[derive(Deserialize)]
+        struct Helper {
+            #[serde(rename = "_data", deserialize_with = "deser_vecvec3")]
+            _data: Vec<Vector3>,
+            #[serde(rename = "_type")]
+            _type: String,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+        Ok(DataField {
+            _data: helper._data,
+            _type: helper._type,
+        })
     }
 }
 
+impl<'de> Deserialize<'de> for DataField<Index> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            #[serde(rename = "_data", deserialize_with = "deser_usize_vec")]
+            _data: Vec<Index>,
+            #[serde(rename = "_type")]
+            _type: String,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+        Ok(DataField {
+            _data: helper._data,
+            _type: helper._type,
+        })
+    }
+}
+ 
+
+#[derive(Debug, Deserialize)]
 struct Mesh {
     _id: Int,
     material: Int,
