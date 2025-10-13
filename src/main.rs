@@ -59,7 +59,9 @@ fn main() {
     };
 
     // Write image data to file
-    // ...
+    let path: &str = r"./result.png";
+    image_data.save_png(path);
+
     warn!("Don't forget to write image data to a file.");
     info!("Finished execution.");
 }
