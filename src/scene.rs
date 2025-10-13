@@ -126,48 +126,6 @@ impl SceneObjects {
     }
 }
 
-impl<'de> Deserialize<'de> for DataField<Vector3> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct Helper {
-            #[serde(rename = "_data", deserialize_with = "deser_vertex_data")]
-            _data: Vec<Vector3>,
-            #[serde(rename = "_type")]
-            _type: String,
-        }
-
-        let helper = Helper::deserialize(deserializer)?;
-        Ok(DataField {
-            _data: helper._data,
-            _type: helper._type,
-        })
-    }
-}
-
-impl<'de> Deserialize<'de> for DataField<Index> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct Helper {
-            #[serde(rename = "_data", deserialize_with = "deser_usize_vec")]
-            _data: Vec<Index>,
-            #[serde(rename = "_type")]
-            _type: String,
-        }
-
-        let helper = Helper::deserialize(deserializer)?;
-        Ok(DataField {
-            _data: helper._data,
-            _type: helper._type,
-        })
-    }
-}
- 
 
 #[derive(Debug, Deserialize, Clone)]
 struct Mesh {
