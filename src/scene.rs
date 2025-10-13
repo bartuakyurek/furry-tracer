@@ -12,9 +12,10 @@
 
 use serde_json;
 use serde::{Deserialize};
+use tracing_subscriber::registry::Data;
 
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
-use crate::numeric::{Int, Float, Vector3};
+use crate::numeric::{Int, Float, Vector3, Index};
 use crate::shapes::{TriangleSerde, Sphere, Plane};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
@@ -50,7 +51,7 @@ pub struct Scene {
     materials: SceneMaterials,
 
     #[serde(rename = "VertexData", deserialize_with = "deser_vertex_data")]
-    vertex_data: Vec<Vector3>, 
+    vertex_data: DataField<Vector3>, 
     
     #[serde(rename = "Objects")]
     objects: SceneObjects,
@@ -113,4 +114,19 @@ pub struct SceneObjects {
 
     #[serde(rename = "Plane", default)]
     pub planes: Vec<Plane>,
+}
+
+
+#[derive(Debug, Deserialize)]
+struct DataField<T> {
+    
+    _data: Vec<T>,
+    _type: String,
+}
+// TODO: VertexDataField is DataField<Vector3> and Face <Index>
+
+struct Mesh {
+    _id: Int,
+    material: Int,
+    faces: DataField<Index>,
 }
