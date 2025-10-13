@@ -59,13 +59,12 @@ fn main() {
     };
 
   
-    for im in images.iter() {
+    for im in images.into_iter() {
         let imagefolder = "./"; // Save to current folder 
         if let Err(e) = im.save_png(&imagefolder) {
             eprintln!("Failed to save {}: {}", imagefolder, e);
         }
     }
-
 
     warn!("Don't forget to write image data to a file.");
     info!("Finished execution.");

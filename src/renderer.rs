@@ -20,6 +20,7 @@ use tracing_subscriber::fmt::format::Format;
 use crate::scene::{Scene};
 use crate::numeric::{Vector3, Float};
 
+#[derive(Clone)]
 pub struct ImageData {
     pixels : Vec<Vector3>, // Vector of RGB per pixel
     width : usize,
@@ -49,7 +50,7 @@ impl ImageData {
         path.extension().unwrap().to_str().unwrap() == extension
     }
 
-    pub fn get_fullpath(self, path: &str) -> PathBuf {
+    pub fn get_fullpath(&self, path: &str) -> PathBuf {
         // Check if provided path is a folder 
         // if so, create a .png under this folder
         // otherwise use the provided path as is
@@ -59,7 +60,7 @@ impl ImageData {
             let mut finalpath: PathBuf = path.to_path_buf();
             if path.is_dir() {
                 // create <imagename>.png under this directory 
-                finalpath = path.join(self.name);
+                finalpath = path.join(self.name.clone());
             } 
             if finalpath.set_extension(extension) {
                 warn!("Extension changed to .{}", extension);
