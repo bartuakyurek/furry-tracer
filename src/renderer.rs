@@ -51,43 +51,21 @@ impl ImageData {
 
     pub fn png_filepath(self, path: &str) -> &str {
         // Check if provided path is a folder 
-        // 
+        // if so, create a .png under this folder
+        // otherwise use the provided path as is
         let extension = "png";
         let pngpath = {
             let path = Path::new(path);
             let mut finalpath: PathBuf = path.to_path_buf();
             if path.is_dir() {
-                // Provided path is a directory
-                // Create <imagename>.png under this directory 
+                // create <imagename>.png under this directory 
                 finalpath = path.join(self.name);
-                if !self.check_extension(&finalpath, extension) {
-
-                }
             } 
-            else {
-                if self.check_extension(&finalpath, extension) {
-                    // Path ends with .png
-                    debug!("File path already includes {} extension, no modification needed.", extension);
-                } 
-                else {
-                    // Modify to match expected extension
-                    warn!("Extension changed to .{}", extension);
-                    finalpath.set_extension(extension);
-                    #let fname = finalpath.file_name().unwrap().to_str().unwrap();
-                    #finalpath = finalpath.parent().unwrap().join(format!("{}.{}", fname, extension));
-                }
-            }
-
-            if !finalpath.ends_with(extension) {
-                finalpath = finalpath.join(self.name);
-            }
-
-            if !finalpath.ends_with(extension) {
-                finalpath = path.join(extension);
+            if finalpath.set_extension(extension) {
+                warn!("Extension changed to .{}", extension);
             }
             finalpath.to_str().unwrap()
         };
-
         pngpath
     }
 
