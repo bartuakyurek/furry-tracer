@@ -22,7 +22,7 @@ enum SingleOrVec<T> {
     Multiple(Vec<T>),
 }
 
-impl<T> SingleOrVec<T>  {
+impl<T: Clone> SingleOrVec<T>  {
     pub fn all(&self) -> Vec<T> {
         match &self {
             SingleOrVec::Single(cam) => vec![cam.clone()],
