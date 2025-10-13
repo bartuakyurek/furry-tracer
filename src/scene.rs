@@ -105,19 +105,26 @@ impl SceneMaterials {
 
 #[derive(Debug, Deserialize)]
 pub struct SceneObjects {
-    #[serde(rename = "Triangle", default)]
-    pub triangles: Vec<TriangleSerde>,
+    #[serde(rename = "Triangle")]
+    pub triangles: SingleOrVec<TriangleSerde>,
 
-    #[serde(rename = "Sphere", default)]
-    pub spheres: Vec<Sphere>,
+    #[serde(rename = "Sphere")]
+    pub spheres: SingleOrVec<Sphere>,
 
-    #[serde(rename = "Plane", default)]
-    pub planes: Vec<Plane>,
+    #[serde(rename = "Plane")]
+    pub planes: SingleOrVec<Plane>,
 
     #[serde(rename = "Mesh")]
     pub meshes: SingleOrVec<Mesh>,
 }
 
+
+impl SceneObjects {
+    /// Always returns a Vec<Camera> regardless of JSON being a single object or array
+    pub fn all(&self) -> (Vec<TriangleSerde>, Vec<Sphere>, Vec<Plane>, Vec<Mesh>) {
+        (self.triangles.all(), self.spheres.all(), self.planes.all(), self.meshes.all())
+    }
+}
 
 impl<'de> Deserialize<'de> for DataField<Vector3> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -126,7 +133,7 @@ impl<'de> Deserialize<'de> for DataField<Vector3> {
     {
         #[derive(Deserialize)]
         struct Helper {
-            #[serde(rename = "_data", deserialize_with = "deser_vecvec3")]
+            #[serde(rename = "_data", deserialize_with = "deser_vertex_data")]
             _data: Vec<Vector3>,
             #[serde(rename = "_type")]
             _type: String,
@@ -162,9 +169,10 @@ impl<'de> Deserialize<'de> for DataField<Index> {
 }
  
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Mesh {
-    _id: Int,
+ pub    _id: Int,
     material: Int,
     faces: DataField<Index>,
 }
+

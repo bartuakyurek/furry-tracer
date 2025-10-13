@@ -11,7 +11,7 @@ use serde::{Deserialize};
 
 
 // To be used for VertexData and Faces in JSON files
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataField<T> {
     
     pub(crate) _data: Vec<T>,
