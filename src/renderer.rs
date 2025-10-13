@@ -21,7 +21,8 @@ use crate::numeric::{Vector3, Float, Index};
 
 #[derive(Clone)]
 pub struct ImageData {
-    pixels : Vec<Vector3>, // Vector of RGB per pixel
+    pixel_colors : Vec<Vector3>, // Vector of RGB per pixel
+    pixel_centers: Vec<Vector3>,
     width : usize,
     height: usize,
     name: String, // TODO: width, height, name info actually is stored under camera as well
@@ -29,13 +30,13 @@ pub struct ImageData {
 }
 
 impl ImageData {
-    pub fn flatten(self) -> Vec<Float> {
+    pub fn flatten_color(self) -> Vec<Float> {
         // Return [R1, G1, B1, R2, G2, B2, ...] vector
         // where each triplet is RGB color of a pixel.
-        self.pixels.into_iter().flat_map(|v| [v.x, v.y, v.z]).collect()
+        self.pixel_colors.into_iter().flat_map(|v| [v.x, v.y, v.z]).collect()
     }
     pub fn to_rgb(self) -> Vec<u8> {
-        let rgb_vec = self.flatten().into_iter().map(|x| {
+        let rgb_vec = self.flatten_color().into_iter().map(|x| {
             if x < 0.0 || x > 255.0 {
                 warn!("Clamping applied to x={} value for RGB conversion.", x);
             }
@@ -107,12 +108,6 @@ impl ImageData {
 }
 
 
-struct Pixel {
-    center: Vector3,
-    row: Index,
-    col: Index,
-}
-
 pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
 {
     let mut images: Vec<ImageData> = Vec::new();
@@ -124,8 +119,10 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         let (width, height) = (cam.image_resolution[0], cam.image_resolution[1]);
         warn!("Use Camera.ImageResolution for width and Height.");
 
-        let pixels = vec![Vector3::ZERO; width * height];
-        let im = ImageData { pixels, width, height, name: cam.image_name };
+        let pixel_colors = vec![Vector3::ZERO; width * height];
+        let pixel_centers = vec![Vector3::ZERO; width * height];
+
+        let im = ImageData { pixel_colors, pixel_centers, width, height, name: cam.image_name };
         
         images.push(im);
     }
