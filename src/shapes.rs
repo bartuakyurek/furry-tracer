@@ -22,8 +22,10 @@ pub trait Intersectable {
 }
 
 
+// Raw data deserialized from .JSON file
+// it assumes vertex indices start from 1
 #[derive(Debug, Deserialize, Clone)]
-pub struct Triangle {
+pub struct TriangleSerde {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     pub id: Int,
 
