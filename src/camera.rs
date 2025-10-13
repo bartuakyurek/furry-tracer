@@ -17,24 +17,30 @@ use crate::json_parser::*;
 // or an array of Cameras 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
-enum CameraSingleOrVec {
-    Single(Camera),
-    Multiple(Vec<Camera>),
+enum SingleOrVec<T> {
+    Single(T),
+    Multiple(Vec<T>),
+}
+
+impl<T> SingleOrVec<T>  {
+    pub fn all(&self) -> Vec<T> {
+        match &self {
+            SingleOrVec::Single(cam) => vec![cam.clone()],
+            SingleOrVec::Multiple(vec) => vec.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Cameras {
     #[serde(rename = "Camera")]
-    camera: CameraSingleOrVec, // Allow either single cam (as in test.json) or multiple cams
+    camera: SingleOrVec<Camera>, // Allow either single cam (as in test.json) or multiple cams
 }
 
 impl Cameras {
     /// Always returns a Vec<Camera> regardless of JSON being a single object or array
     pub fn all(&self) -> Vec<Camera> {
-        match &self.camera {
-            CameraSingleOrVec::Single(cam) => vec![cam.clone()],
-            CameraSingleOrVec::Multiple(vec) => vec.clone(),
-        }
+        self.camera.all()
     }
 }
 
