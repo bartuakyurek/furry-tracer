@@ -63,6 +63,9 @@ pub struct Camera {
     #[serde(rename = "ImageName")]
     pub image_name: String,
 
+    #[serde(rename = "NumSamples", deserialize_with = "deser_int")]
+    pub num_samples: Int,
+
     #[serde(skip)]
     w : Vector3,
 
@@ -75,7 +78,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, image_resolution: [usize; 2], image_name: String) -> Self {
+    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
         let mut cam = Camera {
             id,
             position,
@@ -84,6 +87,7 @@ impl Camera {
             nearplane,
             image_resolution,
             image_name,
+            num_samples,
             w : Vector3::NAN,
             v : Vector3::NAN,
             u : Vector3::NAN,
@@ -154,6 +158,7 @@ mod tests {
             NearPlane::new(-1., 1., -1., 1., 10.),
             [720, 720],
             "test.png".to_string(),
+            1,
         );
         assert!(approx_zero(cam.u.dot(cam.v))); 
         assert!(approx_zero(cam.v.dot(cam.w))); 
