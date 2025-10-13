@@ -12,24 +12,7 @@ use serde::{Deserialize};
 use tracing::{info, debug, error, warn};
 use crate::numeric::{Int, Float, Vector3, approx_zero};
 use crate::json_parser::*;
-
-// To handle JSON file having a single camera
-// or an array of Cameras 
-#[derive(Debug, Deserialize, Clone)]
-#[serde(untagged)]
-enum SingleOrVec<T> {
-    Single(T),
-    Multiple(Vec<T>),
-}
-
-impl<T: Clone> SingleOrVec<T>  {
-    pub fn all(&self) -> Vec<T> {
-        match &self {
-            SingleOrVec::Single(cam) => vec![cam.clone()],
-            SingleOrVec::Multiple(vec) => vec.clone(),
-        }
-    }
-}
+use crate::dataforms::{SingleOrVec};
 
 #[derive(Debug, Deserialize)]
 pub struct Cameras {

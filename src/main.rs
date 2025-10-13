@@ -17,9 +17,10 @@ mod shapes;
 mod numeric;
 mod material;
 mod renderer;
+mod dataforms;
 mod json_parser;
 mod geometry_processing;
-use crate::{json_parser::parse_json795, numeric::{Vector3}};
+use crate::{json_parser::parse_json795};
 
 
 fn main() {
@@ -31,7 +32,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
         debug!("No arguments were provided, setting default scene path...");
-        &String::from("./assets/test.json")
+        &String::from("./assets/bunny_with_plane.json")
     } else if args.len() == 2 {
         &args[1]
     } else {
