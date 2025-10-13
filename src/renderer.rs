@@ -25,6 +25,7 @@ pub struct ImageData {
     pixel_centers: Vec<Vector3>,
     width : usize,
     height: usize,
+    resolution: [usize; 2],
     name: String, // TODO: width, height, name info actually is stored under camera as well
                   // is it wise to copy those into ImageData? I thought it is more organized this way.
 }
@@ -38,20 +39,21 @@ pub fn pixel_centers(width: usize, height: usize, offset: Vector3) -> Vec<Vector
 impl ImageData {
 
     
-    pub fn new(width: usize, height: usize, name: String, background: Vector3) -> Self {
+    pub fn new(width: usize, height: usize, resolution: [usize; 2], name: String, background: Vector3) -> Self {
         // Create a new image of specified background color
         // Set background to Vector3::ZERO for black background
         let pixel_colors = vec![background; width * height];
-        Self::new_from(width, height, name, pixel_colors)
+        Self::new_from(width, height, resolution, name, pixel_colors)
     }
 
-    pub fn new_from(width: usize, height: usize, name: String, pixel_colors: Vec<Vector3>) -> Self {
+    pub fn new_from(width: usize, height: usize, resolution: [usize; 2], name: String, pixel_colors: Vec<Vector3>) -> Self {
         let pixel_centers = pixel_centers(width, height, Vector3::ZERO);
         ImageData {
             pixel_colors,
             pixel_centers,
             width,
             height,
+            resolution,
             name,
         }
     }
