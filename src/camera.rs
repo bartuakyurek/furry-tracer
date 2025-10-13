@@ -55,7 +55,8 @@ pub struct Camera {
     #[serde(rename = "NearPlane", deserialize_with = "deser_nearplane")]
     nearplane: NearPlane,
 
-    // NOTE: Skipping near distance as nearplane already contains it
+    #[serde(rename = "NearDistance", deserialize_with = "deser_float")]
+    near_distance: Float,
 
     #[serde(rename = "ImageResolution", deserialize_with = "deser_pair")]
     pub image_resolution: [usize; 2], // TODO: Should be usize instead of Int but deserialization needs modification to handle Int for i32, usized etc. 
@@ -78,13 +79,14 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
+    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
         let mut cam = Camera {
             id,
             position,
             gaze,
             up,
             nearplane,
+            near_distance,
             image_resolution,
             image_name,
             num_samples,
@@ -126,18 +128,15 @@ pub(crate) struct NearPlane {
     pub(crate) bottom: Float,
     #[serde(deserialize_with = "deser_float")]
     pub(crate) top: Float,
-    #[serde(deserialize_with = "deser_float")]
-    pub(crate) near_distance: Float,
 }
 
 impl NearPlane {
-    pub fn new(left: Float, right: Float, bottom: Float, top: Float, near_distance: Float) -> Self {
+    pub fn new(left: Float, right: Float, bottom: Float, top: Float) -> Self {
         NearPlane { 
             left,
             right,
             bottom,
             top,
-            near_distance,
         }
     }
 }
@@ -155,7 +154,8 @@ mod tests {
             Vector3::new(0., 0., 0.),
             Vector3::new(0., 0.2, -10.), // Not perpendicular to up
             Vector3::new(0., 1., 0.),
-            NearPlane::new(-1., 1., -1., 1., 10.),
+            NearPlane::new(-1., 1., -1., 1.),
+            10.0,
             [720, 720],
             "test.png".to_string(),
             1,

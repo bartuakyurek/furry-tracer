@@ -29,7 +29,7 @@ use std::fs::File;
 use std::io::BufReader;
 use serde::Deserialize;
 use serde::de::{self, Visitor, SeqAccess, Deserializer};
-use tracing::{debug};
+use tracing::{debug, warn};
 use crate::scene::{RootScene};
 use crate::camera::{NearPlane};
 use crate::numeric::{Int, Float, Vector3};
@@ -275,15 +275,15 @@ where
 {
     let s = String::deserialize(deserializer)?;
     let parts: Vec<&str> = s.split_whitespace().collect();
-    if parts.len() != 5 {
-        return Err(de::Error::custom("Expected 5 elements for NearPlane"));
+    if parts.len() > 4 {
+        warn!("Expected 4 floats for nearplane definition found extra elements in size {} (most likely 5 floats are received, ignoring parts after 4th value)", parts.len())
+        // return Err(de::Error::custom("Expected 5 elements for NearPlane"));
     }
     Ok(NearPlane {
         left: parts[0].parse().map_err(|_| de::Error::custom("Failed parsing left"))?,
         right: parts[1].parse().map_err(|_| de::Error::custom("Failed parsing right"))?,
         bottom: parts[2].parse().map_err(|_| de::Error::custom("Failed parsing bottom"))?,
         top: parts[3].parse().map_err(|_| de::Error::custom("Failed parsing top"))?,
-        near_distance: parts[4].parse().map_err(|_| de::Error::custom("Failed parsing near_distance"))?,
     })
 }
 
