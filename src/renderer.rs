@@ -14,11 +14,10 @@
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::BufWriter;
-use tracing::{info, debug, error, warn};
-use tracing_subscriber::fmt::format::Format;
+use tracing::{debug, warn};
 
 use crate::scene::{Scene};
-use crate::numeric::{Vector3, Float};
+use crate::numeric::{Vector3, Float, Index};
 
 #[derive(Clone)]
 pub struct ImageData {
@@ -105,6 +104,13 @@ impl ImageData {
         
         Ok(())
     }
+}
+
+
+struct Pixel {
+    center: Vector3,
+    row: Index,
+    col: Index,
 }
 
 pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>

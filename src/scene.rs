@@ -11,7 +11,7 @@
 */
 
 use serde_json;
-use serde::{Deserialize, de::{Deserializer}};
+use serde::{Deserialize};
 
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3, Index};

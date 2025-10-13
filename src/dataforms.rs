@@ -7,8 +7,9 @@
     @author: Bartu
 */
 
-use serde::{Deserialize};
-
+use serde::{Deserialize, de::{Deserializer}};
+use crate::numeric::{Vector3, Index};
+use crate::json_parser::{deser_vertex_data, deser_usize_vec};
 
 // To be used for VertexData and Faces in JSON files
 #[derive(Debug, Clone)]
