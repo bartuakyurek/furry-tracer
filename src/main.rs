@@ -8,7 +8,7 @@
 */
 
 use std::{self, env};
-use tracing::{info, debug, error, warn};
+use tracing::{info, warn, error};
 use tracing_subscriber;
 
 mod scene;
@@ -25,14 +25,14 @@ use crate::{json_parser::parse_json795};
 
 fn main() {
 
-    // Logging 
-    tracing_subscriber::fmt::init(); // logs to console
+    // Logging on console
+    tracing_subscriber::fmt::init(); 
 
     // Parse args
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
-        debug!("No arguments were provided, setting default scene path...");
-        &String::from("./assets/bunny_with_plane.json")
+        warn!("No arguments were provided, setting default scene path...");
+        &String::from("./assets/bunny.json")
     } else if args.len() == 2 {
         &args[1]
     } else {
@@ -59,14 +59,12 @@ fn main() {
         Err(e) => {error!("Failed to render scene: {}", e); return;}
     };
 
-  
+    // Write images to .png files
     for im in images.into_iter() {
         let imagefolder = "./"; // Save to current folder 
         if let Err(e) = im.save_png(&imagefolder) {
             eprintln!("Failed to save {}: {}", imagefolder, e);
         }
     }
-
-    warn!("Don't forget to write image data to a file.");
     info!("Finished execution.");
 }

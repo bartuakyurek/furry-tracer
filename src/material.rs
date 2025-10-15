@@ -1,13 +1,24 @@
-use crate::numeric::{Float, Int, Vector3};
-
-pub enum Material {
-    Diffuse,
-    Ambient,
-}
 
 
+use tracing::{warn, error};
 use serde::Deserialize;
 use crate::json_parser::*;
+use crate::numeric::{Float, Int, Vector3};
+
+// pub enum MaterialEnum {
+//     Diffuse,
+//     MirrorLike,// 
+// }
+
+// impl MaterialEnum {
+//     fn radiance(&self) {
+//         // TODO: Match self and return radiance 
+//     }// 
+// }
+
+pub trait Material {
+    // todo: fn radiance() 
+}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct DiffuseMaterial {
@@ -27,11 +38,8 @@ pub struct DiffuseMaterial {
     pub phong_exp: Float,
 }
 
-impl Material for DiffuseMaterial {
-    fn ambient(&self) -> Vector3 { self.ambient }
-    fn diffuse(&self) -> Vector3 { self.diffuse }
-    fn specular(&self) -> Vector3 { self.specular }
-    fn phong_exponent(&self) -> Float { self.phong_exp }
+impl Material for DiffuseMaterial{
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -60,6 +68,9 @@ pub struct MirrorMaterial {
     pub mirror: Vector3,
 }
 
+impl Material for MirrorMaterial {
+
+}
 
 pub type BoxedMaterial = Box<dyn Material>;
 
@@ -71,10 +82,14 @@ pub struct SceneMaterials {
 
 
 fn parse_material(value: serde_json::Value) -> BoxedMaterial {
-    if let Some(t) = value.get("_type") {
+    if let Some(t) = value.get("_id") {
         match t.as_str().unwrap() {
-            "mirror" => Box::new(serde_json::from_value::<MirrorMaterial>(value).unwrap()),
-            _ => panic!("Unknown material type"),
+            "1" => Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap()),
+            "2" => Box::new(serde_json::from_value::<MirrorMaterial>(value).unwrap()),
+            _ => {
+                error!("Unknown material type with _id = {} encountered! Material reverted to default.", t.as_str().unwrap());
+                Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
+             } 
         }
     } else {
         Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())

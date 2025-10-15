@@ -56,6 +56,11 @@ pub struct Scene {
     objects: SceneObjects,
 }
 
+impl Scene {
+    //pub fn new() {
+    //}
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct SceneLights {
     #[serde(rename = "AmbientLight", deserialize_with = "deser_vec3")]
@@ -85,22 +90,7 @@ pub struct SceneMaterials {
 }
 
 impl SceneMaterials {
-    pub fn into_materials(self) -> Vec<Box<dyn Material>> {
-        self.raw_materials
-            .all()
-            .into_iter()
-            .map(|val| {
-                if let Some(t) = val.get("_type") {
-                    match t.as_str().unwrap() {
-                        "mirror" => Box::new(serde_json::from_value::<MirrorMaterial>(val).unwrap()) as Box<dyn Material>,
-                        other => panic!("Unknown material type: {}", other),
-                    }
-                } else {
-                    Box::new(serde_json::from_value::<DiffuseMaterial>(val).unwrap()) as Box<dyn Material>
-                }
-            })
-            .collect()
-    }
+    
 }
 
 #[derive(Debug, Deserialize)]
@@ -114,17 +104,17 @@ pub struct SceneObjects {
     #[serde(rename = "Plane")]
     pub planes: SingleOrVec<Plane>,
 
-    #[serde(rename = "Mesh")]
-    pub meshes: SingleOrVec<Mesh>,
+    //#[serde(rename = "Mesh")]
+    //pub meshes: SingleOrVec<Mesh>,
 }
 
 
-impl SceneObjects {
-    /// Always returns a Vec<Camera> regardless of JSON being a single object or array
-    pub fn all(&self) -> (Vec<TriangleSerde>, Vec<Sphere>, Vec<Plane>, Vec<Mesh>) {
-        (self.triangles.all(), self.spheres.all(), self.planes.all(), self.meshes.all())
-    }
-}
+//impl SceneObjects {
+//    /// Always returns a Vec<Camera> regardless of JSON being a single object or array
+//    pub fn all(&self) -> (Vec<TriangleSerde>, Vec<Sphere>, Vec<Plane>, Vec<Mesh>) {
+//        (self.triangles.all(), self.spheres.all(), self.planes.all(), self.meshes.all())
+//    }
+//}
 
 
 #[derive(Debug, Deserialize, Clone)]
