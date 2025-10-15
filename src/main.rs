@@ -41,8 +41,7 @@ fn main() {
     };
     
     // Parse JSON
-    info!("Loading scene from {}...", json_path);
-    let root =  match parse_json795(json_path) {
+    let scn =  match parse_json795(json_path) {
         Ok(root) => {
             info!("Scene loaded successfully.\n {:#?}", root);
             root
@@ -54,7 +53,7 @@ fn main() {
     };
 
     // Render image and return array of RGB
-    let images = match renderer::render(root.scene) {
+    let images = match renderer::render(scn) {
         Ok(image_data) => {info!("Render completed."); image_data}
         Err(e) => {error!("Failed to render scene: {}", e); return;}
     };

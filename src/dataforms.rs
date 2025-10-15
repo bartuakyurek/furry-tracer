@@ -79,3 +79,10 @@ impl<T: Clone> SingleOrVec<T>  {
         }
     }
 }
+
+impl<T> Default for SingleOrVec<T> {
+    // Default is an empty vector 
+    fn default() -> Self {
+        SingleOrVec::Multiple(Vec::new()) 
+    }
+}

@@ -7,14 +7,13 @@
 */
 
 
-use bevy_math::NormedVectorSpace;
 use serde::{Deserialize};
-use tracing::{info, debug, error, warn};
+use tracing::{info, debug};
 use crate::numeric::{Int, Float, Vector3, approx_zero};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct Cameras {
     #[serde(rename = "Camera")]
     camera: SingleOrVec<Camera>, // Allow either single cam (as in test.json) or multiple cams
@@ -27,7 +26,7 @@ impl Cameras {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Default, Deserialize, Clone)]
 pub struct Camera {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     id: Int,
@@ -107,7 +106,7 @@ impl Camera {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Default, Deserialize, Clone)]
 pub(crate) struct NearPlane {
     #[serde(deserialize_with = "deser_float")]
     pub(crate) left: Float,
@@ -118,6 +117,7 @@ pub(crate) struct NearPlane {
     #[serde(deserialize_with = "deser_float")]
     pub(crate) top: Float,
 }
+
 
 impl NearPlane {
     pub fn new(left: Float, right: Float, bottom: Float, top: Float) -> Self {

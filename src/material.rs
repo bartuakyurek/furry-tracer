@@ -15,6 +15,7 @@ use crate::numeric::{Float, Int, Vector3};
 //         // TODO: Match self and return radiance 
 //     }// 
 // }
+pub type BoxedMaterial = Box<dyn Material>;
 
 pub trait Material {
     // todo: fn radiance() 
@@ -72,26 +73,26 @@ impl Material for MirrorMaterial {
 
 }
 
-pub type BoxedMaterial = Box<dyn Material>;
-
-#[derive(Debug, Deserialize)]
-pub struct SceneMaterials {
-    #[serde(rename = "Material")]
-    pub materials: Vec<serde_json::Value>, // parse raw JSON first
-}
 
 
-fn parse_material(value: serde_json::Value) -> BoxedMaterial {
-    if let Some(t) = value.get("_id") {
-        match t.as_str().unwrap() {
-            "1" => Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap()),
-            "2" => Box::new(serde_json::from_value::<MirrorMaterial>(value).unwrap()),
-            _ => {
-                error!("Unknown material type with _id = {} encountered! Material reverted to default.", t.as_str().unwrap());
-                Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
-             } 
-        }
-    } else {
-        Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
-    }
-}
+//#[derive(Debug, Deserialize)]
+//pub struct SceneMaterialsRaw {
+//    #[serde(rename = "Material")]
+//    pub materials: Vec<serde_json::Value>, // parse raw JSON first
+//}
+//
+//
+//fn parse_material(value: serde_json::Value) -> BoxedMaterial {
+//    if let Some(t) = value.get("_id") {
+//        match t.as_str().unwrap() {
+//            "1" => Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap()),
+//            "2" => Box::new(serde_json::from_value::<MirrorMaterial>(value).unwrap()),
+//            _ => {
+//                error!("Unknown material type with _id = {} encountered! Material reverted to default.", t.as_str().unwrap());
+//                Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
+//             } 
+//        }
+//    } else {
+//        Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
+//    }
+//}

@@ -25,34 +25,80 @@
 use std::fmt;
 use std::marker::PhantomData;
 use std::str::FromStr;
-use std::fs::File;
-use std::io::BufReader;
+use serde_json::Value;
 use serde::Deserialize;
 use serde::de::{self, Visitor, SeqAccess, Deserializer};
 use tracing::{debug, warn};
-use crate::scene::{RootScene};
-use crate::camera::{NearPlane};
+use crate::scene::{*};
+use crate::camera::{Cameras, NearPlane};
 use crate::numeric::{Int, Float, Vector3};
 
-pub fn parse_json795(path: &str) -> Result<RootScene, Box<dyn std::error::Error>> {
+pub fn parse_json795(path: &str) -> Result<Scene, Box<dyn std::error::Error>> {
     /*
-        Parse JSON files in CENG 795 format.
+        Parse JSON files in CENG 795 format. If anything changes in
+        format it is expected to implement:
+            Part 1 - Either Optional or Mandatory fields below
+            Part 2 - Set scene members according to changed field
+
+        For compatibility, it is advised to implement it as optional
+        field.
+
+        WARNING: You may have forgotten to implement json parsing for a
+        specific member and silently using a default value for it! 
     */
 
     let span = tracing::span!(tracing::Level::INFO, "load_scene");
     let _enter = span.enter();
 
-    // Open file
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
     debug!("Reading file from {}", path);
-    
-    // Parse JSON into Scene
-    let root: RootScene = serde_json::from_reader(reader)?;
-    Ok(root) 
+    let file_content = std::fs::read_to_string(path)?;
+    let json: Value = serde_json::from_str(&file_content)?;
+    let scene_json = &json["Scene"];
 
-    // TODO: instead of parsing in one-shot, pcould you load different 
-    // components like ligths, materials, objects?
+    // PART 1 - Read fields
+    // Optional fields
+    let max_recursion_depth = scene_json.get("MaxRecursionDepth")
+        .and_then(|v| v.as_str())
+        .and_then(|s| s.parse::<Int>().ok());
+
+    let background_color = scene_json.get("BackgroundColor")
+        .and_then(|v| v.as_str())
+        .and_then(|s: &str| parse_vec3_str::<Vector3, Float>(s).ok());
+
+    let shadow_ray_epsilon = scene_json.get("ShadowRayEpsilon")
+        .and_then(|v| v.as_str())
+        .and_then(|s| s.parse::<Float>().ok());
+
+    let intersection_test_epsilon = scene_json.get("IntersectionTestEpsilon")
+        .and_then(|v| v.as_str())
+        .and_then(|s| s.parse::<Float>().ok());
+
+    // Mandatory fields
+    let cameras_json = &scene_json["Cameras"];
+    let cameras: Cameras = serde_json::from_value(cameras_json.clone())?;
+
+    let lights_json = &scene_json["Lights"];
+    let lights: SceneLights = serde_json::from_value(lights_json.clone())?;
+
+    let materials_json: &Value = &scene_json["Materials"];
+    let materials: SceneMaterials = serde_json::from_value(materials_json.clone())?;
+
+    let objects_json: &Value = &scene_json["Objects"];
+    let objects: SceneObjects = serde_json::from_value(objects_json.clone())?;
+
+    // PART 2 - Construct Scene 
+    let mut scene = Scene::new();
+    scene.max_recursion_depth = max_recursion_depth;
+    scene.background_color = background_color;
+    scene.shadow_ray_epsilon = shadow_ray_epsilon;
+    scene.intersection_test_epsilon = intersection_test_epsilon;
+    scene.cameras = cameras;
+    scene.lights = lights;
+    scene.materials = materials;
+    scene.objects = objects;
+
+
+    Ok(scene)
 }
 
 
@@ -365,4 +411,45 @@ where
         vertices.push(Vector3::new(chunk[0], chunk[1], chunk[2]));
     }
     Ok(vertices)
+}
+
+
+fn deser_optional<'de, D, T, F>(deserializer: D, parse_fn: F) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    F: Fn(&str) -> Result<T, String>, 
+{
+    // Given a concrete type T and 
+    // a deserialization function F(&str),
+    // Return Option enum of the deserialized
+    // field.  
+
+    let opt: Option<String> = Option::deserialize(deserializer)?;
+    match opt {
+        Some(s) => Ok(Some(parse_fn(&s).map_err(de::Error::custom)?)),
+        None => Ok(None),
+    }
+}
+
+pub fn deser_int_opt<'de, D>(deserializer: D) -> Result<Option<Int>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deser_optional(deserializer, |s| s.parse::<Int>().map_err(|e| e.to_string()))
+}
+
+
+pub fn deser_float_opt<'de, D>(deserializer: D) -> Result<Option<Float>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deser_optional(deserializer, |s| s.parse::<Float>().map_err(|e| e.to_string()))
+}
+
+
+pub fn deser_vec3_opt<'de, D>(deserializer: D) -> Result<Option<Vector3>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deser_optional(deserializer, parse_vec3_str)
 }

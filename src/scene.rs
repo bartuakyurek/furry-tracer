@@ -20,60 +20,56 @@ use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec, DataField};
 
-#[derive(Debug, Deserialize)]
-pub struct RootScene {
-    #[serde(rename = "Scene")]
-    pub scene: Scene,
-}
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default)]
 pub struct Scene {
-    #[serde(rename = "MaxRecursionDepth", deserialize_with = "deser_int")]
-    max_recursion_depth: Int,
-
-    #[serde(rename = "BackgroundColor", deserialize_with = "deser_vec3")]
-    background_color: Vector3,
-
-    #[serde(rename = "ShadowRayEpsilon", deserialize_with = "deser_float")]
-    shadow_ray_epsilon: Float,
-
-    #[serde(rename = "IntersectionTestEpsilon", deserialize_with = "deser_float")]
-    intersection_test_epsilon: Float,
-
-    #[serde(rename = "Cameras")]
+    // If anything is changed here please see
+    // new( ) and json parser to be compatible
+    pub max_recursion_depth: Option<Int>,
+    pub background_color: Option<Vector3>,
+    pub shadow_ray_epsilon: Option<Float>,
+    pub intersection_test_epsilon: Option<Float>,
     pub cameras: Cameras,
-
-    #[serde(rename = "Lights")]
-    lights: SceneLights,
-
-    #[serde(rename = "Materials")]
-    materials: SceneMaterials,
-
-    #[serde(rename = "VertexData")]
-    vertex_data: DataField<Vector3>, 
-    
-    #[serde(rename = "Objects")]
-    objects: SceneObjects,
+    pub lights: SceneLights,
+    pub materials: SceneMaterials,
+    //pub vertex_data: DataField<Vector3>, 
+    pub objects: SceneObjects,
 }
 
 impl Scene {
-    //pub fn new() {
-    //}
+    pub fn new() -> Self {
+        // Initialize everything to default
+         Self {
+            max_recursion_depth: None,            
+            background_color: Some(Vector3::new(0.0, 0.0, 0.0)), 
+            shadow_ray_epsilon: Some(0.0001),        
+            intersection_test_epsilon: Some(0.0001),  
+            cameras: Cameras::default(),
+            lights: SceneLights::default(),
+            materials: SceneMaterials::default(),
+            // vertex_data: DataField::new_empty(),
+            objects: SceneObjects::new(),
+        }
+    }
+    
+    
 }
 
-#[derive(Debug, Deserialize, Clone)]
+
+#[derive(Debug, Default, Deserialize, Clone)]
 pub struct SceneLights {
-    #[serde(rename = "AmbientLight", deserialize_with = "deser_vec3")]
-    pub ambient_light: Vector3,
+    #[serde(rename = "AmbientLight", default, deserialize_with = "deser_vec3_opt")]
+    pub ambient_light: Option<Vector3>,
 
-    #[serde(rename = "PointLight")]
-    pub point_lights: SingleOrVec<PointLight>, 
+    #[serde(rename = "PointLight", default)]
+    pub point_lights: Option<SingleOrVec<PointLight>>, 
 }
+
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct PointLight {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
-    pub id: Int, // or String if you prefer
+    pub id: Int, 
 
     #[serde(rename = "Position", deserialize_with = "deser_vec3")]
     pub position: Vector3,
@@ -82,45 +78,131 @@ pub struct PointLight {
     pub rgb_intensity: Vector3,
 }
 
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize, Clone)]
 pub struct SceneMaterials {
-    #[serde(rename = "Material")]
-    pub raw_materials: SingleOrVec<serde_json::Value>, // keep json value as-is for postprocessing
+    #[serde(rename = "Material", default)]
+    pub raw_materials: SingleOrVec<MaterialRaw>,
 }
 
-impl SceneMaterials {
-    
+
+pub trait SceneObject {
+    //fn id(&self) -> Int;
+    //fn as_any(&self) -> &dyn std::any::Any; 
 }
 
-#[derive(Debug, Deserialize)]
+
+impl SceneObject for TriangleSerde {
+    //fn id(&self) -> Int { self.id }
+    //fn as_any(&self) -> &dyn std::any::Any { self }
+}
+
+impl SceneObject for Sphere {
+    //fn id(&self) -> Int { self.id }
+    //fn as_any(&self) -> &dyn std::any::Any { self }
+}
+
+impl SceneObject for Mesh {
+
+}
+
+impl SceneObject for Plane {
+
+}
+
+
+// Same for Plane, Mesh, etc.
+
+
+#[derive(Debug, Default, Deserialize)]
 pub struct SceneObjects {
-    #[serde(rename = "Triangle")]
-    pub triangles: SingleOrVec<TriangleSerde>,
+    #[serde(rename = "Triangle", default)]
+    pub triangles: Option<SingleOrVec<TriangleSerde>>,
 
-    #[serde(rename = "Sphere")]
-    pub spheres: SingleOrVec<Sphere>,
+    #[serde(rename = "Sphere", default)]
+    pub spheres: Option<SingleOrVec<Sphere>>,
 
-    #[serde(rename = "Plane")]
-    pub planes: SingleOrVec<Plane>,
+    #[serde(rename = "Plane", default)]
+    pub planes: Option<SingleOrVec<Plane>>,
 
-    //#[serde(rename = "Mesh")]
-    //pub meshes: SingleOrVec<Mesh>,
+    #[serde(rename = "Mesh", default)]
+    pub meshes: Option<SingleOrVec<Mesh>>,
 }
 
 
-//impl SceneObjects {
-//    /// Always returns a Vec<Camera> regardless of JSON being a single object or array
-//    pub fn all(&self) -> (Vec<TriangleSerde>, Vec<Sphere>, Vec<Plane>, Vec<Mesh>) {
-//        (self.triangles.all(), self.spheres.all(), self.planes.all(), self.meshes.all())
-//    }
-//}
+impl SceneObjects {
+    pub fn new() -> Self {
+        Self {
+            triangles: None,
+            spheres: None,
+            planes: None,
+            meshes: None,
+        }
+    }
+
+    pub fn all(&self) -> Vec<Box<dyn SceneObject>> {
+        let mut result: Vec<Box<dyn SceneObject>> = Vec::new();
+
+        if let Some(triangles) = &self.triangles {
+            for t in triangles.all() {
+                result.push(Box::new(t.clone()));
+            }
+        }
+
+        if let Some(spheres) = &self.spheres {
+            for s in spheres.all() {
+                result.push(Box::new(s.clone()));
+            }
+        }
+
+        if let Some(planes) = &self.planes {
+            for p in planes.all() {
+                result.push(Box::new(p.clone()));
+            }
+        }
+
+        if let Some(meshes) = &self.meshes {
+            for m in meshes.all() {
+                result.push(Box::new(m.clone()));
+            }
+        }
+
+        result
+    }
+}
+
+enum FacesField {
+    FacesObj (DataField<Index>),
+    Raw (String),
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct MeshRaw {
+    id: Int,
+    material: Int,
+    faces: FacesField,
+}
 
 
 #[derive(Debug, Deserialize, Clone)]
-struct Mesh {
- pub    _id: Int,
-    material: Int,
-    faces: DataField<Index>,
-}
+pub struct MaterialRaw {
+    #[serde(rename = "_id", deserialize_with = "deser_int")]
+    pub id: Int,
 
+    #[serde(rename = "_type", default)]
+    pub mat_type: Option<String>, // e.g. "mirror"
+
+    #[serde(rename = "AmbientReflectance", deserialize_with = "deser_vec3_opt", default)]
+    pub ambient_reflectance: Option<Vector3>,
+
+    #[serde(rename = "DiffuseReflectance", deserialize_with = "deser_vec3_opt", default)]
+    pub diffuse_reflectance: Option<Vector3>,
+
+    #[serde(rename = "SpecularReflectance", deserialize_with = "deser_vec3_opt", default)]
+    pub specular_reflectance: Option<Vector3>,
+
+    #[serde(rename = "PhongExponent", deserialize_with = "deser_int_opt", default)]
+    pub phong_exponent: Option<Int>,
+
+    #[serde(rename = "MirrorReflectance", deserialize_with = "deser_vec3_opt", default)]
+    pub mirror_reflectance: Option<Vector3>,
+}
