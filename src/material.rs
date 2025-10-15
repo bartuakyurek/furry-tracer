@@ -1,15 +1,8 @@
 use crate::numeric::{Float, Int, Vector3};
 
-pub trait Material {
-    fn ambient(&self) -> Vector3;
-    fn diffuse(&self) -> Vector3;
-    fn specular(&self) -> Vector3;
-    fn phong_exponent(&self) -> Float;
-
-    // optional: extend with reflection/refraction later
-    fn mirror_reflectance(&self) -> Option<Vector3> {
-        None
-    }
+pub enum Material {
+    Diffuse,
+    Ambient,
 }
 
 
@@ -67,13 +60,6 @@ pub struct MirrorMaterial {
     pub mirror: Vector3,
 }
 
-impl Material for MirrorMaterial {
-    fn ambient(&self) -> Vector3 { self.ambient }
-    fn diffuse(&self) -> Vector3 { self.diffuse }
-    fn specular(&self) -> Vector3 { self.specular }
-    fn phong_exponent(&self) -> Float { self.phong_exp }
-    fn mirror_reflectance(&self) -> Option<Vector3> { Some(self.mirror) }
-}
 
 pub type BoxedMaterial = Box<dyn Material>;
 
