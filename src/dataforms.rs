@@ -7,9 +7,7 @@
     @author: Bartu
 */
 
-use serde::{Deserialize, de::{Deserializer}};
-use crate::numeric::{Vector3, Index};
-use crate::json_parser::{deser_vertex_data, deser_usize_vec};
+use bevy_math;
 
 // To be used for VertexData and Faces in JSON files
 #[derive(Debug, Clone)]
@@ -20,53 +18,9 @@ pub struct DataField<T> {
 }
 
 
-impl<'de> Deserialize<'de> for DataField<Vector3> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct Helper {
-            #[serde(rename = "_data", deserialize_with = "deser_vertex_data")]
-            _data: Vec<Vector3>,
-            #[serde(rename = "_type")]
-            _type: String,
-        }
-
-        let helper = Helper::deserialize(deserializer)?;
-        Ok(DataField {
-            _data: helper._data,
-            _type: helper._type,
-        })
-    }
-}
-
-impl<'de> Deserialize<'de> for DataField<Index> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct Helper {
-            #[serde(rename = "_data", deserialize_with = "deser_usize_vec")]
-            _data: Vec<Index>,
-            #[serde(rename = "_type")]
-            _type: String,
-        }
-
-        let helper = Helper::deserialize(deserializer)?;
-        Ok(DataField {
-            _data: helper._data,
-            _type: helper._type,
-        })
-    }
-}
- 
-
 // To handle JSON file having a single <object>
 // or an array of <object>s 
-#[derive(Debug, Deserialize, Clone)]
-#[serde(untagged)]
+#[derive(Debug, Clone)]
 pub enum SingleOrVec<T> {
     None,
     Single(T),

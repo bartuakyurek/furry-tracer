@@ -158,12 +158,12 @@ impl ImageData {
 pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
 {
     let mut images: Vec<ImageData> = Vec::new();
-    for mut cam in scene.cameras.all(){
+    for mut cam in scene.cameras{
         cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
         debug!("{:?}", cam);
 
         // TODO: Return Vec<ImageData>
-        let (width, height) = (cam.image_resolution[0], cam.image_resolution[1]);
+        let (width, height) = cam.get_resolution();
         warn!("Use Camera.ImageResolution for width and Height.");
 
         let pixel_colors = vec![Vector3::ZERO; width * height];
