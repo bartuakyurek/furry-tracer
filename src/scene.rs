@@ -57,6 +57,8 @@ impl Scene {
         // Currently assumes given material ids are in order
         // However it'd fail if we attempt to load multiple .json
         // scenes as two different material can have the same id
+        
+        // WARNING: Same validation should be done for lights
         error!("Validate function not implemented yet!");
         Ok(())
     }
@@ -74,6 +76,7 @@ impl Scene {
 pub(crate) struct SceneLights {
     ambient: Option<Vector3>,
     point_lights: Vec<PointLight>,
+    // WARNING: Above assumes PointLight._id matches with vector indices!
 }
 
 

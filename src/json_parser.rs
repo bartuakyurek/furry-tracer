@@ -27,7 +27,7 @@ use std::{str::FromStr, fmt, collections::HashSet};
 use serde_json::{Value};
 use crate::numeric::{Float, Vector3, Int, Index};
 use crate::{dataforms::{From3}};
-use crate::scene::{Scene, SceneLights};
+use crate::scene::{self, Scene, SceneLights};
 
 type BoxedError = Box<dyn std::error::Error>;
 
@@ -45,20 +45,15 @@ pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::E
         In future providing a root scene to aggregate multiple 
         scenes into one might be useful.
     */
-    let mut scene = Scene::new();
-    let mut handled_keys = HashSet::new();
-
+    
     let data = std::fs::read_to_string(json_path)?;
     let json_value: Value = serde_json::from_str(&data)?;
-
     let scene_value = &json_value["Scene"];
     print_json_keys(scene_value);
-    
+
     // Update attributes only if present in JSON (otherwise let default remain as is)
-    set_optional(&mut scene.max_recursion_depth, scene_value, "MaxRecursionDepth", parse_integer, &mut handled_keys);
-    set_optional(&mut scene.background_color, scene_value, "BackgroundColor", parse_vector3_float, &mut handled_keys);
-    set_optional(&mut scene.shadow_ray_epsilon, scene_value, "ShadowRayEpsilon", parse_float, &mut handled_keys);
-    set_optional(&mut scene.intersection_test_epsilon, scene_value, "IntersectionTestEpsilon", parse_float, &mut handled_keys);
+    let mut scene = Scene::new();
+    let mut handled_keys = import_scene_attributes(&mut scene, scene_value);
 
     // NOTE: More fields from JSON file to be declared below
     print_error_if_extra_fields(scene_value, &handled_keys);
@@ -66,8 +61,20 @@ pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::E
     Ok(scene)
 }
 
-fn import_lights(scene_value: &Value) -> SceneLights {
+fn import_scene_attributes(scene: &mut Scene, scene_value: &Value) -> HashSet<String> {
 
+    // Update attributes only if present in JSON (otherwise let default remain as is)
+    let mut handled_keys = HashSet::new();
+    set_optional(&mut scene.max_recursion_depth, scene_value, "MaxRecursionDepth", parse_integer, &mut handled_keys);
+    set_optional(&mut scene.background_color, scene_value, "BackgroundColor", parse_vector3_float, &mut handled_keys);
+    set_optional(&mut scene.shadow_ray_epsilon, scene_value, "ShadowRayEpsilon", parse_float, &mut handled_keys);
+    set_optional(&mut scene.intersection_test_epsilon, scene_value, "IntersectionTestEpsilon", parse_float, &mut handled_keys);
+
+    handled_keys
+}
+
+fn import_lights(lights_value: &Value) -> SceneLights {
+    SceneLights::default()
 }
 
 
