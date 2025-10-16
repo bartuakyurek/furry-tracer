@@ -52,14 +52,16 @@ pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::E
     let mut handler = JsonHandler::new(scene_value);
 
     // Scene attributes
-    scene.max_recursion_depth = handler.get_optional("MaxRecursionDepth", parse_integer)?;
-    scene.background_color = handler.get_optional("BackgroundColor", parse_vector3_float)?;
-      
+    handler.get_optional(&mut scene.max_recursion_depth, "MaxRecursionDepth", parse_integer)?;
+    handler.get_optional(&mut scene.background_color , "BackgroundColor", parse_vector3_float)?;
+    handler.get_optional(&mut scene.shadow_ray_epsilon, "ShadowRayEpsilon", parse_float)?;
+    handler.get_optional(&mut  scene.intersection_test_epsilon, "IntersectionTestEpsilon", parse_float)?;
+
     // Lights
     if let Some(lights_value) = handler.get_subobject("Lights") {
         let mut lights_handler = JsonHandler::new(lights_value);
-        scene.lights.ambient = lights_handler.get_optional("AmbientLight", parse_vector3_float)?;
-        // TODO Point light here
+        lights_handler.get_optional(&mut scene.lights.ambient,"AmbientLight", parse_vector3_float)?;
+        
     }
 
     handler.warn_extra(); // WARNING: This misses extra subfields, only valid for outer scope
@@ -144,16 +146,19 @@ impl<'a> JsonHandler<'a> {
     /// Get an optional field and track it automatically
     fn get_optional<T>(
         &mut self,
+        data: &mut Option<T>,
         key: &str,
         parser: fn(&str) -> Result<T, Box<dyn std::error::Error>>,
-    ) -> Result<Option<T>, Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(v) = self.value.get(key) {
             let s = v.as_str().ok_or("Expected string")?;
             let parsed = parser(s)?;
+            *data = Some(parsed);
             self.handled_keys.insert(key.to_string());
-            Ok(Some(parsed))
+            Ok(())
         } else {
-            Ok(None)
+            error!("No field '{}' found in JSON, data is not updated.", key);
+            Ok(())
         }
     }
 
