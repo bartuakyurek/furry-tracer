@@ -22,6 +22,7 @@
     @author: bartu 
 */
 
+use tracing::{error, warn, info};
 use std::{str::FromStr, fmt};
 use serde_json::{Value};
 use crate::numeric::{Float, Vector3, Int, Index};
@@ -48,6 +49,7 @@ pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn std
     let data = std::fs::read_to_string(json_path)?;
     let json_value: Value = serde_json::from_str(&data)?;
     let v = &json_value["Scene"];
+    print_json_keys(v);
     
     scene.max_recursion_depth = get_optional(&v, "MaxRecursionDepth", parse_integer);
     scene.background_color = get_optional(&v, "background_color", parse_vector3_float);
@@ -60,13 +62,31 @@ pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn std
 }
 
 
-fn get_optional_str<'a>(v: &'a Value, key: &str) -> Option<&'a str> {
-    v.get(key)?.as_str()
+fn get_optional<T>(
+    v: &Value,
+    key: &str,
+    parser: fn(&str) -> Result<T, BoxedError>,
+) -> Option<T> {
+    match v.get(key) {
+        Some(Value::String(s)) => match parser(s) {
+            Ok(val) => Some(val),
+            Err(e) => {
+                error!("Failed to parse field '{}': {}", key, e);
+                None
+            }
+        },
+        Some(_) => {
+            warn!("Field '{}' exists but is not a string, reverting to None", key);
+            error!("Please provide parsing logic for field '{}'", key);
+            None
+        }
+        None => {
+            warn!("Field '{}' not found in JSON, reverting to None", key);
+            None
+        }
+    }
 }
 
-fn get_optional<T>(v: &Value, key: &str, parser: fn(&str) -> Result<T, BoxedError>) -> Option<T> {
-    get_optional_str(v, key).map(|s| parser(s).ok()).flatten()
-}
 
 fn parse_scalar<T>(s: &str) -> Result<T, BoxedError> 
 where
@@ -117,4 +137,16 @@ fn parse_float(s: &str) -> Result<Float, BoxedError> {
 
 fn parse_integer(s: &str) -> Result<Int, BoxedError> {
     parse_scalar::<Int>(s)
+}
+
+// For debug purposes
+fn print_json_keys(v: &Value) {
+    if let Some(obj) = v.as_object() {
+        println!("Keys:");
+        for key in obj.keys() {
+            println!("  - {}", key);
+        }
+    } else {
+        println!("Value is not a JSON object.");
+    }
 }
