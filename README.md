@@ -1,6 +1,7 @@
 # furry-tracer
 
 This is a ray tracer developed for METU graduate level course CENG 795.
+
 Author: Bartu
 
 ---
@@ -16,6 +17,11 @@ For unit tests:
 For more suggestions to improve code:
 ``$ cargo clippy``
 
+
+[NOTE]
+Binaries are placed under ./target/debug/ or ./target/release
+depending on cargo run commands above. By default it is under
+debug but for faster runs compiling with --release is recommended.
 
 TODO 
 - Vertex indices start from 1, not 0, make sure to handle that correctly
