@@ -30,35 +30,33 @@ use crate::{dataforms::{From3}, scene::Scene};
 
 type BoxedError = Box<dyn std::error::Error>;
 
-pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn std::error::Error>>{
+pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>{
     /*
-        Import JSON file contents to a given scene.
+        Return Scene loaded from .json file content.
         
         Example use: 
             // create an empty scene Scene::EMPTY
             // call import_json(path, scene)
         
-        Intended to be useful for importing multiple json files
-        into a single scene. 
-        TODO: For it to import multiple scenes, lights and cameras
-        material ids, mesh ids also need to be merged so for now
-        assume this function directly maps a json file to scene,
-        and later on provide a root scene to aggregate multiple 
-        scenes into one.
+        WARNING: To import multiple scenes, some object ids also need
+        to be merged. This function directly maps a json file to scene.
+        In future providing a root scene to aggregate multiple 
+        scenes into one might be useful.
     */
+    let mut scene = Scene::default();
     let data = std::fs::read_to_string(json_path)?;
     let json_value: Value = serde_json::from_str(&data)?;
     let v = &json_value["Scene"];
     print_json_keys(v);
     
     scene.max_recursion_depth = get_optional(&v, "MaxRecursionDepth", parse_integer);
-    scene.background_color = get_optional(&v, "background_color", parse_vector3_float);
-    scene.shadow_ray_epsilon = get_optional(&v, "shadow_ray_epsilon", parse_float);
+    scene.background_color = get_optional(&v, "BackgroundColor", parse_vector3_float);
+    scene.shadow_ray_epsilon = get_optional(&v, "ShadowRayEpsilon", parse_float);
     
     // NOTE: More fields from JSON file to be declared below
 
     scene.validate()?;
-    Ok(())
+    Ok(scene)
 }
 
 

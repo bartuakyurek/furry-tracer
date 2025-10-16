@@ -41,10 +41,10 @@ fn main() {
     };
     
     // Parse JSON
-    let mut scn = Scene::default();
-    match import_json(&json_path.as_str(), &mut scn) {
-        Ok(()) => {
-            info!("Scene loaded successfully.\n {:#?}", scn); 
+    let scn: Scene = match import_json(&json_path.as_str()) {
+        Ok(s) => {
+            info!("Scene loaded successfully.\n {:#?}", s); 
+            s
         }
         Err(e) => {
             error!("Failed to load scene: {}", e);
