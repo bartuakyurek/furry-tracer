@@ -74,8 +74,8 @@ impl Scene {
 
 #[derive(Debug, Default)]
 pub(crate) struct SceneLights {
-    ambient: Option<Vector3>,
-    point_lights: Vec<PointLight>,
+    pub ambient: Option<Vector3>,
+    pub point_lights: Vec<PointLight>,
     // WARNING: Above assumes PointLight._id matches with vector indices!
 }
 
