@@ -57,7 +57,14 @@ pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::E
     handler.get_optional(&mut scene.shadow_ray_epsilon, "ShadowRayEpsilon", parse_float)?;
     handler.get_optional(&mut  scene.intersection_test_epsilon, "IntersectionTestEpsilon", parse_float)?;
 
+    load_lights(&mut scene, &mut handler)?;
 
+    handler.warn_extra(); // WARNING: This misses extra subfields, only valid for outer scope
+    scene.validate()?;
+    Ok(scene)
+}
+
+fn load_lights(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError>{
     // Lights
     if let Some(lights_value) = handler.get_subobject("Lights") {
         let mut lights_handler = JsonHandler::new(lights_value);
@@ -72,14 +79,8 @@ pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::E
         })?;    
         scene.lights.point_lights = point_lights.all();
     }
-    
-
-    handler.warn_extra(); // WARNING: This misses extra subfields, only valid for outer scope
-    scene.validate()?;
-    Ok(scene)
+    Ok(())
 }
-
-
 
 fn parse_scalar<T>(s: &str) -> Result<T, BoxedError> 
 where
