@@ -22,7 +22,7 @@
     @author: bartu 
 */
 
-use tracing::{error, warn, info};
+use tracing::{error, warn, info, debug};
 use std::{str::FromStr, fmt};
 use serde_json::{Value};
 use crate::numeric::{Float, Vector3, Int, Index};
@@ -30,7 +30,8 @@ use crate::{dataforms::{From3}, scene::Scene};
 
 type BoxedError = Box<dyn std::error::Error>;
 
-pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>{
+pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>
+{
     /*
         Return Scene loaded from .json file content.
         
@@ -49,9 +50,10 @@ pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>
     let v = &json_value["Scene"];
     print_json_keys(v);
     
-    scene.max_recursion_depth = get_optional(&v, "MaxRecursionDepth", parse_integer);
-    scene.background_color = get_optional(&v, "BackgroundColor", parse_vector3_float);
-    scene.shadow_ray_epsilon = get_optional(&v, "ShadowRayEpsilon", parse_float);
+    // Update attributes only if present in JSON (otherwise let default remain as is)
+    set_optional(&mut scene.max_recursion_depth, v, "MaxRecursionDepth", parse_integer);
+    set_optional(&mut scene.background_color, v, "BackgroundColor", parse_vector3_float);
+    set_optional(&mut scene.shadow_ray_epsilon, v, "ShadowRayEpsilon", parse_float);
     
     // NOTE: More fields from JSON file to be declared below
 
@@ -59,31 +61,31 @@ pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>
     Ok(scene)
 }
 
-
 fn get_optional<T>(
     v: &Value,
     key: &str,
     parser: fn(&str) -> Result<T, BoxedError>,
 ) -> Option<T> {
-    match v.get(key) {
-        Some(Value::String(s)) => match parser(s) {
-            Ok(val) => Some(val),
-            Err(e) => {
-                error!("Failed to parse field '{}': {}", key, e);
-                None
-            }
-        },
-        Some(_) => {
-            warn!("Field '{}' exists but is not a string, reverting to None", key);
-            error!("Please provide parsing logic for field '{}'", key);
-            None
-        }
-        None => {
-            warn!("Field '{}' not found in JSON, reverting to None", key);
-            None
-        }
+    v.get(key)?
+        .as_str()
+        .and_then(|s| parser(s).ok())
+}
+
+fn set_optional<T>(
+    field: &mut Option<T>,
+    v: &Value,
+    key: &str,
+    parser: fn(&str) -> Result<T, BoxedError>,
+) {
+    if let Some(new_value) = get_optional::<T>(v, key, parser) {
+        *field = Some(new_value);
+        debug!("Key '{}' found in JSON", key);
+    }
+    else {
+        warn!("Key '{}' not found in JSON, keeping default value.", key);
     }
 }
+
 
 
 fn parse_scalar<T>(s: &str) -> Result<T, BoxedError> 
@@ -140,11 +142,11 @@ fn parse_integer(s: &str) -> Result<Int, BoxedError> {
 // For debug purposes
 fn print_json_keys(v: &Value) {
     if let Some(obj) = v.as_object() {
-        println!("Keys:");
+        info!("Found keys:");
         for key in obj.keys() {
-            println!("  - {}", key);
+            info!("  - {}", key);
         }
     } else {
-        println!("Value is not a JSON object.");
+        error!("Value is not a JSON object.");
     }
 }
