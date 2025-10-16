@@ -38,7 +38,7 @@ pub struct Scene {
 impl Scene {
     pub fn new( ) -> Self {
         Scene {
-                max_recursion_depth: Some(5),
+                max_recursion_depth: Some(99),
                 background_color: Some(Vector3::new(0.0, 0.0, 0.0)), // black
                 shadow_ray_epsilon: Some(0.001),
                 intersection_test_epsilon: Some(0.0001),
@@ -71,7 +71,7 @@ impl Scene {
 
 
 #[derive(Debug, Default)]
-struct SceneLights {
+pub(crate) struct SceneLights {
     ambient: Option<Vector3>,
     point_lights: Vec<PointLight>,
 }

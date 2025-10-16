@@ -26,11 +26,12 @@ use tracing::{error, warn, info, debug};
 use std::{str::FromStr, fmt, collections::HashSet};
 use serde_json::{Value};
 use crate::numeric::{Float, Vector3, Int, Index};
-use crate::{dataforms::{From3}, scene::Scene};
+use crate::{dataforms::{From3}};
+use crate::scene::{Scene, SceneLights};
 
 type BoxedError = Box<dyn std::error::Error>;
 
-pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>
+pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>
 {
     /*
         Return Scene loaded from .json file content.
@@ -57,12 +58,18 @@ pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>
     set_optional(&mut scene.max_recursion_depth, scene_value, "MaxRecursionDepth", parse_integer, &mut handled_keys);
     set_optional(&mut scene.background_color, scene_value, "BackgroundColor", parse_vector3_float, &mut handled_keys);
     set_optional(&mut scene.shadow_ray_epsilon, scene_value, "ShadowRayEpsilon", parse_float, &mut handled_keys);
-    
+    set_optional(&mut scene.intersection_test_epsilon, scene_value, "IntersectionTestEpsilon", parse_float, &mut handled_keys);
+
     // NOTE: More fields from JSON file to be declared below
     print_error_if_extra_fields(scene_value, &handled_keys);
     scene.validate()?;
     Ok(scene)
 }
+
+fn import_lights(scene_value: &Value) -> SceneLights {
+
+}
+
 
 fn get_optional<T>(
     v: &Value,
@@ -109,7 +116,6 @@ fn print_error_if_extra_fields(v: &Value, handled_keys: &HashSet<String>) {
         }
     }
 }
-
 
 
 fn parse_scalar<T>(s: &str) -> Result<T, BoxedError> 

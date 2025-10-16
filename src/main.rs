@@ -20,7 +20,7 @@ mod renderer;
 mod dataforms;
 mod json_parser;
 mod geometry_processing;
-use crate::{json_parser::import_json, scene::Scene};
+use crate::{json_parser::import_scene_json, scene::Scene};
 
 
 fn main() {
@@ -41,7 +41,7 @@ fn main() {
     };
     
     // Parse JSON
-    let scn: Scene = match import_json(&json_path.as_str()) {
+    let scn: Scene = match import_scene_json(&json_path.as_str()) {
         Ok(s) => {
             info!("Scene loaded successfully.\n {:#?}", s); 
             s
