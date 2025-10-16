@@ -32,6 +32,7 @@ use tracing::{debug, warn};
 use crate::scene::{*};
 use crate::camera::{Cameras, NearPlane};
 use crate::numeric::{Int, Float, Vector3};
+use crate::dataforms::{DataField, From3};
 
 pub fn parse_json795(path: &str) -> Result<Scene, Box<dyn std::error::Error>> {
     /*
@@ -95,12 +96,24 @@ pub fn parse_json795(path: &str) -> Result<Scene, Box<dyn std::error::Error>> {
     scene.cameras = cameras;
     scene.lights = lights;
     scene.materials = materials;
-    scene.objects = objects;
+    //scene.objects = objects;
 
 
     Ok(scene)
 }
 
+
+// See https://serde.rs/string-or-struct.html
+impl<T> FromStr for DataField<T> 
+where 
+{
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(DataField {
+            _data: parse_vec(s),
+            _type: None,
+        })
+    }
+}
 
 
 pub fn deser_usize<'de, D>(deserializer: D) -> Result<usize, D::Error>
@@ -160,21 +173,7 @@ where
     }
 }
 
-pub trait From3<T>: Sized {
-    fn new(x: T, y: T, z: T) -> Self;
-}
 
-impl From3<f32> for bevy_math::Vec3 {
-    fn new(x: f32, y: f32, z: f32) -> Self {
-        Self::new(x, y, z)
-    }
-}
-
-impl From3<f64> for bevy_math::DVec3 {
-    fn new(x: f64, y: f64, z: f64) -> Self {
-        Self::new(x, y, z)
-    }
-}
 
 pub fn deser_vec3<'de, D, V, F>(deserializer: D) -> Result<V, D::Error>
 where
@@ -389,6 +388,15 @@ where
     let y = parts[1].parse::<F>().map_err(|e| e.to_string())?;
     let z = parts[2].parse::<F>().map_err(|e| e.to_string())?;
     Ok(V::new(x, y, z))
+}
+
+fn parse_vec_str<V, F>(s: &str) -> Result<V, String>
+where
+    F: FromStr,
+    F::Err: fmt::Display,
+    V: Vec<F>,
+{
+
 }
 
 

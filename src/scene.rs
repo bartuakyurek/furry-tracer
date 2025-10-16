@@ -15,7 +15,7 @@ use serde::{Deserialize};
 
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3, Index};
-use crate::shapes::{TriangleSerde, Sphere, Plane};
+use crate::shapes::{Triangle, Sphere, Plane};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec, DataField};
@@ -33,7 +33,7 @@ pub struct Scene {
     pub lights: SceneLights,
     pub materials: SceneMaterials,
     //pub vertex_data: DataField<Vector3>, 
-    pub objects: SceneObjects,
+    //pub objects: SceneObjects,
 }
 
 impl Scene {
@@ -48,7 +48,7 @@ impl Scene {
             lights: SceneLights::default(),
             materials: SceneMaterials::default(),
             // vertex_data: DataField::new_empty(),
-            objects: SceneObjects::new(),
+            //objects: SceneObjects::new(),
         }
     }
     
@@ -91,7 +91,7 @@ pub trait SceneObject {
 }
 
 
-impl SceneObject for TriangleSerde {
+impl SceneObject for Triangle {
     //fn id(&self) -> Int { self.id }
     //fn as_any(&self) -> &dyn std::any::Any { self }
 }
@@ -116,7 +116,7 @@ impl SceneObject for Plane {
 #[derive(Debug, Default, Deserialize)]
 pub struct SceneObjects {
     #[serde(rename = "Triangle", default)]
-    pub triangles: Option<SingleOrVec<TriangleSerde>>,
+    pub triangles: Option<SingleOrVec<Triangle>>,
 
     #[serde(rename = "Sphere", default)]
     pub spheres: Option<SingleOrVec<Sphere>>,
@@ -170,16 +170,13 @@ impl SceneObjects {
     }
 }
 
-enum FacesField {
-    FacesObj (DataField<Index>),
-    Raw (String),
-}
+
 
 #[derive(Debug, Deserialize, Clone)]
-struct MeshRaw {
+struct Mesh {
     id: Int,
     material: Int,
-    faces: FacesField,
+    faces: DataField<Index>,
 }
 
 

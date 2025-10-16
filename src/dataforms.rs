@@ -19,6 +19,7 @@ pub struct DataField<T> {
     pub(crate) _type: String,
 }
 
+
 impl<'de> Deserialize<'de> for DataField<Vector3> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -67,6 +68,7 @@ impl<'de> Deserialize<'de> for DataField<Index> {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum SingleOrVec<T> {
+    None,
     Single(T),
     Multiple(Vec<T>),
 }
@@ -74,6 +76,7 @@ pub enum SingleOrVec<T> {
 impl<T: Clone> SingleOrVec<T>  {
     pub fn all(&self) -> Vec<T> {
         match &self {
+            SingleOrVec::None => vec![],
             SingleOrVec::Single(t) => vec![t.clone()],
             SingleOrVec::Multiple(vec) => vec.clone(),
         }
@@ -84,5 +87,21 @@ impl<T> Default for SingleOrVec<T> {
     // Default is an empty vector 
     fn default() -> Self {
         SingleOrVec::Multiple(Vec::new()) 
+    }
+}
+
+pub trait From3<T>: Sized {
+    fn new(x: T, y: T, z: T) -> Self;
+}
+
+impl From3<f32> for bevy_math::Vec3 {
+    fn new(x: f32, y: f32, z: f32) -> Self {
+        Self::new(x, y, z)
+    }
+}
+
+impl From3<f64> for bevy_math::DVec3 {
+    fn new(x: f64, y: f64, z: f64) -> Self {
+        Self::new(x, y, z)
     }
 }
