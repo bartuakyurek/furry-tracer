@@ -36,6 +36,17 @@ pub struct Scene {
 }
 
 impl Scene {
+    pub fn new( ) -> Self {
+        Scene {
+                max_recursion_depth: Some(5),
+                background_color: Some(Vector3::new(0.0, 0.0, 0.0)), // black
+                shadow_ray_epsilon: Some(0.001),
+                intersection_test_epsilon: Some(0.0001),
+                // Everything else gets their own Default
+                ..Default::default()
+            }
+    }
+
     pub fn validate(&self) -> Result<(), Error> {
         // TODO: check if materials vector has material
         // ids matching with their indices
@@ -54,6 +65,10 @@ impl Scene {
         self.materials.push(mat);
     }
 }
+
+
+
+
 
 #[derive(Debug, Default)]
 struct SceneLights {

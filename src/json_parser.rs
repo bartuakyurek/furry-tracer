@@ -44,7 +44,7 @@ pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>
         In future providing a root scene to aggregate multiple 
         scenes into one might be useful.
     */
-    let mut scene = Scene::default();
+    let mut scene = Scene::new();
     let data = std::fs::read_to_string(json_path)?;
     let json_value: Value = serde_json::from_str(&data)?;
     let v = &json_value["Scene"];

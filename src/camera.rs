@@ -27,7 +27,14 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(id: Index, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
+    pub fn new() -> Self {
+        Self {
+                image_name: String::from("default.png"), 
+                ..Default::default()
+            }
+    }
+    
+    pub fn new_from(id: Index, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
         let mut cam = Camera {
             _id: id,
             position,
@@ -46,9 +53,6 @@ impl Camera {
         cam
     }
 
-    pub fn new_from(fov: Float){
-        // TODO: Allow constructing camera from 
-    }
     pub fn setup(&mut self) {
         // Compute w, v, u vectors
         // assumes Gaze and Up is already provided during creation
@@ -103,7 +107,7 @@ mod tests {
     #[test]
     fn test_setup() {
 
-        let cam = Camera::new(
+        let cam = Camera::new_from(
             1,
             Vector3::new(0., 0., 0.),
             Vector3::new(0., 0.2, -10.), // Not perpendicular to up
