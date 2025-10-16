@@ -26,8 +26,8 @@ use tracing::{error, warn, info, debug};
 use std::{str::FromStr, fmt, collections::HashSet};
 use serde_json::{Value};
 use crate::numeric::{Float, Vector3, Int, Index};
-use crate::{dataforms::{From3}};
-use crate::scene::{self, Scene, SceneLights};
+use crate::dataforms::{From3, SingleOrVec};
+use crate::scene::{self, Scene, SceneLights, PointLight};
 
 type BoxedError = Box<dyn std::error::Error>;
 
@@ -57,17 +57,28 @@ pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::E
     handler.get_optional(&mut scene.shadow_ray_epsilon, "ShadowRayEpsilon", parse_float)?;
     handler.get_optional(&mut  scene.intersection_test_epsilon, "IntersectionTestEpsilon", parse_float)?;
 
+
     // Lights
     if let Some(lights_value) = handler.get_subobject("Lights") {
         let mut lights_handler = JsonHandler::new(lights_value);
         lights_handler.get_optional(&mut scene.lights.ambient,"AmbientLight", parse_vector3_float)?;
         
+        let point_lights: SingleOrVec<PointLight> = lights_handler.get_single_or_vec("PointLight", |v| {
+        let mut pl = PointLight::default();
+        if let Some(id) = v.get("_id") { pl._id = parse_index(id.as_str().ok_or("Invalid _id for Point Light")?)?; }
+        if let Some(pos) = v.get("Position") { pl.position = parse_vector3_float(pos.as_str().ok_or("Invalid Position for Point Light")?)?; }
+        if let Some(inten) = v.get("Intensity") { pl.intensity = parse_vector3_float(inten.as_str().ok_or("Invalid Intensity for Point Light")?)?; }
+        Ok(pl)
+        })?;    
+        scene.lights.point_lights = point_lights.all();
     }
+    
 
     handler.warn_extra(); // WARNING: This misses extra subfields, only valid for outer scope
     scene.validate()?;
     Ok(scene)
 }
+
 
 
 fn parse_scalar<T>(s: &str) -> Result<T, BoxedError> 
@@ -121,6 +132,10 @@ fn parse_integer(s: &str) -> Result<Int, BoxedError> {
     parse_scalar::<Int>(s)
 }
 
+fn parse_index(s: &str) -> Result<Index, BoxedError> {
+    parse_scalar::<Index>(s)
+}
+
 // For debug purposes
 fn print_json_keys(v: &Value) {
     if let Some(obj) = v.as_object() {
@@ -172,6 +187,30 @@ impl<'a> JsonHandler<'a> {
         }
     }
 
+    fn get_single_or_vec<T>(
+        &mut self,
+        key: &str,
+        parser: fn(&Value) -> Result<T, BoxedError>,
+    ) -> Result<SingleOrVec<T>, BoxedError> {
+        if let Some(v) = self.value.get(key) {
+            self.handled_keys.insert(key.to_string());
+            match v {
+                Value::Array(arr) => {
+                    let mut vec = Vec::with_capacity(arr.len());
+                    for item in arr {
+                        vec.push(parser(item)?);
+                    }
+                    Ok(SingleOrVec::Multiple(vec))
+                }
+                Value::Object(_) => Ok(SingleOrVec::Single(parser(v)?)),
+                _ => Ok(SingleOrVec::None),
+            }
+        } else {
+            Ok(SingleOrVec::None)
+        }
+    }
+
+
     /// Check for extra fields
     fn warn_extra(&self) {
         if let Value::Object(map) = self.value {
@@ -182,4 +221,5 @@ impl<'a> JsonHandler<'a> {
             }
         }
     }
+
 }

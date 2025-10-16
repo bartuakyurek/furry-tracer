@@ -80,10 +80,10 @@ pub(crate) struct SceneLights {
 }
 
 
-#[derive(Debug, Default)]
-struct PointLight {
-    _id: Index,
-    position: Vector3,
-    intensity: Vector3, // R G B
+#[derive(Debug, Default, Clone)]
+pub(crate) struct PointLight {
+    pub _id: Index,
+    pub position: Vector3,
+    pub intensity: Vector3, // R G B
 }
 
