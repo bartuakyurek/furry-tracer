@@ -23,7 +23,7 @@
 */
 
 use tracing::{error, warn, info, debug};
-use std::{str::FromStr, fmt};
+use std::{str::FromStr, fmt, collections::HashSet};
 use serde_json::{Value};
 use crate::numeric::{Float, Vector3, Int, Index};
 use crate::{dataforms::{From3}, scene::Scene};
@@ -45,18 +45,21 @@ pub fn import_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>>
         scenes into one might be useful.
     */
     let mut scene = Scene::new();
+    let mut handled_keys = HashSet::new();
+
     let data = std::fs::read_to_string(json_path)?;
     let json_value: Value = serde_json::from_str(&data)?;
-    let v = &json_value["Scene"];
-    print_json_keys(v);
+
+    let scene_value = &json_value["Scene"];
+    print_json_keys(scene_value);
     
     // Update attributes only if present in JSON (otherwise let default remain as is)
-    set_optional(&mut scene.max_recursion_depth, v, "MaxRecursionDepth", parse_integer);
-    set_optional(&mut scene.background_color, v, "BackgroundColor", parse_vector3_float);
-    set_optional(&mut scene.shadow_ray_epsilon, v, "ShadowRayEpsilon", parse_float);
+    set_optional(&mut scene.max_recursion_depth, scene_value, "MaxRecursionDepth", parse_integer, &mut handled_keys);
+    set_optional(&mut scene.background_color, scene_value, "BackgroundColor", parse_vector3_float, &mut handled_keys);
+    set_optional(&mut scene.shadow_ray_epsilon, scene_value, "ShadowRayEpsilon", parse_float, &mut handled_keys);
     
     // NOTE: More fields from JSON file to be declared below
-
+    print_error_if_extra_fields(scene_value, &handled_keys);
     scene.validate()?;
     Ok(scene)
 }
@@ -76,6 +79,7 @@ fn set_optional<T>(
     v: &Value,
     key: &str,
     parser: fn(&str) -> Result<T, BoxedError>,
+    handled_keys: &mut HashSet<String>,
 ) {
     if let Some(new_value) = get_optional::<T>(v, key, parser) {
         *field = Some(new_value);
@@ -83,6 +87,26 @@ fn set_optional<T>(
     }
     else {
         warn!("Key '{}' not found in JSON, keeping default value.", key);
+    }
+    handled_keys.insert(key.to_string());
+}
+
+
+fn print_error_if_extra_fields(v: &Value, handled_keys: &HashSet<String>) {
+    /*
+
+    Given serde_json::Value v, and a HashSet of strings
+    print error message regarding missing fields.
+    If a JSON file has fields this parser has not handled
+    yet, an error should be printed to notice the user.
+    
+    */
+    if let Value::Object(map) = v {
+        for key in map.keys() {
+            if !handled_keys.contains(key) {
+                error!("Unexpected key '{}' in JSON. Make sure to handle it in your json parser!", key);
+            }
+        }
     }
 }
 
