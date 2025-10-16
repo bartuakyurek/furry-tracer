@@ -24,7 +24,7 @@
 
 use std::{error::Error};
 use serde_json::{Value};
-use crate::scene::{Scene};
+use crate::{dataforms::DataField, scene::Scene};
 
 pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn Error>>{
     /*
@@ -46,3 +46,4 @@ pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn Err
 }
 
 // TODO: Parser functions to be declared below
+

@@ -10,12 +10,12 @@
     @author: Bartu
 */
 
-
+use std::rc::Rc; 
 use crate::camera::{Camera};
 use crate::numeric::{Int, Float, Vector3, Index};
-//use crate::material::{*};
-//use crate::shapes::{Triangle, Sphere, Plane};
-//use crate::dataforms::{SingleOrVec, DataField};
+use crate::material::{BoxedMaterial, Material};
+use crate::shapes::{Intersectable, Plane, Sphere, Triangle};
+use crate::dataforms::{SingleOrVec, DataField};
 
 
 #[derive(Debug, Default)]
@@ -25,12 +25,23 @@ pub struct Scene {
     pub shadow_ray_epsilon: Option<Float>,
     pub intersection_test_epsilon: Option<Float>,
     pub cameras: Vec<Camera>,
-    //pub lights: SceneLights,
-    //pub materials: SceneMaterials,
-    //pub vertex_data: DataField<Vector3>, 
-    //pub objects: SceneObjects,
+    pub lights: SceneLights,
+    pub materials: Vec<Rc<dyn Material>>,
+    pub vertex_data: DataField<Vector3>, 
+    pub objects: Vec<Rc<dyn Intersectable>>,
 }
 
 impl Scene {
     
+}
+
+#[derive(Debug, Default)]
+struct SceneLights {
+
+}
+
+
+#[derive(Debug, Default)]
+struct SceneMaterials {
+
 }

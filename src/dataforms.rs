@@ -10,7 +10,7 @@
 use bevy_math;
 
 // To be used for VertexData and Faces in JSON files
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct DataField<T> {
     
     pub(crate) _data: Vec<T>,

@@ -7,9 +7,8 @@
 */
 
 
-use serde::{Deserialize};
+use std::fmt::Debug;
 use crate::numeric::{Int, Float, Vector3, Index};
-use crate::json_parser::*;
 
 pub struct Ray {
     origin: Vector3,
@@ -17,14 +16,14 @@ pub struct Ray {
 }
 
 
-pub trait Intersectable {
-    fn intersects_with(ray: Ray) -> bool;
+pub trait Intersectable: Send + Sync + Debug {
+    fn intersects_with(&self, ray: Ray) -> bool;
 }
 
 
 // Raw data deserialized from .JSON file
 // it assumes vertex indices start from 1
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Triangle {
     pub id: Int,
     pub indices: Vec<usize>,
@@ -32,7 +31,7 @@ pub struct Triangle {
 }
 
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Sphere {
     pub id: Int,
     pub center: Index,
@@ -40,7 +39,7 @@ pub struct Sphere {
     pub material: Int,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Plane {
     pub id: Int,
     pub point: Index,

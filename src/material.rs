@@ -1,12 +1,12 @@
 
-
+use std::fmt::{Debug};
 use tracing::{warn, error};
 use crate::numeric::{Float, Int, Vector3};
 
 
 pub type BoxedMaterial = Box<dyn Material>;
 
-pub trait Material {
+pub trait Material: Send + Sync + Debug {
     // todo: fn radiance() 
 }
 
