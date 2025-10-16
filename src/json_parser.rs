@@ -22,11 +22,14 @@
     @author: bartu 
 */
 
-use std::{error::Error};
+use std::{str::FromStr, fmt};
 use serde_json::{Value};
-use crate::{dataforms::DataField, scene::Scene};
+use crate::numeric::{Float, Vector3, Int, Index};
+use crate::{dataforms::{From3}, scene::Scene};
 
-pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn Error>>{
+type BoxedError = Box<dyn std::error::Error>;
+
+pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn std::error::Error>>{
     /*
         Import JSON file contents to a given scene.
         
@@ -35,17 +38,83 @@ pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn Err
             // call import_json(path, scene)
         
         Intended to be useful for importing multiple json files
-        into a single scene.
+        into a single scene. 
+        TODO: For it to import multiple scenes, lights and cameras
+        material ids, mesh ids also need to be merged so for now
+        assume this function directly maps a json file to scene,
+        and later on provide a root scene to aggregate multiple 
+        scenes into one.
     */
     let data = std::fs::read_to_string(json_path)?;
-    let value: Value = serde_json::from_str(&data)?;
-    let scene_json = &value["Scene"];
+    let json_value: Value = serde_json::from_str(&data)?;
+    let v = &json_value["Scene"];
     
-    // TODO: add hashmap contents to scene
+    scene.max_recursion_depth = get_optional(&v, "MaxRecursionDepth", parse_integer);
+    scene.background_color = get_optional(&v, "background_color", parse_vector3_float);
+    scene.shadow_ray_epsilon = get_optional(&v, "shadow_ray_epsilon", parse_float);
+    
+    // NOTE: More fields from JSON file to be declared below
 
     scene.validate()?;
     Ok(())
 }
 
-// TODO: Parser functions to be declared below
 
+fn get_optional_str<'a>(v: &'a Value, key: &str) -> Option<&'a str> {
+    v.get(key)?.as_str()
+}
+
+fn get_optional<T>(v: &Value, key: &str, parser: fn(&str) -> Result<T, BoxedError>) -> Option<T> {
+    get_optional_str(v, key).map(|s| parser(s).ok()).flatten()
+}
+
+fn parse_scalar<T>(s: &str) -> Result<T, BoxedError> 
+where
+    T: std::str::FromStr,
+    T::Err: std::error::Error + 'static,
+{
+    s.parse::<T>()
+        .map_err(|e| Box::new(e) as BoxedError)
+}
+
+/// Helper function: parse a string like "25 25 25" into Vector3
+fn parse_vector3<V, F>(s: &str) -> Result<V, String> 
+where 
+    F: FromStr,
+    F::Err: fmt::Display,
+    V: From3<F>,
+{
+    let parts: Vec<&str> = s.split_whitespace().collect();
+    if parts.len() != 3 {
+        return Err(format!("Expected 3 values, got {}", parts.len()));
+    }
+    let x = parts[0].parse::<F>().map_err(|e| e.to_string())?;
+    let y = parts[1].parse::<F>().map_err(|e| e.to_string())?;
+    let z = parts[2].parse::<F>().map_err(|e| e.to_string())?;
+    Ok(V::new(x, y, z))
+}
+
+
+fn parse_vec<T: std::str::FromStr>(s: &str) -> Result<Vec<T>, BoxedError>
+where
+    T::Err: std::error::Error + 'static
+{
+    s.split_whitespace()
+        .map(|x| x.parse::<T>().map_err(|e| Box::new(e) as BoxedError))
+        .collect()
+}
+
+
+// Concrete type wrappers
+fn parse_vector3_float(s: &str) -> Result<Vector3, BoxedError> {
+    parse_vector3::<Vector3, Float>(s).map_err(|e| e.into())
+}
+
+fn parse_float(s: &str) -> Result<Float, BoxedError> {
+    parse_scalar::<Float>(s)
+}
+
+
+fn parse_integer(s: &str) -> Result<Int, BoxedError> {
+    parse_scalar::<Int>(s)
+}

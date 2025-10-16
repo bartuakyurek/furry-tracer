@@ -16,9 +16,9 @@ use tracing::{warn, error};
 
 use crate::camera::{Camera};
 use crate::numeric::{Int, Float, Vector3, Index};
-use crate::material::{BoxedMaterial, Material};
-use crate::shapes::{Intersectable, Plane, Sphere, Triangle};
-use crate::dataforms::{SingleOrVec, DataField};
+use crate::material::{Material};
+use crate::shapes::{Intersectable};
+use crate::dataforms::{DataField};
 
 
 #[derive(Debug, Default)]
@@ -32,6 +32,7 @@ pub struct Scene {
     pub materials: Vec<Rc<dyn Material>>,
     pub vertex_data: DataField<Vector3>, 
     pub objects: Vec<Rc<dyn Intersectable>>,
+
 }
 
 impl Scene {
@@ -41,8 +42,16 @@ impl Scene {
         // if not, attempt reordering them
         // if reordering is successful print a warning about reorder
         // else return error
+
+        // Currently assumes given material ids are in order
+        // However it'd fail if we attempt to load multiple .json
+        // scenes as two different material can have the same id
         error!("Validate function not implemented yet!");
         Ok(())
+    }
+
+    pub fn add_material(&mut self, mat: Rc<dyn Material>) {
+        self.materials.push(mat);
     }
 }
 
@@ -55,12 +64,8 @@ struct SceneLights {
 
 #[derive(Debug, Default)]
 struct PointLight {
-    _id: Int,
+    _id: Index,
     position: Vector3,
     intensity: Vector3, // R G B
 }
 
-#[derive(Debug, Default)]
-struct SceneMaterials {
-
-}

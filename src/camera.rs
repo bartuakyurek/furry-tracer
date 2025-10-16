@@ -8,11 +8,11 @@
 
 
 use tracing::{info, debug};
-use crate::numeric::{Int, Float, Vector3, approx_zero};
+use crate::numeric::{Int, Index, Float, Vector3, approx_zero};
 
 #[derive(Default, Debug, Clone)]
 pub struct Camera {
-    id: Int,
+    _id: Index,
     position: Vector3,
     gaze: Vector3,
     up: Vector3,
@@ -27,9 +27,9 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
+    pub fn new(id: Index, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
         let mut cam = Camera {
-            id,
+            _id: id,
             position,
             gaze,
             up,

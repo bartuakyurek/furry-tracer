@@ -25,7 +25,7 @@ pub trait Intersectable: Send + Sync + Debug {
 // it assumes vertex indices start from 1
 #[derive(Debug, Default, Clone)]
 pub struct Triangle {
-    pub id: Int,
+    pub _id: Index,
     pub indices: Vec<usize>,
     pub material: Int,
 }
@@ -33,7 +33,7 @@ pub struct Triangle {
 
 #[derive(Debug, Default, Clone)]
 pub struct Sphere {
-    pub id: Int,
+    pub _id: Index,
     pub center: Index,
     pub radius: Float,
     pub material: Int,
@@ -41,8 +41,15 @@ pub struct Sphere {
 
 #[derive(Debug, Default, Clone)]
 pub struct Plane {
-    pub id: Int,
+    pub _id: Index,
     pub point: Index,
     pub normal: Vector3,
+    pub material: Int,
+}
+
+
+#[derive(Debug, Default, Clone)]
+pub struct Mesh {
+    pub _id: Index,
     pub material: Int,
 }
