@@ -11,6 +11,9 @@
 */
 
 use std::rc::Rc; 
+use serde::de::value::Error;
+use tracing::{warn, error};
+
 use crate::camera::{Camera};
 use crate::numeric::{Int, Float, Vector3, Index};
 use crate::material::{BoxedMaterial, Material};
@@ -32,14 +35,30 @@ pub struct Scene {
 }
 
 impl Scene {
-    
+    pub fn validate(&self) -> Result<(), Error> {
+        // TODO: check if materials vector has material
+        // ids matching with their indices
+        // if not, attempt reordering them
+        // if reordering is successful print a warning about reorder
+        // else return error
+        error!("Validate function not implemented yet!");
+        Ok(())
+    }
 }
 
 #[derive(Debug, Default)]
 struct SceneLights {
-
+    ambient: Option<Vector3>,
+    point_lights: Vec<PointLight>,
 }
 
+
+#[derive(Debug, Default)]
+struct PointLight {
+    _id: Int,
+    position: Vector3,
+    intensity: Vector3, // R G B
+}
 
 #[derive(Debug, Default)]
 struct SceneMaterials {

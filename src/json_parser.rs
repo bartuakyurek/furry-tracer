@@ -42,6 +42,8 @@ pub fn import_json(json_path: &str, scene: &mut Scene) -> Result<(), Box<dyn Err
     let scene_json = &value["Scene"];
     
     // TODO: add hashmap contents to scene
+
+    scene.validate()?;
     Ok(())
 }
 
