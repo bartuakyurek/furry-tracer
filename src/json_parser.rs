@@ -22,12 +22,15 @@
     @author: bartu 
 */
 
+
 use tracing::{error, warn, info, debug};
-use std::{str::FromStr, fmt, collections::HashSet};
+use std::{str::FromStr, fmt, collections::HashSet, rc::Rc};
 use serde_json::{Value};
 use crate::numeric::{Float, Vector3, Int, Index};
 use crate::dataforms::{From3, SingleOrVec};
 use crate::scene::{self, Scene, SceneLights, PointLight};
+use crate::camera::{Camera, NearPlane};
+use crate::material::{Material};
 
 type BoxedError = Box<dyn std::error::Error>;
 
@@ -57,12 +60,49 @@ pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::E
     handler.get_optional(&mut scene.shadow_ray_epsilon, "ShadowRayEpsilon", parse_float)?;
     handler.get_optional(&mut  scene.intersection_test_epsilon, "IntersectionTestEpsilon", parse_float)?;
 
+    // Cameras, Lights, Materials, Objects
     load_lights(&mut scene, &mut handler)?;
+    load_cameras(&mut scene, &mut handler)?;
+    load_materials(&mut scene, &mut handler)?;
+    load_objects(&mut scene, &mut handler)?;
 
     handler.warn_extra(); // WARNING: This misses extra subfields, only valid for outer scope
     scene.validate()?;
     Ok(scene)
 }
+
+fn load_cameras(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError> {
+    
+    if let Some(cameras_value) = handler.get_subobject("Cameras") {
+        let mut cameras_handler = JsonHandler::new(cameras_value);
+        // get Camera 
+        // id 
+        // poisition
+        // gaze
+        
+    }
+
+    Ok(())
+}
+
+
+fn load_materials(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError> {
+    
+    //if let Some(materials_value) = handler.get_subobject("Materials") {
+    //}
+
+    Ok(())
+}
+
+fn load_objects(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError> {
+    
+    //if let Some(objects_value) = handler.get_subobject("Objects") {
+    //}
+
+    Ok(())
+}
+
+
 
 fn load_lights(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError>{
     // Lights
