@@ -7,18 +7,18 @@
 */
 
 
-use tracing::{info, debug};
+use tracing::{info, debug, error};
 use crate::numeric::{Int, Index, Float, Vector3, approx_zero};
 
 #[derive(Default, Debug, Clone)]
 pub struct Camera {
-    _id: Index,
-    position: Vector3,
-    gaze: Vector3,
-    up: Vector3,
-    nearplane: NearPlane,
-    near_distance: Float,
-    image_resolution: [usize; 2],
+    pub(crate) _id: Index,
+    pub(crate) position: Vector3,
+    pub(crate) gaze: Vector3,
+    pub(crate) up: Vector3,
+    pub(crate) nearplane: NearPlane,
+    pub(crate) near_distance: Float,
+    pub(crate) image_resolution: [usize; 2],
     pub(crate) image_name: String,
     num_samples: Int,
     w : Vector3,
@@ -97,6 +97,26 @@ impl NearPlane {
             top,
         }
     }
+
+    pub fn new_from<T>(vec4: Vec<T>) -> Result<Self, String>
+    where
+        T: Into<Float> + Copy,
+    {
+        if vec4.len() != 4 {
+            error!(
+                "Expected 4 elements to construct NearPlane, got {}. Ignoring remaining elements.",
+                vec4.len()
+            );
+        }
+
+        Ok(NearPlane {
+            left: vec4[0].into(),
+            right: vec4[1].into(),
+            bottom: vec4[2].into(),
+            top: vec4[3].into(),
+        })
+    }
+
 }
 
 
