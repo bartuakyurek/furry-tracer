@@ -7,8 +7,9 @@
 */
 
 
-use std::fmt::Debug;
+use serde::{Deserialize};
 use crate::numeric::{Int, Float, Vector3, Index};
+use crate::json_parser::*;
 
 pub struct Ray {
     origin: Vector3,
@@ -16,40 +17,53 @@ pub struct Ray {
 }
 
 
-pub trait Intersectable: Send + Sync + Debug {
-    fn intersects_with(&self, ray: Ray) -> bool;
+pub trait Intersectable {
+    fn intersects_with(ray: Ray) -> bool;
 }
 
 
 // Raw data deserialized from .JSON file
 // it assumes vertex indices start from 1
-#[derive(Debug, Default, Clone)]
-pub struct Triangle {
-    pub _id: Index,
+#[derive(Debug, Deserialize, Clone)]
+pub struct TriangleSerde {
+    #[serde(rename = "_id", deserialize_with = "deser_int")]
+    pub id: Int,
+
+    #[serde(rename = "Indices", deserialize_with = "deser_usize_vec")]
     pub indices: Vec<usize>,
+
+    #[serde(rename = "Material", deserialize_with = "deser_int")]
     pub material: Int,
 }
 
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Sphere {
-    pub _id: Index,
+    #[serde(rename = "_id", deserialize_with = "deser_int")]
+    pub id: Int,
+
+    // JSON uses a *vertex index* instead of a 3D vector for center
+    #[serde(rename = "Center", deserialize_with = "deser_usize")]
     pub center: Index,
+
+    #[serde(rename = "Radius", deserialize_with = "deser_float")]
     pub radius: Float,
+
+    #[serde(rename = "Material", deserialize_with = "deser_int")]
     pub material: Int,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Plane {
-    pub _id: Index,
+    #[serde(rename = "_id", deserialize_with = "deser_int")]
+    pub id: Int,
+
+    #[serde(rename = "Point", deserialize_with = "deser_usize")]
     pub point: Index,
+
+    #[serde(rename = "Normal", deserialize_with = "deser_vec3")]
     pub normal: Vector3,
-    pub material: Int,
-}
 
-
-#[derive(Debug, Default, Clone)]
-pub struct Mesh {
-    pub _id: Index,
+    #[serde(rename = "Material", deserialize_with = "deser_int")]
     pub material: Int,
 }

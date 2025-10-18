@@ -20,7 +20,7 @@ mod renderer;
 mod dataforms;
 mod json_parser;
 mod geometry_processing;
-use crate::{json_parser::import_scene_json, scene::Scene};
+use crate::{json_parser::parse_json795};
 
 
 fn main() {
@@ -32,7 +32,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
         warn!("No arguments were provided, setting default scene path...");
-        &String::from("./assets/test.json")
+        &String::from("./assets/bunny.json")
     } else if args.len() == 2 {
         &args[1]
     } else {
@@ -41,10 +41,11 @@ fn main() {
     };
     
     // Parse JSON
-    let scn: Scene = match import_scene_json(&json_path.as_str()) {
-        Ok(s) => {
-            info!("Scene loaded successfully.\n {:#?}", s); 
-            s
+    info!("Loading scene from {}...", json_path);
+    let root =  match parse_json795(json_path) {
+        Ok(root) => {
+            info!("Scene loaded successfully.\n {:#?}", root);
+            root
         }
         Err(e) => {
             error!("Failed to load scene: {}", e);
@@ -53,7 +54,7 @@ fn main() {
     };
 
     // Render image and return array of RGB
-    let images = match renderer::render(scn) {
+    let images = match renderer::render(root.scene) {
         Ok(image_data) => {info!("Render completed."); image_data}
         Err(e) => {error!("Failed to render scene: {}", e); return;}
     };

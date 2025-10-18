@@ -7,36 +7,70 @@
 */
 
 
-use tracing::{info, debug, error};
-use crate::numeric::{Int, Index, Float, Vector3, approx_zero};
+use bevy_math::NormedVectorSpace;
+use serde::{Deserialize};
+use tracing::{info, debug, error, warn};
+use crate::numeric::{Int, Float, Vector3, approx_zero};
+use crate::json_parser::*;
+use crate::dataforms::{SingleOrVec};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Deserialize)]
+pub struct Cameras {
+    #[serde(rename = "Camera")]
+    camera: SingleOrVec<Camera>, // Allow either single cam (as in test.json) or multiple cams
+}
+
+impl Cameras {
+    /// Always returns a Vec<Camera> regardless of JSON being a single object or array
+    pub fn all(&self) -> Vec<Camera> {
+        self.camera.all()
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Camera {
-    pub(crate) _id: Index,
-    pub(crate) position: Vector3,
-    pub(crate) gaze: Vector3,
-    pub(crate) up: Vector3,
-    pub(crate) nearplane: NearPlane,
-    pub(crate) near_distance: Float,
-    pub(crate) image_resolution: [usize; 2],
-    pub(crate) image_name: String,
-    num_samples: Int,
+    #[serde(rename = "_id", deserialize_with = "deser_int")]
+    id: Int,
+    
+    #[serde(rename = "Position", deserialize_with = "deser_vec3")]
+    position: Vector3,
+
+    #[serde(rename = "Gaze", deserialize_with = "deser_vec3")]
+    gaze: Vector3,
+
+    #[serde(rename = "Up", deserialize_with = "deser_vec3")]
+    up: Vector3,
+
+    #[serde(rename = "NearPlane", deserialize_with = "deser_nearplane")]
+    nearplane: NearPlane,
+
+    #[serde(rename = "NearDistance", deserialize_with = "deser_float")]
+    near_distance: Float,
+
+    #[serde(rename = "ImageResolution", deserialize_with = "deser_pair")]
+    pub image_resolution: [usize; 2], // TODO: Should be usize instead of Int but deserialization needs modification to handle Int for i32, usized etc. 
+
+    #[serde(rename = "ImageName")]
+    pub image_name: String,
+
+    #[serde(rename = "NumSamples", deserialize_with = "deser_int")]
+    pub num_samples: Int,
+
+    #[serde(skip)]
     w : Vector3,
+
+    #[serde(skip)]
     v : Vector3,
+
+    #[serde(skip)]
     u : Vector3,
+
 }
 
 impl Camera {
-    pub fn new() -> Self {
-        Self {
-                image_name: String::from("default.png"), 
-                ..Default::default()
-            }
-    }
-    
-    pub fn new_from(id: Index, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
+    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
         let mut cam = Camera {
-            _id: id,
+            id,
             position,
             gaze,
             up,
@@ -52,7 +86,6 @@ impl Camera {
         cam.setup();
         cam
     }
-
     pub fn setup(&mut self) {
         // Compute w, v, u vectors
         // assumes Gaze and Up is already provided during creation
@@ -72,21 +105,19 @@ impl Camera {
         debug_assert!(approx_zero(self.v.dot(self.w))); 
         debug_assert!(approx_zero(self.v.dot(self.u))); 
     }
-
-    pub fn get_resolution(&self) -> (usize, usize) {
-        (self.image_resolution[0], self.image_resolution[1])
-    }
 }
 
-
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct NearPlane {
+    #[serde(deserialize_with = "deser_float")]
     pub(crate) left: Float,
+    #[serde(deserialize_with = "deser_float")]
     pub(crate) right: Float,
+    #[serde(deserialize_with = "deser_float")]
     pub(crate) bottom: Float,
+    #[serde(deserialize_with = "deser_float")]
     pub(crate) top: Float,
 }
-
 
 impl NearPlane {
     pub fn new(left: Float, right: Float, bottom: Float, top: Float) -> Self {
@@ -97,26 +128,6 @@ impl NearPlane {
             top,
         }
     }
-
-    pub fn new_from<T>(vec4: Vec<T>) -> Result<Self, String>
-    where
-        T: Into<Float> + Copy,
-    {
-        if vec4.len() != 4 {
-            error!(
-                "Expected 4 elements to construct NearPlane, got {}. Ignoring remaining elements.",
-                vec4.len()
-            );
-        }
-
-        Ok(NearPlane {
-            left: vec4[0].into(),
-            right: vec4[1].into(),
-            bottom: vec4[2].into(),
-            top: vec4[3].into(),
-        })
-    }
-
 }
 
 
@@ -127,7 +138,7 @@ mod tests {
     #[test]
     fn test_setup() {
 
-        let cam = Camera::new_from(
+        let cam = Camera::new(
             1,
             Vector3::new(0., 0., 0.),
             Vector3::new(0., 0.2, -10.), // Not perpendicular to up
