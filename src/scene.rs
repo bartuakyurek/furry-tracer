@@ -117,8 +117,8 @@ pub struct SceneObjects {
     #[serde(rename = "Plane")]
     pub planes: SingleOrVec<Plane>,
 
-    //#[serde(rename = "Mesh")]
-    //pub meshes: SingleOrVec<Mesh>,
+    #[serde(rename = "Mesh")]
+    pub meshes: SingleOrVec<Mesh>,
 }
 
 
@@ -130,10 +130,14 @@ pub struct SceneObjects {
 //}
 
 
-#[derive(Debug, Deserialize, Clone)]
-struct Mesh {
- pub    _id: Int,
-    material: Int,
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct Mesh {
+    #[serde(rename = "_id", deserialize_with = "deser_usize")]
+    pub _id: Index,
+    #[serde(rename = "Material", deserialize_with = "deser_usize")]
+    material: Index,
+    #[serde(rename = "Faces")]
     faces: DataField<Index>,
 }
 
