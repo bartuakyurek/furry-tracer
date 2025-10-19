@@ -31,8 +31,10 @@
 
 use serde_json;
 use serde::{Deserialize};
+use tracing::{warn, error};
+
 use crate::json_parser::{deser_string_or_struct};
-use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
+use crate::material::{BoxedMaterial, DiffuseMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3, Index};
 use crate::shapes::{TriangleSerde, Sphere, Plane};
 use crate::camera::{Cameras};
@@ -113,14 +115,30 @@ pub struct PointLight {
 #[serde(default)]
 pub struct SceneMaterials {
     #[serde(rename = "Material")]
-    pub raw_materials: SingleOrVec<serde_json::Value>, // keep json value as-is for postprocessing
+    raw_materials: SingleOrVec<serde_json::Value>, // keep json value as-is for postprocessing
+
+    #[serde(skip)]
+    materials: Vec<BoxedMaterial>,
 }
 
-//impl SceneMaterials {
-//    pub fn all() -> Vec<dyn Material> {
-//
-//    }
-//}
+impl SceneMaterials {
+    pub fn finalize(&mut self) {
+        self.materials = self
+            .raw_materials
+            .all()
+            .into_iter()
+            .map(parse_material)
+            .collect();
+    }
+
+    pub fn all(&mut self) -> &Vec<BoxedMaterial> {
+        if self.materials.is_empty() && !self.raw_materials.all().is_empty() {
+            warn!("Calling SceneMaterials.finalize() to fully deserialize materials from JSON file...");
+            self.finalize(); 
+        }
+        &self.materials
+    }
+}
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(default)] // If any of the fields below is missing in the JSON, use default (empty vector, hopefully)
@@ -152,3 +170,21 @@ pub struct Mesh {
     faces: DataField<Index>,
 }
 
+
+
+
+// TODO: This is the responsibility of json parser 
+fn parse_material(value: serde_json::Value) -> BoxedMaterial {
+    if let Some(t) = value.get("_type") {
+        match t.as_str().unwrap() {
+            "diffuse" => Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap()),
+            "mirror" => Box::new(serde_json::from_value::<MirrorMaterial>(value).unwrap()),
+            _ => {
+                error!("Unknown material type with _id = {} encountered! Material reverted to Diffuse.", t.as_str().unwrap());
+                Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
+             } 
+        }
+    } else {
+        Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
+    }
+}
