@@ -6,6 +6,25 @@
     This declaration is meant to be compatible with 
     CENG 795's JSON file formats.
 
+    WARNING: This Scene description is coupled with JSON file descriptions
+    and it assumes JSON file fields are named in PascalCase (not camelCase or snake_case)
+    TODO: Provide structs to (de)serialize JSON files, and communicate with a separate
+    Scene struct that is hopefully decoupled from JSON file descriptions, i.e. to support
+    such workflow:
+        
+        let s Scene::EMPTY
+        s.add_some_object()
+        s.add_some_light()
+        s.center_camera() 
+        let js = JSONScene::new_from(s)
+        js.serialize(path/to/json)
+    
+    or
+        let js = JSONSCene::new(path/to/json)
+        let s = Scene::new_from(js)
+        s.do_something_if_you_like()
+        render(s)
+
     @date: 2 Oct, 2025
     @author: Bartu
 */
