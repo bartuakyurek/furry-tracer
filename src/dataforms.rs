@@ -12,7 +12,7 @@ use crate::numeric::{Vector3, Index};
 use crate::json_parser::{deser_vertex_data, deser_usize_vec};
 
 // To be used for VertexData and Faces in JSON files
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct DataField<T> {
     
     pub(crate) _data: Vec<T>,
@@ -67,6 +67,7 @@ impl<'de> Deserialize<'de> for DataField<Index> {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum SingleOrVec<T> {
+    Empty,
     Single(T),
     Multiple(Vec<T>),
 }
@@ -74,8 +75,15 @@ pub enum SingleOrVec<T> {
 impl<T: Clone> SingleOrVec<T>  {
     pub fn all(&self) -> Vec<T> {
         match &self {
+            SingleOrVec::Empty => vec![],
             SingleOrVec::Single(t) => vec![t.clone()],
             SingleOrVec::Multiple(vec) => vec.clone(),
         }
+    }
+}
+
+impl<T: Default> Default for SingleOrVec<T> {
+    fn default() -> Self {
+        SingleOrVec::Empty
     }
 }

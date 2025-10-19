@@ -26,7 +26,8 @@ pub struct RootScene {
     pub scene: Scene,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
+#[serde(default)]
 pub struct Scene {
     #[serde(rename = "MaxRecursionDepth", deserialize_with = "deser_int")]
     max_recursion_depth: Int,
@@ -61,6 +62,7 @@ impl Scene {
     //}
 }
 
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct SceneLights {
     #[serde(rename = "AmbientLight", deserialize_with = "deser_vec3")]
@@ -70,7 +72,16 @@ pub struct SceneLights {
     pub point_lights: SingleOrVec<PointLight>, 
 }
 
-#[derive(Debug, Deserialize, Clone)]
+impl Default for SceneLights {
+    fn default() -> Self {
+        Self {
+            ambient_light: Vector3::ZERO, // No intensity
+            point_lights: SingleOrVec::default(),
+            }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct PointLight {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     pub id: Int, // or String if you prefer
@@ -83,7 +94,7 @@ pub struct PointLight {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct SceneMaterials {
     #[serde(rename = "Material")]
     pub raw_materials: SingleOrVec<serde_json::Value>, // keep json value as-is for postprocessing
@@ -93,7 +104,7 @@ impl SceneMaterials {
     
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct SceneObjects {
     #[serde(rename = "Triangle")]
     pub triangles: SingleOrVec<TriangleSerde>,

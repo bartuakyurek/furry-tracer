@@ -18,47 +18,63 @@ use tracing::{debug, warn};
 
 use crate::scene::{Scene};
 use crate::numeric::{Vector3, Float, Index};
-
 #[derive(Clone)]
 pub struct ImageData {
     pixel_colors : Vec<Vector3>, // Vector of RGB per pixel
     pixel_centers: Vec<Vector3>,
     width : usize,
     height: usize,
-    resolution: [usize; 2],
+    scale: Float,   
     name: String, // TODO: width, height, name info actually is stored under camera as well
                   // is it wise to copy those into ImageData? I thought it is more organized this way.
 }
 
-pub fn pixel_centers(width: usize, height: usize, offset: Vector3) -> Vec<Vector3>{
-        // set offset to Vector3::ZERO if image is centered to camera (as assumed in this course)
-    
-        // TODO: fill here.... 
-}
+//pub fn pixel_centers(width: usize, height: usize, scale: Float, offset: Vector3) -> Vec<Vector3>{
+//    // Given width and height of 
+//    // Returns 3d locations of each pixel's center point
+//    // set offset to Vector3::ZERO if image is centered to camera (as assumed in this course)
+//    // TODO: fill here.... 
+//    {
+//
+//         let width: Float = width as Float * scale;
+//         let height: Float = height as Float * scale;
+//         let half_pixel = scale / 2.0;
+//         
+//         for y in 0..height {
+//                for x in 0..width {
+//                    let px = x + half_pixel + offset[0];
+//                    let py = y + half_pixel + offset[1];
+//                    let pz = 0.0 as Float; // TODO: What if image plane is rotated? I don't think this is the right way to do it
+//                    Vector3::new(px, py, pz); 
+//                }
+//            }
+//    }
+//}
 
 impl ImageData {
 
-    
-    pub fn new(width: usize, height: usize, resolution: [usize; 2], name: String, background: Vector3) -> Self {
+    pub fn new(resolution: [usize; 2], name: String, background: Vector3) -> Self {
         // Create a new image of specified background color
         // Set background to Vector3::ZERO for black background
+        let scale: Float = 1.0;
+        let (width, height) = (resolution[0], resolution[1]);
         let pixel_colors = vec![background; width * height];
-        Self::new_from(width, height, resolution, name, pixel_colors)
+        Self::new_from(width, height, scale, name, pixel_colors)
     }
 
-    pub fn new_from(width: usize, height: usize, resolution: [usize; 2], name: String, pixel_colors: Vec<Vector3>) -> Self {
-        let pixel_centers = pixel_centers(width, height, Vector3::ZERO);
+    pub fn new_from(width: usize, height: usize, scale: Float, name: String, pixel_colors: Vec<Vector3>) -> Self {
+        
+        //let pixel_centers = pixel_centers(width, height, scale, Vector3::ZERO);
+        let pixel_centers = vec![Vector3::ZERO; width*height];
         ImageData {
             pixel_colors,
             pixel_centers,
             width,
             height,
-            resolution,
+            scale,
             name,
         }
     }
-
-    
 
     pub fn flatten_color(self) -> Vec<Float> {
         // Return [R1, G1, B1, R2, G2, B2, ...] vector
@@ -141,22 +157,22 @@ impl ImageData {
 pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
 {
     let mut images: Vec<ImageData> = Vec::new();
-    for mut cam in scene.cameras.all(){
+    for mut cam in scene.cameras.all() {
         cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
         debug!("{:?}", cam);
 
         // TODO: Return Vec<ImageData>
-        let (width, height) = (cam.image_resolution[0], cam.image_resolution[1]);
+        let (width, height) = cam.get_resolution();
         warn!("Use Camera.ImageResolution for width and Height.");
 
         let pixel_colors = vec![Vector3::ZERO; width * height];
         let pixel_centers = vec![Vector3::ZERO; width * height];
 
-        let im = ImageData { pixel_colors, pixel_centers, width, height, name: cam.image_name };
+        let scale = 1.0 as Float;
+        let im = ImageData { pixel_colors, pixel_centers, width, height, scale, name: cam.image_name };
         
         images.push(im);
     }
     
     Ok(images)
 }
-

@@ -24,7 +24,7 @@ pub trait Intersectable {
 
 // Raw data deserialized from .JSON file
 // it assumes vertex indices start from 1
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct TriangleSerde {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     pub id: Int,
@@ -37,7 +37,7 @@ pub struct TriangleSerde {
 }
 
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Sphere {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     pub id: Int,
@@ -53,7 +53,7 @@ pub struct Sphere {
     pub material: Int,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Plane {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     pub id: Int,

@@ -51,8 +51,7 @@ pub fn parse_json795(path: &str) -> Result<RootScene, Box<dyn std::error::Error>
     let root: RootScene = serde_json::from_reader(reader)?;
     Ok(root) 
 
-    // TODO: instead of parsing in one-shot, pcould you load different 
-    // components like ligths, materials, objects?
+
 }
 
 

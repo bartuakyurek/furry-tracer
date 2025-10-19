@@ -14,7 +14,7 @@ use crate::numeric::{Int, Float, Vector3, approx_zero};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Cameras {
     #[serde(rename = "Camera")]
     camera: SingleOrVec<Camera>, // Allow either single cam (as in test.json) or multiple cams
@@ -27,7 +27,7 @@ impl Cameras {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Camera {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     id: Int,
@@ -105,9 +105,13 @@ impl Camera {
         debug_assert!(approx_zero(self.v.dot(self.w))); 
         debug_assert!(approx_zero(self.v.dot(self.u))); 
     }
+
+    pub fn get_resolution(&self) -> (usize, usize) {
+        (self.image_resolution[0], self.image_resolution[1])
+    }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub(crate) struct NearPlane {
     #[serde(deserialize_with = "deser_float")]
     pub(crate) left: Float,
