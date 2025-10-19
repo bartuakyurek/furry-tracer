@@ -27,7 +27,7 @@ pub struct RootScene {
 }
 
 #[derive(Debug, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "PascalCase")]
 #[serde(default)]
 pub struct Scene {
     #[serde(deserialize_with = "deser_int")]
@@ -56,7 +56,7 @@ impl Scene {
 
 
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "PascalCase")]
 pub struct SceneLights {
     #[serde(rename = "AmbientLight", deserialize_with = "deser_vec3")]
     pub ambient_light: Vector3,
