@@ -6,8 +6,11 @@
     @author: bartu
 */
 
-
+use void::Void;
+use std::str::FromStr;
 use serde::{Deserialize};
+
+use crate::dataforms::DataField;
 use crate::numeric::{Int, Float, Vector3, Index};
 use crate::json_parser::*;
 
@@ -21,6 +24,23 @@ pub trait Intersectable {
     fn intersects_with(ray: Ray) -> bool;
 }
 
+
+pub type VertexData = DataField<Vector3>; // use CoordLike in geometry_processing.rs?
+
+// DISCLAIMER: This function is taken from
+// https://serde.rs/string-or-struct.html
+impl FromStr for VertexData {
+    // This implementation of `from_str` can never fail, so use the impossible
+    // `Void` type as the error type.
+    type Err = Void;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(DataField::<Vector3>{
+            _data: parse_string_vecvec3(s).unwrap(),
+            _type: String::from("xyz"), // Default for VertexData (Note: it would be different from other DataFields)
+        })
+    }
+}
 
 // Raw data deserialized from .JSON file
 // it assumes vertex indices start from 1

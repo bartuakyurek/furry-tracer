@@ -31,13 +31,14 @@
 
 use serde_json;
 use serde::{Deserialize};
-
+use crate::json_parser::{deser_string_or_struct};
 use crate::material::{Material, DiffuseMaterial, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3, Index};
 use crate::shapes::{TriangleSerde, Sphere, Plane};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec, DataField};
+use crate::shapes::{VertexData};
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
@@ -61,10 +62,12 @@ pub struct Scene {
     #[serde(deserialize_with = "deser_float")]
     intersection_test_epsilon: Float,
 
+    #[serde(deserialize_with = "deser_string_or_struct")]
+    pub vertex_data: VertexData, 
+
     pub cameras: Cameras,
     pub lights: SceneLights,
     pub materials: SceneMaterials,
-    pub vertex_data: DataField<Vector3>, 
     pub objects: SceneObjects,
 }
 
@@ -113,23 +116,19 @@ pub struct SceneMaterials {
     pub raw_materials: SingleOrVec<serde_json::Value>, // keep json value as-is for postprocessing
 }
 
-impl SceneMaterials {
-    
-}
+//impl SceneMaterials {
+//    pub fn all() -> Vec<dyn Material> {
+//
+//    }
+//}
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(default)] // If any of the fields below is missing in the JSON, use default (empty vector, hopefully)
+#[serde(rename_all = "PascalCase")]
 pub struct SceneObjects {
-    #[serde(rename = "Triangle")]
     pub triangles: SingleOrVec<TriangleSerde>,
-
-    #[serde(rename = "Sphere")]
     pub spheres: SingleOrVec<Sphere>,
-
-    #[serde(rename = "Plane")]
     pub planes: SingleOrVec<Plane>,
-
-    #[serde(rename = "Mesh")]
     pub meshes: SingleOrVec<Mesh>,
 }
 

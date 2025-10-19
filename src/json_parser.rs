@@ -22,14 +22,18 @@
     @author: bartu 
 */
 
-use std::fmt;
+use std::fmt::{self, Error};
 use std::marker::PhantomData;
 use std::str::FromStr;
 use std::fs::File;
 use std::io::BufReader;
-use serde::Deserialize;
-use serde::de::{self, Visitor, SeqAccess, Deserializer};
+use std::collections::BTreeMap as Map;
+
+use void::Void;
+use serde::{Deserialize, Deserializer};
+use serde::de::{self, Visitor, SeqAccess, MapAccess};
 use tracing::{debug, warn};
+
 use crate::scene::{RootScene};
 use crate::camera::{NearPlane};
 use crate::numeric::{Int, Float, Vector3};
@@ -294,7 +298,7 @@ where
     D: Deserializer<'de>,
 {
     // Deserialize a vector of Vector3
-    // given either string of "X Y Z" or 
+    // given either a single string of "X Y Z" or 
     // array of strings ["X1 Y1 Z1", "X2 Y2 Z2", ...]
     struct VecVec3Visitor;
 
@@ -350,18 +354,75 @@ where
     D: serde::Deserializer<'de>,
 {
     let s: String = Deserialize::deserialize(deserializer)?;
-    let nums: Vec<Float> = s
+    parse_string_vecvec3(&s).map_err(serde::de::Error::custom)
+}
+
+
+pub fn parse_string_vecvec3(s: &str) -> Result<Vec<Vector3>, String> {
+    parse_string_vec(s, 3, |chunk| Ok(Vector3::new(chunk[0], chunk[1], chunk[2])))
+}
+
+fn parse_string_vec<T, F>(s: &str, chunk_len: usize, mut f: F) -> Result<Vec<T>, String>
+where
+    F: FnMut(&[f64]) -> Result<T, String>,
+{
+    let nums: Vec<f64> = s
         .split_whitespace()
-        .map(|x| x.parse::<Float>().map_err(serde::de::Error::custom))
-        .collect::<Result<Vec<_>, _>>()?;
+        .map(|x| x.parse::<f64>().map_err(|e| e.to_string()))
+        .collect::<Result<_, _>>()?;
 
-    if nums.len() % 3 != 0 {
-        return Err(serde::de::Error::custom("VertexData must have multiples of 3 floats"));
+    if nums.len() % chunk_len != 0 {
+        return Err(format!("Input length not divisible by {}", chunk_len));
     }
 
-    let mut vertices = Vec::with_capacity(nums.len() / 3);
-    for chunk in nums.chunks(3) {
-        vertices.push(Vector3::new(chunk[0], chunk[1], chunk[2]));
+    nums.chunks(chunk_len)
+        .map(|chunk| f(chunk))
+        .collect::<Result<Vec<_>, _>>()
+}
+
+
+// DISCLAIMER: This function is taken from
+// https://serde.rs/string-or-struct.html
+pub fn deser_string_or_struct<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+where
+    T: Deserialize<'de> + FromStr<Err = Void>,
+    D: Deserializer<'de>,
+{
+    // This is a Visitor that forwards string types to T's `FromStr` impl and
+    // forwards map types to T's `Deserialize` impl. The `PhantomData` is to
+    // keep the compiler from complaining about T being an unused generic type
+    // parameter. We need T in order to know the Value type for the Visitor
+    // impl.
+    struct StringOrStruct<T>(PhantomData<fn() -> T>);
+
+    impl<'de, T> Visitor<'de> for StringOrStruct<T>
+    where
+        T: Deserialize<'de> + FromStr<Err = Void>,
+    {
+        type Value = T;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("string or map")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<T, E>
+        where
+            E: de::Error,
+        {
+            Ok(FromStr::from_str(value).unwrap())
+        }
+
+        fn visit_map<M>(self, map: M) -> Result<T, M::Error>
+        where
+            M: MapAccess<'de>,
+        {
+            // `MapAccessDeserializer` is a wrapper that turns a `MapAccess`
+            // into a `Deserializer`, allowing it to be used as the input to T's
+            // `Deserialize` implementation. T then deserializes itself using
+            // the entries from the map visitor.
+            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
+        }
     }
-    Ok(vertices)
+
+    deserializer.deserialize_any(StringOrStruct(PhantomData))
 }
