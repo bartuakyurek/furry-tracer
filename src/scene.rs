@@ -95,6 +95,7 @@ pub struct PointLight {
 
 
 #[derive(Debug, Deserialize, Default)]
+#[serde(default)]
 pub struct SceneMaterials {
     #[serde(rename = "Material")]
     pub raw_materials: SingleOrVec<serde_json::Value>, // keep json value as-is for postprocessing
@@ -105,6 +106,7 @@ impl SceneMaterials {
 }
 
 #[derive(Debug, Deserialize, Default)]
+#[serde(default)] // If any of the fields below is missing in the JSON, use default (empty vector, hopefully)
 pub struct SceneObjects {
     #[serde(rename = "Triangle")]
     pub triangles: SingleOrVec<TriangleSerde>,

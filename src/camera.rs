@@ -6,10 +6,9 @@
     @author: bartu
 */
 
-
-use bevy_math::NormedVectorSpace;
+use smart_default::SmartDefault;
 use serde::{Deserialize};
-use tracing::{info, debug, error, warn};
+use tracing::{info, debug};
 use crate::numeric::{Int, Float, Vector3, approx_zero};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec};
@@ -27,7 +26,9 @@ impl Cameras {
     }
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone)]
+#[derive(SmartDefault)]
+#[serde(default)]
 pub struct Camera {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
     id: Int,
@@ -53,6 +54,7 @@ pub struct Camera {
     #[serde(rename = "ImageName")]
     pub image_name: String,
 
+    #[default = 1]
     #[serde(rename = "NumSamples", deserialize_with = "deser_int")]
     pub num_samples: Int,
 
