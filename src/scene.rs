@@ -27,34 +27,26 @@ pub struct RootScene {
 }
 
 #[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 #[serde(default)]
 pub struct Scene {
-    #[serde(rename = "MaxRecursionDepth", deserialize_with = "deser_int")]
+    #[serde(deserialize_with = "deser_int")]
     max_recursion_depth: Int,
 
-    #[serde(rename = "BackgroundColor", deserialize_with = "deser_vec3")]
+    #[serde(deserialize_with = "deser_vec3")]
     background_color: Vector3,
 
-    #[serde(rename = "ShadowRayEpsilon", deserialize_with = "deser_float")]
+    #[serde(deserialize_with = "deser_float")]
     shadow_ray_epsilon: Float,
 
-    #[serde(rename = "IntersectionTestEpsilon", deserialize_with = "deser_float")]
+    #[serde(deserialize_with = "deser_float")]
     intersection_test_epsilon: Float,
 
-    #[serde(rename = "Cameras")]
     pub cameras: Cameras,
-
-    #[serde(rename = "Lights")]
-    lights: SceneLights,
-
-    #[serde(rename = "Materials")]
-    materials: SceneMaterials,
-
-    #[serde(rename = "VertexData")]
-    vertex_data: DataField<Vector3>, 
-    
-    #[serde(rename = "Objects")]
-    objects: SceneObjects,
+    pub lights: SceneLights,
+    pub materials: SceneMaterials,
+    pub vertex_data: DataField<Vector3>, 
+    pub objects: SceneObjects,
 }
 
 impl Scene {
@@ -64,6 +56,7 @@ impl Scene {
 
 
 #[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct SceneLights {
     #[serde(rename = "AmbientLight", deserialize_with = "deser_vec3")]
     pub ambient_light: Vector3,
