@@ -96,7 +96,7 @@ impl ImageData {
         path.extension().unwrap().to_str().unwrap() == extension
     }
 
-    pub fn get_fullpath(&self, path: &str) -> PathBuf {
+    pub fn get_png_fullpath(&self, path: &str) -> PathBuf {
         // Check if provided path is a folder 
         // if so, create a .png under this folder
         // otherwise use the provided path as is
@@ -108,8 +108,9 @@ impl ImageData {
                 // create <imagename>.png under this directory 
                 finalpath = path.join(self.name.clone());
             } 
+            debug!("Final path before set_extension( ): {}", finalpath.to_str().to_owned().unwrap());
             if finalpath.set_extension(extension) {
-                warn!("Extension changed to .{}", extension);
+                warn!("Extension changed to .{}", extension); // TODO: This unnecessarily updates the extension to .png even if it already has .png extension
             }
             finalpath
         }
@@ -126,7 +127,7 @@ impl ImageData {
         // extension it will be silently converted to .png
         //
         // DISCLAIMER: This function is based on https://docs.rs/png/0.18.0/png/
-        let path: PathBuf = self.get_fullpath(path);
+        let path: PathBuf = self.get_png_fullpath(path);
 
         let file = File::create(path).unwrap();
         let ref mut w = BufWriter::new(file);
