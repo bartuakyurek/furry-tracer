@@ -1,6 +1,8 @@
 /*
 
     Aggregate geometry utilities on Shapes
+    and cache them in a struct. WARNING: None
+    of the structs are actually used at the moment.
     
     @date: 9 Oct, 2025
     @author: bartu
