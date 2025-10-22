@@ -16,7 +16,7 @@ pub struct Ray {
 }
 
 impl Ray {
-    // functioın at( )
+    // function at( )
 }
 
 

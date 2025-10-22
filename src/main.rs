@@ -11,6 +11,7 @@ use std::{self, env};
 use tracing::{info, warn, error};
 use tracing_subscriber;
 
+mod image;
 mod scene;
 mod camera;
 mod shapes;
