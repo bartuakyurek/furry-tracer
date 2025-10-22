@@ -40,7 +40,7 @@ use crate::shapes::{TriangleSerde, Sphere, Plane};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec, DataField};
-use crate::shapes::{VertexData};
+use crate::dataforms::{VertexData};
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {

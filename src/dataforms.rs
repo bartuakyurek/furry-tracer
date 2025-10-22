@@ -7,9 +7,12 @@
     @author: Bartu
 */
 
+
+use void::Void;
+use std::str::FromStr;
 use serde::{Deserialize, de::{Deserializer}};
 use crate::numeric::{Vector3, Index};
-use crate::json_parser::{deser_vertex_data, deser_usize_vec};
+use crate::json_parser::{deser_vertex_data, deser_usize_vec, parse_string_vecvec3};
 
 // To be used for VertexData and Faces in JSON files
 #[derive(Debug, Clone, Default)]
@@ -85,5 +88,21 @@ impl<T: Clone> SingleOrVec<T>  {
 impl<T: Default> Default for SingleOrVec<T> {
     fn default() -> Self {
         SingleOrVec::Empty
+    }
+}
+
+
+
+pub type VertexData = DataField<Vector3>; // use CoordLike in geometry_processing.rs?
+
+// DISCLAIMER: This function is taken from
+// https://serde.rs/string-or-struct.html
+impl FromStr for VertexData {
+    type Err = Void;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(DataField::<Vector3>{
+            _data: parse_string_vecvec3(s).unwrap(),
+            _type: String::from("xyz"), // Default for VertexData (Note: it would be different from other DataFields)
+        })
     }
 }
