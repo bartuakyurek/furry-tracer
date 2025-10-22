@@ -76,7 +76,7 @@ where
             .ok_or_else(|| de::Error::custom("Invalid integer")),
         serde_json::Value::String(s) => s.parse::<usize>()
             .map_err(|_| de::Error::custom("Failed to parse integer from string")),
-        _ => Err(de::Error::custom("Expected int or string")),
+        t => Err(de::Error::custom(format!("Expected int or string, found {:#?}", t))),
     }
 }
 
@@ -94,7 +94,7 @@ where
             .ok_or_else(|| de::Error::custom("Invalid integer")),
         serde_json::Value::String(s) => s.parse::<Int>()
             .map_err(|_| de::Error::custom("Failed to parse integer from string")),
-        _ => Err(de::Error::custom("Expected int or string")),
+        t => Err(de::Error::custom(format!("Expected int or string, found {t}"))),
     }
 }
 
@@ -113,7 +113,7 @@ where
             .ok_or_else(|| de::Error::custom("Invalid float")),
         serde_json::Value::String(s) => s.parse::<Float>()
             .map_err(|_| de::Error::custom("Failed to parse float from string")),
-        _ => Err(de::Error::custom("Expected float or string")),
+        t => Err(de::Error::custom(format!("Expected float or string, found {t}"))),
     }
 }
 

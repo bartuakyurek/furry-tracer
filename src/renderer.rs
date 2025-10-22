@@ -14,7 +14,7 @@
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::BufWriter;
-use tracing::{debug, warn};
+use tracing::{debug, warn, info};
 
 use crate::scene::{Scene};
 use crate::numeric::{Vector3, Float, Index};
@@ -30,27 +30,6 @@ pub struct ImageData {
                   // is it wise to copy those into ImageData? I thought it is more organized this way.
 }
 
-//pub fn pixel_centers(width: usize, height: usize, scale: Float, offset: Vector3) -> Vec<Vector3>{
-//    // Given width and height of 
-//    // Returns 3d locations of each pixel's center point
-//    // set offset to Vector3::ZERO if image is centered to camera (as assumed in this course)
-//    // TODO: fill here.... 
-//    {
-//
-//         let width: Float = width as Float * scale;
-//         let height: Float = height as Float * scale;
-//         let half_pixel = scale / 2.0;
-//         
-//         for y in 0..height {
-//                for x in 0..width {
-//                    let px = x + half_pixel + offset[0];
-//                    let py = y + half_pixel + offset[1];
-//                    let pz = 0.0 as Float; // TODO: What if image plane is rotated? I don't think this is the right way to do it
-//                    Vector3::new(px, py, pz); 
-//                }
-//            }
-//    }
-//}
 
 impl ImageData {
 
@@ -107,7 +86,7 @@ impl ImageData {
                 // create <imagename>.png under this directory 
                 finalpath = path.join(self.name.clone());
             } 
-            debug!("Final path before set_extension( ): {}", finalpath.to_str().unwrap_or("<invalid UTF-8 path>"));
+            
             if !self.check_extension(&finalpath, extension){
                 finalpath.set_extension(extension);
                 warn!(">> Extension changed to .{}, final path is {}", extension, finalpath.to_str().unwrap_or("<invalid UTF-8 path>")); 
@@ -135,16 +114,7 @@ impl ImageData {
     
         encoder.set_color(png::ColorType::Rgb);
         encoder.set_depth(png::BitDepth::Eight);
-
-        //encoder.set_source_gamma(png::ScaledFloat::from_scaled(45455)); // 1.0 / 2.2, scaled by 100000
-        //encoder.set_source_gamma(png::ScaledFloat::new(1.0 / 2.2));     // 1.0 / 2.2, unscaled, but rounded
-        //let source_chromaticities = png::SourceChromaticities::new(     // Using unscaled instantiation here
-        //    (0.31270, 0.32900),
-        //    (0.64000, 0.33000),
-        //    (0.30000, 0.60000),
-        //    (0.15000, 0.06000)
-        //);
-        //encoder.set_source_chromaticities(source_chromaticities);
+        // TODO / WARNING: You may need to set gamma as in this link https://docs.rs/png/0.18.0/png/
         let mut writer = encoder.write_header().unwrap();
 
         let data = self.to_rgb();
@@ -155,20 +125,44 @@ impl ImageData {
 }
 
 
+pub fn get_pixel_centers(width: usize, height: usize, near_plane_corners: &[Vector3; 4]) -> Vec<Vector3> {
+    // Assuming nearplane corners are:
+    // [0]=top-left, [1]=top-right, [2]=bottom-left, [3]=bottom-right
+    let mut pixel_centers = Vec::with_capacity(width * height);
+    
+    for row in 0..height {
+        for col in 0..width {
+            let u = (col as Float + 0.5) / width as Float; // pixel width
+            let v = (row as Float + 0.5) / height as Float; // pixel height
+            
+            let top = near_plane_corners[0] * (1.0 - u) + near_plane_corners[1] * u;
+            let bottom = near_plane_corners[2] * (1.0 - u) + near_plane_corners[3] * u;
+            let center = top * (1.0 - v) + bottom * v;
+            
+            pixel_centers.push(center);
+        }
+    }
+    
+    pixel_centers
+}
+
+
 pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
 {
     let mut images: Vec<ImageData> = Vec::new();
     for mut cam in scene.cameras.all() {
         cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
-        debug!("{:?}", cam);
+        debug!("{:#?}", cam);
+        debug!("Nearplane corners are {:#?}", &cam.get_nearplane_corners());
 
         let (width, height) = cam.get_resolution();
         warn!("Use Camera.ImageResolution for width and Height.");
 
-        let pixel_colors = vec![Vector3::ZERO; width * height]; // Colors range [0, 255], not [0, 1]
-        let pixel_centers = vec![Vector3::ZERO; width * height];
+        let pixel_centers = get_pixel_centers(width, height, &cam.get_nearplane_corners()); // Adjust based on actual field name
+        
         // TODO: get colors
-
+        let pixel_colors = vec![Vector3::ZERO; width * height]; // Colors range [0, 255], not [0, 1]
+        
         let im = ImageData { pixel_colors, pixel_centers, width, height, name: cam.image_name };
         
         images.push(im);

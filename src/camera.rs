@@ -43,7 +43,7 @@ pub struct Camera {
     up: Vector3,
 
     #[serde(rename = "NearPlane", deserialize_with = "deser_nearplane")]
-    nearplane: NearPlane,
+    pub nearplane: NearPlane,
 
     #[serde(rename = "NearDistance", deserialize_with = "deser_float")]
     near_distance: Float,
@@ -111,6 +111,10 @@ impl Camera {
     pub fn get_resolution(&self) -> (usize, usize) {
         (self.image_resolution[0], self.image_resolution[1])
     }
+
+    pub fn get_nearplane_corners(&self) -> [Vector3; 4] {
+        self.nearplane.corners(self.position, self.u, self.v, self.w, self.near_distance)
+    }
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -133,6 +137,27 @@ impl NearPlane {
             bottom,
             top,
         }
+    }
+
+    /// Returns the four corners in world space using camera basis vectors
+    /// Order: [top-left, top-right, bottom-left, bottom-right]
+    pub fn corners(
+        &self,
+        camera_position: Vector3,
+        u: Vector3,  // camera's right vector
+        v: Vector3,  // camera's up vector
+        w: Vector3,  // camera's backward vector (-gaze)
+        near_distance: Float
+    ) -> [Vector3; 4] {
+        // Center of near plane in world space
+        let plane_center = camera_position - w * near_distance; // subtract because w points backward
+        
+        [
+            plane_center + u * self.left + v * self.top,      // top-left
+            plane_center + u * self.right + v * self.top,     // top-right
+            plane_center + u * self.left + v * self.bottom,   // bottom-left
+            plane_center + u * self.right + v * self.bottom,  // bottom-right
+        ]
     }
 }
 

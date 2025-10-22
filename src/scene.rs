@@ -29,9 +29,9 @@
     @author: Bartu
 */
 
-use serde_json;
+use serde_json::{self, Value};
 use serde::{Deserialize};
-use tracing::{warn, error};
+use tracing::{warn, error, debug, info};
 
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{BoxedMaterial, DiffuseMaterial, Material, MirrorMaterial};
@@ -76,6 +76,15 @@ pub struct Scene {
 impl Scene {
     //pub fn new() {
     //}
+
+    pub fn setup(&mut self) {
+
+        // Convert materials serde_json values to actual structs
+        self.materials.finalize();
+        for m in &self.materials.materials {
+            debug!("Material: {:#?}", m);
+        }
+    }
 }
 
 
@@ -115,7 +124,7 @@ pub struct PointLight {
 #[serde(default)]
 pub struct SceneMaterials {
     #[serde(rename = "Material")]
-    raw_materials: SingleOrVec<serde_json::Value>, // keep json value as-is for postprocessing
+    raw_materials: SingleOrVec<serde_json::Value>, // Parse the json value later separately
 
     #[serde(skip)]
     materials: Vec<BoxedMaterial>,
@@ -123,12 +132,11 @@ pub struct SceneMaterials {
 
 impl SceneMaterials {
     pub fn finalize(&mut self) {
-        self.materials = self
-            .raw_materials
-            .all()
-            .into_iter()
-            .map(parse_material)
-            .collect();
+        self.materials = self.raw_materials
+                        .all()
+                        .into_iter()
+                        .flat_map(parse_material)
+                        .collect();
     }
 
     pub fn all(&mut self) -> &Vec<BoxedMaterial> {
@@ -171,20 +179,32 @@ pub struct Mesh {
 }
 
 
+fn parse_single_material(value: serde_json::Value) -> BoxedMaterial {
+    
+    debug!("Parsing material JSON: {:#?}", value);
 
+    // Check _type field
+    let mat_type = value.get("_type").and_then(|v| v.as_str()).unwrap_or("diffuse");
 
-// TODO: This is the responsibility of json parser 
-fn parse_material(value: serde_json::Value) -> BoxedMaterial {
-    if let Some(t) = value.get("_type") {
-        match t.as_str().unwrap() {
-            "diffuse" => Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap()),
-            "mirror" => Box::new(serde_json::from_value::<MirrorMaterial>(value).unwrap()),
-            _ => {
-                error!("Unknown material type with _id = {} encountered! Material reverted to Diffuse.", t.as_str().unwrap());
-                Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
-             } 
+    match mat_type {
+        "diffuse" => Box::new(DiffuseMaterial::new_from(&value)),
+        //"mirror" => Box::new(MirrorMaterial::new_from(value)),
+        // TODO: add more materials here
+
+        other => {
+            error!("Unknown material type '{other}', defaulting to DiffuseMaterial");
+            Box::new(DiffuseMaterial::new_from(&value))
         }
-    } else {
-        Box::new(serde_json::from_value::<DiffuseMaterial>(value).unwrap())
+    }
+}
+
+fn parse_material(value: serde_json::Value) -> Vec<BoxedMaterial> {
+    match value {
+        Value::Array(arr) => arr.into_iter().map(parse_single_material).collect(),
+        Value::Object(_) => vec![parse_single_material(value)],
+        _ => {
+            error!("Invalid material JSON, expected object or array: {value:?}");
+            vec![]
+        }
     }
 }
