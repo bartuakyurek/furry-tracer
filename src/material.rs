@@ -21,18 +21,18 @@ pub trait Material : std::fmt::Debug + Send + Sync  {
 
     // TODO: Why below code is not dyn compatible? 
     // I wanted to reduce duplicate new_from code from Materials 
-    //fn new_from(value: &serde_json::Value) -> Self 
-    //where
-    //    Self: Sized + serde::de::DeserializeOwned,
-    //{
-    //    match serde_json::from_value::<Self>(value.clone()) {
-    //        Ok(m) => m,
-    //        Err(e) => {
-    //            error!("Failed to parse DiffuseMaterial: {e}. JSON: {value}");
-    //            Self::default()
-    //        }
-    //    }
-    //}
+    fn new_from(value: &serde_json::Value) -> Self 
+    where
+        Self: Sized + serde::de::DeserializeOwned + Default,
+    {
+        match serde_json::from_value::<Self>(value.clone()) {
+            Ok(m) => m,
+            Err(e) => {
+                error!("Failed to parse DiffuseMaterial: {e}. JSON: {value}");
+                Self::default()
+            }
+        }
+    }
 }
 
 pub type BoxedMaterial = Box<dyn Material>;
@@ -50,18 +50,6 @@ pub struct DiffuseMaterial {
     pub specular_rf: Vector3,
     #[serde(rename = "PhongExponent", deserialize_with = "deser_float")]
     pub phong_exponent: Float,
-}
-
-impl DiffuseMaterial {
-    pub fn new_from(value: &serde_json::Value) -> Self {
-        match serde_json::from_value::<DiffuseMaterial>(value.clone()) {
-            Ok(m) => m,
-            Err(e) => {
-                error!("Failed to parse DiffuseMaterial: {e}. JSON: {value}");
-                DiffuseMaterial::default()
-            }
-        }
-    }
 }
 
 
@@ -104,17 +92,6 @@ pub struct MirrorMaterial {
 }
 
 
-impl MirrorMaterial {
-    pub fn new_from(value: &serde_json::Value) -> Self {
-        match serde_json::from_value::<Self>(value.clone()) {
-            Ok(m) => m,
-            Err(e) => {
-                error!("Failed to parse DiffuseMaterial: {e}. JSON: {value}");
-                Self::default()
-            }
-        }
-    }
-}
 
 
 impl Default for MirrorMaterial {
