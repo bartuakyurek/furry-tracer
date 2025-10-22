@@ -91,7 +91,7 @@ impl ImageData {
         rgb_vec
     } 
 
-    pub fn check_extension(self, path: &PathBuf, extension: &str) -> bool {
+    pub fn check_extension(&self, path: &PathBuf, extension: &str) -> bool {
         path.extension().unwrap().to_str().unwrap() == extension
     }
 
@@ -107,9 +107,10 @@ impl ImageData {
                 // create <imagename>.png under this directory 
                 finalpath = path.join(self.name.clone());
             } 
-            debug!("Final path before set_extension( ): {}", finalpath.to_str().to_owned().unwrap());
-            if finalpath.set_extension(extension) {
-                warn!("Extension changed to .{}", extension); // TODO: This unnecessarily updates the extension to .png even if it already has .png extension
+            debug!("Final path before set_extension( ): {}", finalpath.to_str().unwrap_or("<invalid UTF-8 path>"));
+            if !self.check_extension(&finalpath, extension){
+                finalpath.set_extension(extension);
+                warn!(">> Extension changed to .{}, final path is {}", extension, finalpath.to_str().unwrap_or("<invalid UTF-8 path>")); 
             }
             finalpath
         }
@@ -175,3 +176,4 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
     
     Ok(images)
 }
+
