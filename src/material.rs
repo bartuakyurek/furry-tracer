@@ -5,22 +5,14 @@ use serde::Deserialize;
 use crate::json_parser::*;
 use crate::numeric::{Float, Int, Index, Vector3};
 
-// pub enum MaterialEnum {
-//     Diffuse,
-//     MirrorLike,// 
-// }
-
-// impl MaterialEnum {
-//     fn radiance(&self) {
-//         // TODO: Match self and return radiance 
-//     }// 
-// }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// 
+/// MATERIAL TRAIT
+/// 
+/// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 pub trait Material : std::fmt::Debug + Send + Sync  {
-    // todo: fn radiance() 
+    // TODO: fn radiance() 
 
-    // TODO: Why below code is not dyn compatible? 
-    // I wanted to reduce duplicate new_from code from Materials 
     fn new_from(value: &serde_json::Value) -> Self 
     where
         Self: Sized + serde::de::DeserializeOwned + Default,
@@ -37,6 +29,11 @@ pub trait Material : std::fmt::Debug + Send + Sync  {
 
 pub type BoxedMaterial = Box<dyn Material>;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// 
+/// DIFFUSE
+/// 
+/// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct DiffuseMaterial {
@@ -70,10 +67,11 @@ impl Material for DiffuseMaterial{
 
 }
 
-///////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// 
+/// MIRROR
 /// 
-/// ///////////////////////////////////////////////////////////////
+/// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct MirrorMaterial {
@@ -90,9 +88,6 @@ pub struct MirrorMaterial {
     #[serde(rename = "PhongExponent", deserialize_with = "deser_float")]
     pub phong_exponent: Float,
 }
-
-
-
 
 impl Default for MirrorMaterial {
     fn default() -> Self {
