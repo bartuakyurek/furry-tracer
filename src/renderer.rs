@@ -20,11 +20,12 @@ use crate::scene::{Scene};
 use crate::numeric::{Vector3, Float, Index};
 #[derive(Clone)]
 pub struct ImageData {
+    // WARNING: Currently width and height is assumed to represent number of pixels,
+    // not accepting a measure like centimeters, that'd require DPI as well
     pixel_colors : Vec<Vector3>, // Vector of RGB per pixel
     pixel_centers: Vec<Vector3>,
-    width : usize,
+    width : usize, 
     height: usize,
-    scale: Float,   
     name: String, // TODO: width, height, name info actually is stored under camera as well
                   // is it wise to copy those into ImageData? I thought it is more organized this way.
 }
@@ -56,13 +57,12 @@ impl ImageData {
     pub fn new(resolution: [usize; 2], name: String, background: Vector3) -> Self {
         // Create a new image of specified background color
         // Set background to Vector3::ZERO for black background
-        let scale: Float = 1.0;
         let (width, height) = (resolution[0], resolution[1]);
         let pixel_colors = vec![background; width * height];
-        Self::new_from(width, height, scale, name, pixel_colors)
+        Self::new_from(width, height, name, pixel_colors)
     }
 
-    pub fn new_from(width: usize, height: usize, scale: Float, name: String, pixel_colors: Vec<Vector3>) -> Self {
+    pub fn new_from(width: usize, height: usize, name: String, pixel_colors: Vec<Vector3>) -> Self {
         
         //let pixel_centers = pixel_centers(width, height, scale, Vector3::ZERO);
         let pixel_centers = vec![Vector3::ZERO; width*height];
@@ -71,7 +71,6 @@ impl ImageData {
             pixel_centers,
             width,
             height,
-            scale,
             name,
         }
     }
@@ -136,15 +135,15 @@ impl ImageData {
         encoder.set_color(png::ColorType::Rgb);
         encoder.set_depth(png::BitDepth::Eight);
 
-        encoder.set_source_gamma(png::ScaledFloat::from_scaled(45455)); // 1.0 / 2.2, scaled by 100000
-        encoder.set_source_gamma(png::ScaledFloat::new(1.0 / 2.2));     // 1.0 / 2.2, unscaled, but rounded
-        let source_chromaticities = png::SourceChromaticities::new(     // Using unscaled instantiation here
-            (0.31270, 0.32900),
-            (0.64000, 0.33000),
-            (0.30000, 0.60000),
-            (0.15000, 0.06000)
-        );
-        encoder.set_source_chromaticities(source_chromaticities);
+        //encoder.set_source_gamma(png::ScaledFloat::from_scaled(45455)); // 1.0 / 2.2, scaled by 100000
+        //encoder.set_source_gamma(png::ScaledFloat::new(1.0 / 2.2));     // 1.0 / 2.2, unscaled, but rounded
+        //let source_chromaticities = png::SourceChromaticities::new(     // Using unscaled instantiation here
+        //    (0.31270, 0.32900),
+        //    (0.64000, 0.33000),
+        //    (0.30000, 0.60000),
+        //    (0.15000, 0.06000)
+        //);
+        //encoder.set_source_chromaticities(source_chromaticities);
         let mut writer = encoder.write_header().unwrap();
 
         let data = self.to_rgb();
@@ -162,15 +161,14 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
         debug!("{:?}", cam);
 
-        // TODO: Return Vec<ImageData>
         let (width, height) = cam.get_resolution();
         warn!("Use Camera.ImageResolution for width and Height.");
 
-        let pixel_colors = vec![Vector3::ZERO; width * height];
+        let pixel_colors = vec![Vector3::ZERO; width * height]; // Colors range [0, 255], not [0, 1]
         let pixel_centers = vec![Vector3::ZERO; width * height];
+        // TODO: get colors
 
-        let scale = 1.0 as Float;
-        let im = ImageData { pixel_colors, pixel_centers, width, height, scale, name: cam.image_name };
+        let im = ImageData { pixel_colors, pixel_centers, width, height, name: cam.image_name };
         
         images.push(im);
     }
