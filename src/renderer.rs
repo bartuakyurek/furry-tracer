@@ -23,7 +23,6 @@ pub struct ImageData {
     // WARNING: Currently width and height is assumed to represent number of pixels,
     // not accepting a measure like centimeters, that'd require DPI as well
     pixel_colors : Vec<Vector3>, // Vector of RGB per pixel
-    pixel_centers: Vec<Vector3>,
     width : usize, 
     height: usize,
     name: String, // TODO: width, height, name info actually is stored under camera as well
@@ -42,12 +41,8 @@ impl ImageData {
     }
 
     pub fn new_from(width: usize, height: usize, name: String, pixel_colors: Vec<Vector3>) -> Self {
-        
-        //let pixel_centers = pixel_centers(width, height, scale, Vector3::ZERO);
-        let pixel_centers = vec![Vector3::ZERO; width*height];
         ImageData {
             pixel_colors,
-            pixel_centers,
             width,
             height,
             name,
@@ -163,8 +158,7 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         // TODO: get colors
         let pixel_colors = vec![Vector3::ZERO; width * height]; // Colors range [0, 255], not [0, 1]
         
-        let im = ImageData { pixel_colors, pixel_centers, width, height, name: cam.image_name };
-        
+        let im = ImageData { pixel_colors, width, height, name: cam.image_name };
         images.push(im);
     }
     
