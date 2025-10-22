@@ -35,11 +35,11 @@ use tracing::{warn, error, debug};
 
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{BoxedMaterial, DiffuseMaterial, Material, MirrorMaterial};
-use crate::numeric::{Int, Float, Vector3, Index};
-use crate::shapes::{TriangleSerde, Sphere, Plane};
+use crate::numeric::{Int, Float, Vector3};
+use crate::shapes::{TriangleSerde, Sphere, Plane, Mesh};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
-use crate::dataforms::{SingleOrVec, DataField};
+use crate::dataforms::{SingleOrVec};
 use crate::dataforms::{VertexData};
 
 #[derive(Debug, Deserialize)]
@@ -84,6 +84,10 @@ impl Scene {
         for m in &self.materials.materials { // TODO: refactor that ambigious call materials.materials( )
             debug!("Material: {:#?}", m);
         }
+
+        // Fix VertexData if _type is not "xyz" 
+        let previous_type = self.vertex_data._type.clone();
+        if self.vertex_data.normalize_to_xyz() { warn!("VertexData _type is changed from '{}' to '{}'", previous_type, self.vertex_data._type); }
     }
 }
 
@@ -167,16 +171,6 @@ pub struct SceneObjects {
 //}
 
 
-#[derive(Debug, Deserialize, Clone, Default)]
-#[serde(default)]
-pub struct Mesh {
-    #[serde(rename = "_id", deserialize_with = "deser_usize")]
-    pub _id: Index,
-    #[serde(rename = "Material", deserialize_with = "deser_usize")]
-    material: Index,
-    #[serde(rename = "Faces")]
-    faces: DataField<Index>,
-}
 
 
 fn parse_single_material(value: serde_json::Value) -> BoxedMaterial {

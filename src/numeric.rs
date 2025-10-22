@@ -14,9 +14,7 @@
     @author: Bartu
 */
 
-use bevy_math::{DVec3, U8Vec3};
-
-pub type RGB = U8Vec3;  // For final RGB colors
+use bevy_math::{DVec3};
 pub type Int = i32;
 pub type Float = f64;
 pub type Vector3 = DVec3; // f64

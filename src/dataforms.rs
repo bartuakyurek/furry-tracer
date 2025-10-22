@@ -10,6 +10,7 @@
 
 use void::Void;
 use std::str::FromStr;
+use tracing::{warn};
 use serde::{Deserialize, de::{Deserializer}};
 use crate::numeric::{Vector3, Index};
 use crate::json_parser::{deser_vertex_data, deser_usize_vec, parse_string_vecvec3};
@@ -21,6 +22,7 @@ pub struct DataField<T> {
     pub(crate) _data: Vec<T>,
     pub(crate) _type: String,
 }
+
 
 impl<'de> Deserialize<'de> for DataField<Vector3> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -104,5 +106,45 @@ impl FromStr for VertexData {
             _data: parse_string_vecvec3(s).unwrap(),
             _type: String::from("xyz"), // Default for VertexData (Note: it would be different from other DataFields)
         })
+    }
+}
+
+impl VertexData{
+    pub fn normalize_to_xyz(&mut self) -> bool {
+        // If given vertex data has type other than xyz,
+        // (specifically a permutation of xyz) convert data 
+        // layout to xyz to be used in computations. Returns 
+        // false if no change is applied. 
+        if self._type == "xyz" {
+            return false; // already as expected
+        }
+
+        let mut new_data = Vec::with_capacity(self._data.len());
+
+        for chunk in self._data.chunks_exact(3) {
+            if chunk.len() < 3 {
+                warn!("DataField had incomplete triplet, skipping remainder");
+                break;
+            }
+
+            let (x, y, z) = match self._type.as_str() {
+                "xyz" => (chunk[0], chunk[1], chunk[2]),
+                "xzy" => (chunk[0], chunk[2], chunk[1]),
+                "yxz" => (chunk[1], chunk[0], chunk[2]),
+                "yzx" => (chunk[2], chunk[0], chunk[1]),
+                "zxy" => (chunk[1], chunk[2], chunk[0]),
+                "zyx" => (chunk[2], chunk[1], chunk[0]),
+                other => {
+                    warn!("Unknown vertex data type '{other}', assuming xyz");
+                    (chunk[0], chunk[1], chunk[2])
+                }
+            };
+
+            new_data.extend_from_slice(&[x, y, z]);
+        }
+
+        self._data = new_data;
+        self._type = "xyz".to_string();
+        return true;
     }
 }

@@ -32,6 +32,8 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         // TODO: get colors
         let pixel_colors = vec![Vector3::ZERO; width * height]; // Colors range [0, 255], not [0, 1]
         let pixel_centers = image::get_pixel_centers(width, height, &cam.get_nearplane_corners()); // Adjust based on actual field name
+        // Generate primary rays from camera center to pixel centers
+        // Recursive ray tracing here!
         // END OF TODO
         
         let im = ImageData::new_from_colors(cam.image_resolution, cam.image_name, pixel_colors);
