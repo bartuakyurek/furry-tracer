@@ -22,12 +22,11 @@
     @author: bartu 
 */
 
-use std::fmt::{self, Error};
+use std::fmt::{self};
 use std::marker::PhantomData;
 use std::str::FromStr;
 use std::fs::File;
 use std::io::BufReader;
-use std::collections::BTreeMap as Map;
 
 use void::Void;
 use serde::{Deserialize, Deserializer};

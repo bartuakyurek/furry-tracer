@@ -1,9 +1,21 @@
+/*
 
+    Declare Material trait, and store data related to
+    different types of materials. Currently supporting:
+        - Diffuse
+        - Mirror
+        - Conductor (TBI)
+        - Dielectric (TBI)
 
-use tracing::{warn, error};
+    @date: Oct, 2025
+    @author: Bartu
+
+*/
+
+use tracing::{error};
 use serde::Deserialize;
 use crate::json_parser::*;
-use crate::numeric::{Float, Int, Index, Vector3};
+use crate::numeric::{Float, Index, Vector3};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// 

@@ -14,10 +14,10 @@
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::BufWriter;
-use tracing::{debug, warn, info};
+use tracing::{debug, warn};
 
 use crate::scene::{Scene};
-use crate::numeric::{Vector3, Float, Index};
+use crate::numeric::{Vector3, Float};
 #[derive(Clone)]
 pub struct ImageData {
     // WARNING: Currently width and height is assumed to represent number of pixels,

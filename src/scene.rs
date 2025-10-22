@@ -31,7 +31,7 @@
 
 use serde_json::{self, Value};
 use serde::{Deserialize};
-use tracing::{warn, error, debug, info};
+use tracing::{warn, error, debug};
 
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{BoxedMaterial, DiffuseMaterial, Material, MirrorMaterial};
