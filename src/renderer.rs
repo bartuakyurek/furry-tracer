@@ -31,24 +31,6 @@ pub struct ImageData {
 
 
 impl ImageData {
-
-    pub fn new(resolution: [usize; 2], name: String, background: Vector3) -> Self {
-        // Create a new image of specified background color
-        // Set background to Vector3::ZERO for black background
-        let (width, height) = (resolution[0], resolution[1]);
-        let pixel_colors = vec![background; width * height];
-        Self::new_from(width, height, name, pixel_colors)
-    }
-
-    pub fn new_from(width: usize, height: usize, name: String, pixel_colors: Vec<Vector3>) -> Self {
-        ImageData {
-            pixel_colors,
-            width,
-            height,
-            name,
-        }
-    }
-
     pub fn flatten_color(self) -> Vec<Float> {
         // Return [R1, G1, B1, R2, G2, B2, ...] vector
         // where each triplet is RGB color of a pixel.
