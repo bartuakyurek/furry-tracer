@@ -81,7 +81,7 @@ impl Scene {
 
         // Convert materials serde_json values to actual structs
         self.materials.finalize();
-        for m in &self.materials.materials {
+        for m in &self.materials.materials { // TODO: refactor that ambigious call materials.materials( )
             debug!("Material: {:#?}", m);
         }
     }
@@ -188,7 +188,7 @@ fn parse_single_material(value: serde_json::Value) -> BoxedMaterial {
 
     match mat_type {
         "diffuse" => Box::new(DiffuseMaterial::new_from(&value)),
-        //"mirror" => Box::new(MirrorMaterial::new_from(value)),
+        "mirror" => Box::new(MirrorMaterial::new_from(&value)),
         // TODO: add more materials here
 
         other => {
