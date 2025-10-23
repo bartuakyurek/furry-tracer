@@ -25,7 +25,7 @@ impl Ray {
 
 
 pub trait Intersectable {
-    fn intersects_with(ray: &Ray) -> bool;
+    fn intersects_with(ray: &Ray) -> Option<HitRecord>;
 }
 
 
