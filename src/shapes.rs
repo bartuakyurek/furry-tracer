@@ -17,7 +17,16 @@ pub struct Ray {
 }
 
 impl Ray {
-    // function at( )
+    pub fn new(origin: Vector3, direction: Vector3) -> Self {
+        Self {
+            origin,
+            direction,
+        }
+    }
+
+    pub fn at(&self, t: Float) -> Vector3 {
+        self.origin + self.direction * t // r(t) = o + dt
+    }
 }
 
 
