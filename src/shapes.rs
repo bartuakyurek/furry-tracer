@@ -11,28 +11,6 @@ use crate::dataforms::{DataField};
 use crate::numeric::{Int, Float, Vector3, Index};
 use crate::json_parser::*;
 
-pub struct Ray {
-    origin: Vector3,
-    direction: Vector3,
-}
-
-impl Ray {
-    pub fn new(origin: Vector3, direction: Vector3) -> Self {
-        Self {
-            origin,
-            direction,
-        }
-    }
-
-    pub fn at(&self, t: Float) -> Vector3 {
-        self.origin + self.direction * t // r(t) = o + dt
-    }
-}
-
-
-pub trait Intersectable {
-    fn intersects_with(ray: &Ray) -> bool;
-}
 
 // Raw data deserialized from .JSON file
 // it assumes vertex indices start from 1

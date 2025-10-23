@@ -11,6 +11,7 @@ use std::{self, env};
 use tracing::{info, warn, error};
 use tracing_subscriber;
 
+mod ray;
 mod image;
 mod scene;
 mod camera;
@@ -18,9 +19,9 @@ mod shapes;
 mod numeric;
 mod material;
 mod renderer;
+mod geo_cache;
 mod dataforms;
 mod json_parser;
-mod geo_cache;
 use crate::{json_parser::parse_json795};
 
 
