@@ -110,6 +110,10 @@ impl FromStr for VertexData {
 }
 
 impl VertexData{
+    pub fn insert_dummy_at_the_beginning(&mut self) {
+        self._data.insert(0, Vector3::ZERO);
+    }
+
     pub fn normalize_to_xyz(&mut self) -> bool {
         // If given vertex data has type other than xyz,
         // (specifically a permutation of xyz) convert data 

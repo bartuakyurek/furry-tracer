@@ -54,7 +54,7 @@ fn main() {
             return;
         }
     };
-    root.scene.setup(); // TODO: This created actural structs for materials etc. but should be done in a different way
+    root.scene.setup_after_json(); // TODO: This created actural structs for materials etc. but should be done in a different way
     info!("Scene is setup successfully.\n {:#?}", root);
     let root = root; // Shadow mutatability before render
 

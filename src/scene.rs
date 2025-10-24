@@ -76,18 +76,23 @@ pub struct Scene {
 impl Scene {
     //pub fn new() {
     //}
+    pub fn setup_after_json(&mut self) {
+        // Implement required adjustments after loading from a JSON file
 
-    pub fn setup(&mut self) {
-
-        // Convert materials serde_json values to actual structs
+        // 1- Convert materials serde_json values to actual structs
         self.materials.finalize();
         for m in &self.materials.materials { // TODO: refactor that ambigious call materials.materials( )
             debug!("Material: {:#?}", m);
         }
 
-        // Fix VertexData if _type is not "xyz" 
+        // 2- Fix VertexData if _type is not "xyz" 
         let previous_type = self.vertex_data._type.clone();
         if self.vertex_data.normalize_to_xyz() { warn!("VertexData _type is changed from '{}' to '{}'", previous_type, self.vertex_data._type); }
+
+        // 3- Add a dummy vertex at index 0 because JSON vertex ids start from 1
+        self.vertex_data.insert_dummy_at_the_beginning();
+        warn!("Inserted a dummy vertex at the beginning to use vertex IDs beginning from 1.")
+
     }
 }
 
