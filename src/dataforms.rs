@@ -95,7 +95,7 @@ impl<T: Default> Default for SingleOrVec<T> {
 
 
 
-pub type VertexData = DataField<Vector3>; // use CoordLike in geometry_processing.rs?
+pub type VertexData = DataField<Vector3>; // TODO: use CoordLike in geometry_processing.rs?
 
 // DISCLAIMER: This function is taken from
 // https://serde.rs/string-or-struct.html

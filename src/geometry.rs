@@ -12,7 +12,7 @@
     @author: bartu
 */
 
-use crate::shapes::{TriangleSerde};
+use crate::shapes::{TriangleRaw};
 use crate::numeric::{Float, Vector3};
 
 pub fn tri_normal(v1: &Vector3, v2: &Vector3, v3: &Vector3) -> Vector3{
@@ -68,7 +68,7 @@ impl StructofArrays for CoordLike {
 
 impl CoordLike {
    
-    fn tri_normals(triangles: &Vec<TriangleSerde>, vertices: &Vec<Vector3>) -> CoordLike {
+    fn tri_normals(triangles: &Vec<TriangleRaw>, vertices: &Vec<Vector3>) -> CoordLike {
         
         let len = triangles.len();
         let mut xs: Vec<Float> = vec![0.; len];
@@ -103,9 +103,10 @@ mod tests {
                 Vector3::new(1., 0., 0.),
                 Vector3::new(0.5, 0.5, 0.),
         ];
-        let tri = TriangleSerde { _id: 0, 
+        let tri = TriangleRaw { _id: 0, 
                     indices: vec![0, 1, 2], 
                     material: 0, 
+                    
                 };
 
         let n_tri: usize = 20;

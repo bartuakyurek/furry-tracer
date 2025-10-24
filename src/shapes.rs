@@ -9,7 +9,7 @@
 use serde::{Deserialize};
 use crate::json_parser::*;
 use crate::interval::{Interval};
-use crate::dataforms::{DataField};
+use crate::dataforms::{DataField, VertexData};
 use crate::numeric::{Float, Vector3, Index};
 use crate::ray::{Ray, Intersectable, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
@@ -17,7 +17,7 @@ use crate::ray::{Ray, Intersectable, HitRecord}; // TODO: Can we create a small 
 // it assumes vertex indices start from 1
 // TODO: How to convert this struct into V, F matrices, for both array of triangles and Mesh objects in the scene?
 #[derive(Debug, Deserialize, Clone, Default)]
-pub struct TriangleSerde {
+pub struct TriangleRaw {
     #[serde(deserialize_with = "deser_usize")]
     pub _id: Index,
     #[serde(rename = "Indices", deserialize_with = "deser_usize_vec")]
@@ -26,15 +26,20 @@ pub struct TriangleSerde {
     pub material: Index,
 }
 
-pub struct ArrayOfTriangles {
-    pub V: Vec<Vector3>,
-    pub F: Vec<Vector3>, // Only supports triangles, not quad faces etc.
+pub struct Triangle<'a> {
+    data: TriangleRaw,
+    verts: &'a VertexData,
 }
 
-impl Intersectable for TriangleSerde {
+impl Intersectable for TriangleRaw {
     fn intersects_with(ray: &Ray, t_interval: &Interval) -> Option<HitRecord> {
         
     }
+}
+
+pub fn intersect_triangle() -> Option<Vector3> {
+    // TODO
+    None
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
