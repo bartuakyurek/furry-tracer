@@ -37,14 +37,21 @@ impl Interval {
         max: FloatConst::INF,
     };
 
-    pub fn new(min: Float, max: Float, epsilon: Float) -> Self {
+    pub fn new(min: Float, max: Float) -> Self {
         Self { 
-            min: {min + epsilon}, 
-            max 
+            min,
+            max,
         }
     }
 
-    pub fn new_with_eps(min: Float, max: Float, epsilon: Float) -> Self {
+    pub fn new_with_mineps(min: Float, max: Float, epsilon: Float) -> Self {
+        Self { 
+            min: {min + epsilon}, 
+            max,
+        }
+    }
+
+    pub fn new_with_minmaxeps(min: Float, max: Float, epsilon: Float) -> Self {
         // [min + epsilon, max - epsilon]
         Self { 
             min: {min + epsilon}, 
