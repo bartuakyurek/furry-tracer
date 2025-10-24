@@ -36,7 +36,7 @@ use tracing::{warn, error, debug};
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{BoxedMaterial, DiffuseMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
-use crate::shapes::{TriangleSerde, Sphere, Plane, Mesh};
+use crate::shapes::{Triangle, Sphere, Plane, Mesh};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec};
@@ -154,11 +154,15 @@ impl SceneMaterials {
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(default)] // If any of the fields below is missing in the JSON, use default (empty vector, hopefully)
-#[serde(rename_all = "PascalCase")]
+// #[serde(rename_all = "PascalCase")] // Do NOT do that here, naming is different in json file
 pub struct SceneObjects {
-    pub triangles: SingleOrVec<TriangleSerde>,
+    #[serde(rename = "Triangle")]
+    pub triangles: SingleOrVec<Triangle>,
+    #[serde(rename = "Sphere")]
     pub spheres: SingleOrVec<Sphere>,
+    #[serde(rename = "Plane")]
     pub planes: SingleOrVec<Plane>,
+    #[serde(rename = "Mesh")]
     pub meshes: SingleOrVec<Mesh>,
 }
 
@@ -169,9 +173,6 @@ pub struct SceneObjects {
 //        (self.triangles.all(), self.spheres.all(), self.planes.all(), self.meshes.all())
 //    }
 //}
-
-
-
 
 fn parse_single_material(value: serde_json::Value) -> BoxedMaterial {
     
