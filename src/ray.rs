@@ -24,11 +24,6 @@ impl Ray {
 }
 
 
-pub trait Intersectable {
-    fn intersects_with(ray: &Ray, t_interval: &Interval) -> Option<HitRecord>;
-}
-
-
 // Question: Couldn't we just use point to see which point is closer?
 // but this is relative to camera, and t is a single scalar that encaptures
 // which HitRecord is closer to the - actually not to camera (for primary rays only it is camera)

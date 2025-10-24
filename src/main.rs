@@ -47,7 +47,6 @@ fn main() {
     info!("Loading scene from {}...", json_path);
     let mut root =  match parse_json795(json_path) {
         Ok(root) => {
-            //info!("Scene loaded successfully.\n {:#?}", root);
             root
         }
         Err(e) => {
@@ -56,6 +55,7 @@ fn main() {
         }
     };
     root.scene.setup(); // TODO: This created actural structs for materials etc. but should be done in a different way
+    info!("Scene is setup successfully.\n {:#?}", root);
     let root = root; // Shadow mutatability before render
 
     // Render image and return array of RGB
