@@ -37,20 +37,36 @@ impl Interval {
         max: FloatConst::INF,
     };
 
-    pub const NONNEGATIVE: Self = Self {
-        min: FloatConst::SLIGHTLY_POSITIVE_ZERO,
-        max: FloatConst::INF,
-    };
-
-    pub const UNIT:  Self = Self {
-        min: FloatConst::SLIGHTLY_POSITIVE_ZERO,
-        max: FloatConst::ALMOST_ONE,
-    };
-
-    pub fn new(t_min: Float, t_max: Float) -> Interval {
-        Interval{min: t_min, max: t_max}
+    pub fn new(min: Float, max: Float, epsilon: Float) -> Self {
+        Self { 
+            min: {min + epsilon}, 
+            max 
+        }
     }
 
+    pub fn new_with_eps(min: Float, max: Float, epsilon: Float) -> Self {
+        // [min + epsilon, max - epsilon]
+        Self { 
+            min: {min + epsilon}, 
+            max: {max - epsilon},
+        }
+    }
+
+    pub fn nonnegative(epsilon: Float) -> Self {
+        // [epsilon, inf]
+        Self { 
+            min: epsilon,  
+            max: FloatConst::INF, 
+        }
+    }
+
+    pub fn unit(epsilon: Float) -> Self {
+        Self {
+            min: epsilon,
+            max: {1.0 - epsilon},
+        }
+    }
+   
     pub fn size(&self) -> Float {
         self.max - self.min
     }
@@ -80,22 +96,16 @@ pub trait FloatConst: Copy {
     const PI: Self;
     const INF: Self;
     const NEG_INF: Self;
-    const SLIGHTLY_POSITIVE_ZERO: Self;
-    const ALMOST_ONE: Self;
 }
 
 impl FloatConst for f32 {
     const PI: Self = std::f32::consts::PI;
     const INF: Self = std::f32::INFINITY;
     const NEG_INF: Self = std::f32::NEG_INFINITY;
-    const SLIGHTLY_POSITIVE_ZERO: Self = 0.0001 as f32;
-    const ALMOST_ONE: Self = 0.99999 as f32;
 }
 
 impl FloatConst for f64 {
     const PI: Self = std::f64::consts::PI;
     const INF: Self = std::f64::INFINITY;
     const NEG_INF: Self = std::f64::NEG_INFINITY;
-    const SLIGHTLY_POSITIVE_ZERO: Self = 0.0001 as f64;
-    const ALMOST_ONE: Self = 0.99999 as f64;
 }
