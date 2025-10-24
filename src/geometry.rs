@@ -4,6 +4,10 @@
     and cache them in a struct. WARNING: None
     of the structs are actually used at the moment.
     
+    TODO:This module is intended to operate on libigl-like data
+    expecting matrices V, F for verts and faces to compute
+    normals and other useful cache for ray tracing.
+    
     @date: 9 Oct, 2025
     @author: bartu
 */

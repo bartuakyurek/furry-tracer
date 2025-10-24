@@ -2,7 +2,7 @@
 
 
 use crate::numeric::{Vector3, Float, Index};
-
+use crate::interval::{Interval};
 
 
 pub struct Ray {
@@ -25,7 +25,7 @@ impl Ray {
 
 
 pub trait Intersectable {
-    fn intersects_with(ray: &Ray) -> Option<HitRecord>;
+    fn intersects_with(ray: &Ray, t_interval: &Interval) -> Option<HitRecord>;
 }
 
 
