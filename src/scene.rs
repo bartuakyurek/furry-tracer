@@ -53,16 +53,16 @@ pub struct RootScene {
 #[serde(default)]
 pub struct Scene {
     #[serde(deserialize_with = "deser_int")]
-    max_recursion_depth: Int,
+    pub max_recursion_depth: Int,
 
     #[serde(deserialize_with = "deser_vec3")]
-    background_color: Vector3,
+    pub background_color: Vector3,
 
     #[serde(deserialize_with = "deser_float")]
-    shadow_ray_epsilon: Float,
+    pub shadow_ray_epsilon: Float,
 
     #[serde(deserialize_with = "deser_float")]
-    intersection_test_epsilon: Float,
+    pub intersection_test_epsilon: Float,
 
     #[serde(deserialize_with = "deser_string_or_struct")]
     pub vertex_data: VertexData, 

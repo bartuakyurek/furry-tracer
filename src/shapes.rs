@@ -2,6 +2,31 @@
 
     Declare primitives: Triangle, Sphere
     
+    TODO: Every shape in this class has material_idx so there could be a struct
+    dedicated to such data unrelated to shapes but required for HitRecord. But
+    Rust does not allow implicit inheritance so we cannot just:
+    struct Shape { // better naming here? 
+        material: Index,    
+    }
+
+    struct SomeShape : Shape {
+        some_other_member: SomeType,
+    }
+
+    What is recommended is to use composition, e.g.
+
+    struct ShapeData {
+        material: Index,
+    }
+
+    struct SomeShape {
+        _data: ShapeData,
+        some_other_member: SomeType,
+    }
+
+    however I'm not sure if this is helpful in our case or if it adds unnecessary complexity.
+    In case this becomes necessary, check out this crate https://docs.rs/delegate/latest/delegate/
+    
     @date: Oct, 2025
     @author: bartu
 */
@@ -27,11 +52,15 @@ pub struct Triangle {
     #[serde(rename = "Indices", deserialize_with = "deser_usize_vec")]
     pub indices: Vec<usize>,
     #[serde(rename = "Material", deserialize_with = "deser_usize")]
-    pub material: Index,
+    pub material_idx: Index,
 }
 
 impl Intersectable for Triangle {
     fn intersects_with(ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
+
+
+
+
         None   
     }
 }

@@ -105,7 +105,7 @@ mod tests {
         ];
         let tri = Triangle { _id: 0, 
                     indices: vec![0, 1, 2], 
-                    material: 0, 
+                    material_idx: 0, 
                     
                 };
 
