@@ -9,7 +9,7 @@
 
 
 use void::Void;
-use std::str::FromStr;
+use std::str::{self, FromStr};
 use tracing::{warn};
 use serde::{Deserialize, de::{Deserializer}};
 use crate::numeric::{Vector3, Index};
@@ -21,6 +21,14 @@ pub struct DataField<T> {
     
     pub(crate) _data: Vec<T>,
     pub(crate) _type: String,
+}
+
+impl<T> std::ops::Index<usize> for DataField<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self._data[index]
+    }
 }
 
 
@@ -108,6 +116,7 @@ impl FromStr for VertexData {
         })
     }
 }
+
 
 impl VertexData{
     pub fn insert_dummy_at_the_beginning(&mut self) {
