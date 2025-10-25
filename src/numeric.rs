@@ -18,7 +18,6 @@ use bevy_math::{DVec3};
 pub type Int = i32;
 pub type Float = f64;
 pub type Vector3 = DVec3; // f64
-pub type Index = usize;
 
 //#[derive(Clone, Copy, Debug, Default)]
 //pub struct Vector3(pub DVec3); // To declare a type and use impl traits on this type

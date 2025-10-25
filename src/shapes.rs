@@ -11,7 +11,7 @@ use serde::{Deserialize};
 use crate::json_parser::*;
 use crate::interval::{Interval};
 use crate::dataforms::{DataField, VertexData};
-use crate::numeric::{Float, Vector3, Index};
+use crate::numeric::{Float, Vector3};
 use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
 pub trait Intersectable {
@@ -24,11 +24,11 @@ pub trait Intersectable {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Triangle {
     #[serde(deserialize_with = "deser_usize")]
-    pub _id: Index,
+    pub _id: usize,
     #[serde(rename = "Indices", deserialize_with = "deser_usize_array")]
     pub indices: [usize; 3],
     #[serde(rename = "Material", deserialize_with = "deser_usize")]
-    pub material_idx: Index,
+    pub material_idx: usize,
 }
 
 impl Intersectable for Triangle {
@@ -56,25 +56,25 @@ impl Intersectable for Triangle {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Sphere {
     #[serde(deserialize_with = "deser_usize")]
-    pub _id: Index,
+    pub _id: usize,
     #[serde(rename = "Center", deserialize_with = "deser_usize")]
-    pub center_idx: Index, // Refers to VertexData
+    pub center_idx: usize, // Refers to VertexData
     #[serde(rename = "Radius", deserialize_with = "deser_float")]
     pub radius: Float,
     #[serde(rename = "Material", deserialize_with = "deser_usize")]
-    pub material_idx: Index,
+    pub material_idx: usize,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Plane {
     #[serde(deserialize_with = "deser_usize")]
-    pub _id: Index,
+    pub _id: usize,
     #[serde(rename = "Point", deserialize_with = "deser_usize")]
-    pub point_idx: Index,
+    pub point_idx: usize,
     #[serde(rename = "Normal", deserialize_with = "deser_vec3")]
     pub normal: Vector3,
     #[serde(rename = "Material", deserialize_with = "deser_usize")]
-    pub material_idx: Index,
+    pub material_idx: usize,
 }
 
 
@@ -82,11 +82,11 @@ pub struct Plane {
 #[serde(default)]
 pub struct Mesh {
     #[serde(deserialize_with = "deser_usize")]
-    pub _id: Index,
+    pub _id: usize,
     #[serde(rename = "Material", deserialize_with = "deser_usize")]
-    material_idx: Index,
+    material_idx: usize,
     #[serde(rename = "Faces")]
-    faces: DataField<Index>,
+    faces: DataField<usize>,
 }
 
 impl Mesh {

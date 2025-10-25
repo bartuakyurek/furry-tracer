@@ -1,7 +1,7 @@
 
 
 
-use crate::numeric::{Vector3, Float, Index};
+use crate::numeric::{Vector3, Float};
 use crate::interval::{Interval};
 
 
@@ -34,6 +34,6 @@ pub struct HitRecord {
     pub point: Vector3,
     pub normal: Vector3,
     pub ray_t: Float,  // To check which HitRecord has smaller t 
-    pub material: Index, // TODO: Should we hold the index of material or actually Option<Rc<dyn Material>> as in here https://the-ray-tracing-road-to-rust.vercel.app/9-metal? Or Arc instead of Rc if we use rayon in future.
+    pub material: usize, // TODO: Should we hold the index of material or actually Option<Rc<dyn Material>> as in here https://the-ray-tracing-road-to-rust.vercel.app/9-metal? Or Arc instead of Rc if we use rayon in future.
     pub is_front_face: bool,
 }

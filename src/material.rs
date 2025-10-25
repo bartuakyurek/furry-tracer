@@ -15,7 +15,7 @@
 use tracing::{error};
 use serde::Deserialize;
 use crate::json_parser::*;
-use crate::numeric::{Float, Index, Vector3};
+use crate::numeric::{Float, Vector3};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// 
@@ -50,7 +50,7 @@ pub type BoxedMaterial = Box<dyn Material>;
 #[derive(Debug, Deserialize, Clone)]
 pub struct DiffuseMaterial {
     #[serde(deserialize_with = "deser_usize")]
-    pub _id: Index,
+    pub _id: usize,
     #[serde(rename = "AmbientReflectance", deserialize_with = "deser_vec3")]
     pub ambient_rf: Vector3,
     #[serde(rename = "DiffuseReflectance", deserialize_with = "deser_vec3")]
@@ -88,7 +88,7 @@ impl Material for DiffuseMaterial{
 #[derive(Debug, Deserialize, Clone)]
 pub struct MirrorMaterial {
     #[serde(deserialize_with = "deser_usize")]
-    pub _id: Index,
+    pub _id: usize,
     #[serde(rename = "AmbientReflectance", deserialize_with = "deser_vec3")]
     pub ambient_rf: Vector3,
     #[serde(rename = "DiffuseReflectance", deserialize_with = "deser_vec3")]

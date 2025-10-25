@@ -9,10 +9,10 @@
 
 
 use void::Void;
-use std::str::{self, FromStr};
+use std::{ops::Index, str::FromStr};
 use tracing::{warn};
 use serde::{Deserialize, de::{Deserializer}};
-use crate::numeric::{Vector3, Index};
+use crate::numeric::{Vector3};
 use crate::json_parser::{deser_vertex_data, deser_usize_vec, parse_string_vecvec3};
 
 // To be used for VertexData and Faces in JSON files
@@ -23,7 +23,7 @@ pub struct DataField<T> {
     pub(crate) _type: String,
 }
 
-impl<T> std::ops::Index<usize> for DataField<T> {
+impl<T> Index<usize> for DataField<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -53,7 +53,7 @@ impl<'de> Deserialize<'de> for DataField<Vector3> {
     }
 }
 
-impl<'de> Deserialize<'de> for DataField<Index> {
+impl<'de> Deserialize<'de> for DataField<usize> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -61,7 +61,7 @@ impl<'de> Deserialize<'de> for DataField<Index> {
         #[derive(Deserialize)]
         struct Helper {
             #[serde(rename = "_data", deserialize_with = "deser_usize_vec")]
-            _data: Vec<Index>,
+            _data: Vec<usize>,
             #[serde(rename = "_type")]
             _type: String,
         }
