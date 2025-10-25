@@ -15,7 +15,7 @@ use crate::dataforms::{DataField, VertexData};
 use crate::numeric::{Float, Vector3};
 use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
-pub trait Intersectable {
+pub trait Shape {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
 }
 
@@ -32,7 +32,7 @@ pub struct Triangle {
     pub material_idx: usize,
 }
 
-impl Intersectable for Triangle {
+impl Shape for Triangle {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
 
         // TODO: cache vertex / face normals
