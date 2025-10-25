@@ -40,7 +40,7 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         for ray in rays.iter(){ // TODO: parallelize with rayon, for each pixel 
             // TODO: later we'll use acceleration structures instead of checking *all* objects like this
             for shape in shapes.iter() {
-                if let hit_record = shape.intersects_with(ray, &Interval::NONNEGATIVE, &scene.vertex_data){
+                if let Some(hit_record) = shape.intersects_with(ray, &Interval::NONNEGATIVE, &scene.vertex_data){
                     info!("There is a hit, yippeeee!! {:?}", hit_record);
                 }
             
