@@ -71,5 +71,10 @@ fn main() {
             eprintln!("Failed to save {}: {}", imagefolder, e);
         }
     }
+
+    // TODO: remove these reminder errors
+    error!("Intersection trait is not implemented for Plane!");
+    error!("Intersection trait is not implemented for Sphere!");
+    error!("Intersection trait is not implemented for Mesh!");
     info!("Finished execution.");
 }

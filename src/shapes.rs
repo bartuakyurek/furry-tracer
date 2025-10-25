@@ -49,7 +49,7 @@ impl Shape for Triangle {
         let [v1i, v2i, v3i] = self.indices; 
         let (v1, v2, v3) = (verts[v1i], verts[v2i], verts[v3i]);
         let n = crate::geometry::tri_normal(&v1, &v2, &v3);
-        info!("Normal is {}", n);
+        // info!("Normal is {}", n);
         None   
     }
 }
@@ -69,7 +69,7 @@ pub struct Sphere {
 
 impl Shape for Sphere {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
-        error!("Intersection trait is not implemented for Sphere!");
+        
         None
     }
 }
@@ -88,7 +88,6 @@ pub struct Plane {
 
 impl Shape for Plane {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
-        error!("Intersection trait is not implemented for Plane!");
         None
     }
 }
@@ -110,7 +109,7 @@ impl Mesh {
 
 impl Shape for Mesh {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
-        error!("Intersection trait is not implemented for Mesh!");
+        
         None
     }
 }
