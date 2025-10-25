@@ -37,6 +37,11 @@ impl Interval {
         max: FloatConst::INF,
     };
 
+    pub const NONNEGATIVE: Self = Self {
+        min: 0.0,
+        max: FloatConst::INF,
+    };
+
     pub fn new(min: Float, max: Float) -> Self {
         Self { 
             min,
@@ -51,19 +56,19 @@ impl Interval {
         }
     }
 
+    pub fn positive(epsilon: Float) -> Self {
+        // [epsilon, inf)
+        Self { 
+            min: epsilon, 
+            max: FloatConst::INF,
+        }
+    }
+
     pub fn new_with_minmaxeps(min: Float, max: Float, epsilon: Float) -> Self {
         // [min + epsilon, max - epsilon]
         Self { 
             min: {min + epsilon}, 
             max: {max - epsilon},
-        }
-    }
-
-    pub fn nonnegative(epsilon: Float) -> Self {
-        // [epsilon, inf]
-        Self { 
-            min: epsilon,  
-            max: FloatConst::INF, 
         }
     }
 
