@@ -1,10 +1,13 @@
 
 
 
+use bevy_math::curve::derivatives;
+
 use crate::numeric::{Vector3, Float};
 use crate::interval::{Interval};
 
 
+#[derive(Debug)]
 pub struct Ray {
     origin: Vector3,
     direction: Vector3,

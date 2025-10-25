@@ -115,6 +115,10 @@ impl Camera {
     pub fn get_nearplane_corners(&self) -> [Vector3; 4] {
         self.nearplane.corners(self.position, self.u, self.v, self.w, self.near_distance)
     }
+
+    pub fn get_position(&self) -> Vector3 {
+        self.position
+    }
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]

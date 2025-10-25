@@ -8,6 +8,7 @@
 */
 
 use serde::{Deserialize};
+use tracing::{info};
 use crate::json_parser::*;
 use crate::interval::{Interval};
 use crate::dataforms::{DataField, VertexData};
@@ -47,7 +48,8 @@ impl Intersectable for Triangle {
         
         let [v1i, v2i, v3i] = self.indices; 
         let (v1, v2, v3) = (verts[v1i], verts[v2i], verts[v3i]);
-        //let n = crate::geometry::tri_normal(v1, v2, v3);
+        let n = crate::geometry::tri_normal(&v1, &v2, &v3);
+        info!("Normal is {}", n);
         None   
     }
 }
