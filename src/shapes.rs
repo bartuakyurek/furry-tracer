@@ -45,10 +45,12 @@ impl Shape for Triangle {
         // this is not handled yet and our assumption is VertexData is the only source of vertices, every
         // shape refers to this data for their coordinates. 
         
+
+        let [a, b, c] = self.indices.map(|i| verts[i]);        
+        let edge_ab = b - a;
+        let edge_ac = c - a;
         
-        let [v1i, v2i, v3i] = self.indices; 
-        let (v1, v2, v3) = (verts[v1i], verts[v2i], verts[v3i]);
-        let n = crate::geometry::tri_normal(&v1, &v2, &v3);
+        //let n = crate::geometry::tri_normal(&v1, &v2, &v3);
         // info!("Normal is {}", n);
         None   
     }
