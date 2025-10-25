@@ -8,7 +8,7 @@
 */
 
 use serde::{Deserialize};
-use tracing::{info};
+use tracing::{info, error};
 use crate::json_parser::*;
 use crate::interval::{Interval};
 use crate::dataforms::{DataField, VertexData};
@@ -67,6 +67,13 @@ pub struct Sphere {
     pub material_idx: usize,
 }
 
+impl Shape for Sphere {
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
+        error!("Intersection trait is not implemented for Sphere!");
+        None
+    }
+}
+
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Plane {
     #[serde(deserialize_with = "deser_usize")]
@@ -79,6 +86,12 @@ pub struct Plane {
     pub material_idx: usize,
 }
 
+impl Shape for Plane {
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
+        error!("Intersection trait is not implemented for Plane!");
+        None
+    }
+}
 
 #[derive(Debug, Deserialize, Clone, Default)]
 #[serde(default)]
@@ -93,4 +106,11 @@ pub struct Mesh {
 
 impl Mesh {
     // to_triangles ( )
+}
+
+impl Shape for Mesh {
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
+        error!("Intersection trait is not implemented for Mesh!");
+        None
+    }
 }

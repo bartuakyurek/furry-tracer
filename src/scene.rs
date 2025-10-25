@@ -28,7 +28,7 @@
     @date: 2 Oct, 2025
     @author: Bartu
 */
-
+use std::{rc::Rc};
 use serde_json::{self, Value};
 use serde::{Deserialize};
 use tracing::{warn, error, debug};
@@ -36,7 +36,7 @@ use tracing::{warn, error, debug};
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{BoxedMaterial, DiffuseMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
-use crate::shapes::{Triangle, Sphere, Plane, Mesh};
+use crate::shapes::{Shape, Mesh, Plane, Sphere, Triangle};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec};
@@ -171,13 +171,22 @@ pub struct SceneObjects {
     pub meshes: SingleOrVec<Mesh>,
 }
 
+impl SceneObjects {
 
-//impl SceneObjects {
-//    /// Always returns a Vec<Camera> regardless of JSON being a single object or array
-//    pub fn all(&self) -> (Vec<TriangleSerde>, Vec<Sphere>, Vec<Plane>, Vec<Mesh>) {
-//        (self.triangles.all(), self.spheres.all(), self.planes.all(), self.meshes.all())
-//    }
-//}
+    pub fn all(&self) -> Vec<Rc<dyn Shape>> {
+        // Return a vector of all shapes in the scene
+        warn!("SceneObjects.all( ) assumes there are only triangles, spheres, planes, and meshes. If there are other Shape trait implementations they are not added yet.");
+        let mut shapes: Vec<Rc<dyn Shape>> = Vec::new();
+
+        shapes.extend(self.triangles.all().into_iter().map(|t| Rc::new(t) as Rc<dyn Shape>));
+        shapes.extend(self.spheres.all().into_iter().map(|s| Rc::new(s) as Rc<dyn Shape>));
+        shapes.extend(self.planes.all().into_iter().map(|p| Rc::new(p) as Rc<dyn Shape>));
+        shapes.extend(self.meshes.all().into_iter().map(|m| Rc::new(m) as Rc<dyn Shape>));
+
+        shapes
+    }
+
+}
 
 fn parse_single_material(value: serde_json::Value) -> BoxedMaterial {
     

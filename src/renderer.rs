@@ -35,9 +35,9 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         let rays = cam.generate_primary_rays();
 
         // 2- Recursive ray tracing here!
-        //for obj in scene.objects.iter() {
-
-        //}
+        for obj in scene.objects.all().iter() {
+            
+        }
         // --------------------------------------------------------------------
         
         let im = ImageData::new_from_colors(cam.image_resolution, cam.image_name, pixel_colors);
