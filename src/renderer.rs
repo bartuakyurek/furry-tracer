@@ -34,12 +34,12 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         // ------------------------ Pixel Colors ------------------------------
         // 1- Generate primary rays from camera center to pixel centers
         let rays = cam.generate_primary_rays();
-        let shapes = scene.objects.all().iter();
+        let shapes = scene.objects.all();
 
         // 2- Recursive ray tracing here!
         for ray in rays.iter(){ // TODO: parallelize with rayon, for each pixel 
             // TODO: later we'll use acceleration structures instead of checking *all* objects like this
-            for shape in shapes {
+            for shape in shapes.iter() {
                 let hit_record = shape.intersects_with(ray, &Interval::NONNEGATIVE, &scene.vertex_data);
             }
         }
