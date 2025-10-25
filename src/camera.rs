@@ -9,9 +9,11 @@
 use smart_default::SmartDefault;
 use serde::{Deserialize};
 use tracing::{info, debug};
-use crate::numeric::{Int, Float, Vector3, approx_zero};
+use crate::image;
+use crate::ray::Ray;
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec};
+use crate::numeric::{Int, Float, Vector3, approx_zero};
 
 #[derive(Debug, Deserialize, Default)]
 pub struct Cameras {
@@ -119,6 +121,20 @@ impl Camera {
     pub fn get_position(&self) -> Vector3 {
         self.position
     }
+
+    pub fn generate_primary_rays(&self) -> Vec<Ray> {
+        let (width, height) = self.get_resolution();
+        let pixel_centers = image::get_pixel_centers(width, height, &self.get_nearplane_corners()); // Adjust based on actual field name
+
+        let ray_origin = self.position;
+        let mut rays = Vec::<Ray>::with_capacity(pixel_centers.len());
+        for center_ptr in pixel_centers.iter() {
+            rays.push(Ray::new(ray_origin, *center_ptr));
+        }
+        rays
+    }
+
+
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
