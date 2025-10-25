@@ -34,9 +34,9 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         // ------------------------ Pixel Colors ------------------------------
         // 1- Generate primary rays from camera center to pixel centers
         let ray_origin = cam.get_position();
-        let mut rays = Vec::<Ray>::with_capacity(pixel_centers.capacity());
-        for (i, center_addr) in pixel_centers.iter().enumerate() {
-            rays[i] = Ray::new(ray_origin, *center_addr);
+        let mut rays = Vec::<Ray>::with_capacity(pixel_centers.len());
+        for center_ptr in pixel_centers.iter() {
+            rays.push(Ray::new(ray_origin, *center_ptr));
         }
         info!("Rays: {:?}", rays);
         
