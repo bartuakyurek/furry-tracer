@@ -3,6 +3,7 @@
 
 use bevy_math::curve::derivatives;
 
+use crate::material;
 use crate::numeric::{Vector3, Float};
 use crate::interval::{Interval};
 
@@ -33,11 +34,23 @@ impl Ray {
 // but ray origin so t=0 is at ray origin, smaller t is, closer the object is.  
 //
 // DISCLAIMER: This struct is based on the approach presented in Ray Tracing in One Weekend book.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct HitRecord {
     pub point: Vector3,
     pub normal: Vector3,
     pub ray_t: Float,  // To check which HitRecord has smaller t 
     pub material: usize, // TODO: Should we hold the index of material or actually Option<Rc<dyn Material>> as in here https://the-ray-tracing-road-to-rust.vercel.app/9-metal? Or Arc instead of Rc if we use rayon in future.
     pub is_front_face: bool,
+}
+
+impl HitRecord {
+    pub fn new_from(point: Vector3, t: Float, material: usize) -> Self {
+        Self {
+            point: point,
+            ray_t: t,
+            material: material, // in order not to accidentally set to default
+            is_front_face: false,
+            ..Default::default()
+        }
+    }
 }
