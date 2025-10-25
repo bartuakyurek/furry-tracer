@@ -17,6 +17,7 @@ use crate::ray::Ray;
 use crate::scene::{Scene};
 use crate::numeric::{Vector3};
 use crate::image::{ImageData};
+use crate::interval::{Interval};
 
 
 pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
@@ -33,11 +34,16 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         // ------------------------ Pixel Colors ------------------------------
         // 1- Generate primary rays from camera center to pixel centers
         let rays = cam.generate_primary_rays();
+        let shapes = scene.objects.all().iter();
 
         // 2- Recursive ray tracing here!
-        for obj in scene.objects.all().iter() {
-            
+        for ray in rays.iter(){ // TODO: parallelize with rayon, for each pixel 
+            // TODO: later we'll use acceleration structures instead of checking *all* objects like this
+            for shape in shapes {
+                let hit_record = shape.intersects_with(ray, &Interval::NONNEGATIVE, &scene.vertex_data);
+            }
         }
+       
         // --------------------------------------------------------------------
         
         let im = ImageData::new_from_colors(cam.image_resolution, cam.image_name, pixel_colors);
