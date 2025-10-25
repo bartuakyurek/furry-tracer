@@ -7,6 +7,7 @@
     @author: bartu
 */
 
+use bevy_math::FloatOrd;
 use serde::{Deserialize};
 use tracing::{info, error};
 use crate::json_parser::*;
@@ -45,14 +46,43 @@ impl Shape for Triangle {
         // this is not handled yet and our assumption is VertexData is the only source of vertices, every
         // shape refers to this data for their coordinates. 
         
+        // Based on Möller-Trumbore algorithm
+        //
+        //     a (pivot)
+        //    / \
+        //  b  -  c
+        // 
+        // WARNING: Assumes given interval has incorporated relevant epsilon e.g.
+        // instead of [0.0, inf], [0.0001, inf] is given otherwise there might be
+        // floating point errors.
+        let [tri_pivot, tri_left, tri_right] = self.indices.map(|i| verts[i]);        
+        let edge_ab = tri_left - tri_pivot;
+        let edge_ac = tri_right - tri_pivot;
 
-        let [a, b, c] = self.indices.map(|i| verts[i]);        
-        let edge_ab = b - a;
-        let edge_ac = c - a;
-        
-        //let n = crate::geometry::tri_normal(&v1, &v2, &v3);
-        // info!("Normal is {}", n);
-        None   
+        // Scalar triple product https://youtu.be/fK1RPmF_zjQ
+        let perp = ray.direction.cross(edge_ac);
+        let determinant: Float = perp.dot(edge_ab);
+        if determinant > - t_interval.min && determinant < t_interval.min {
+            return None;
+        }
+
+        let inverse_determinant = 1.0 as Float / determinant;
+        let dist = ray.origin - tri_pivot;
+
+        let barycentric_u = dist.dot(perp) * inverse_determinant;
+        if barycentric_u < 0.0 || barycentric_u > 1.0 {
+            return None;
+        }
+
+        let another_perp = dist.cross(edge_ab);
+        let barycentric_v = ray.direction.dot(another_perp) * inverse_determinant;
+        if barycentric_v < 0.0 || barycentric_u + barycentric_v > 1.0 {
+            return None;
+        }
+
+        let t = edge_ac.dot(another_perp) * inverse_determinant;
+        info!("todo: convert u,v barycentric to coords");
+        Some(HitRecord::default()) 
     }
 }
 
