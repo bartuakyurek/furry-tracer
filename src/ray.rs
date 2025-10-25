@@ -9,8 +9,8 @@ use crate::interval::{Interval};
 
 #[derive(Debug)]
 pub struct Ray {
-    origin: Vector3,
-    direction: Vector3,
+    pub origin: Vector3,
+    pub direction: Vector3,
 }
 
 impl Ray {
