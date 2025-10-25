@@ -273,6 +273,22 @@ where
     deser_numeric_vec::<D, Int>(deserializer)
 }
 
+pub fn deser_usize_array<'de, D, const N: usize>(deserializer: D) -> Result<[usize; N], D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let v = deser_usize_vec(deserializer)?;
+    if v.len() != N {
+        return Err(serde::de::Error::custom(format!(
+            "expected {} elements, got {}",
+            N, v.len()
+        )));
+    }
+
+    // Convert Vec<usize> to [usize; N] array 
+    v.try_into()
+        .map_err(|_| serde::de::Error::custom("failed to convert Vec to array"))
+}
 
 pub fn deser_nearplane<'de, D>(deserializer: D) -> Result<NearPlane, D::Error>
 where

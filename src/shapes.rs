@@ -15,7 +15,7 @@ use crate::numeric::{Float, Vector3, Index};
 use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
 pub trait Intersectable {
-    fn intersects_with(ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
 }
 
 // Raw data deserialized from .JSON file
@@ -25,18 +25,29 @@ pub trait Intersectable {
 pub struct Triangle {
     #[serde(deserialize_with = "deser_usize")]
     pub _id: Index,
-    #[serde(rename = "Indices", deserialize_with = "deser_usize_vec")]
-    pub indices: Vec<usize>,
+    #[serde(rename = "Indices", deserialize_with = "deser_usize_array")]
+    pub indices: [usize; 3],
     #[serde(rename = "Material", deserialize_with = "deser_usize")]
     pub material_idx: Index,
 }
 
 impl Intersectable for Triangle {
-    fn intersects_with(ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
 
-
-
-
+        // TODO: cache vertex / face normals
+        // WARNING: vertex normals are tricky because if the same vertex was used by multiple 
+        // meshes, that means there are more vertex normals than the length of vertexdata because
+        // connectivities are different. Perhaps it is safe to assume no vertex is used in multiple
+        // objects, but there needs to be function to actually check the scene if a vertex in VertexData
+        // only referred by a single scene object. 
+        // Furthermore, what if there were multiple VertexData to load multiple meshes in the Scene? 
+        // this is not handled yet and our assumption is VertexData is the only source of vertices, every
+        // shape refers to this data for their coordinates. 
+        
+        
+        let [v1i, v2i, v3i] = self.indices; 
+        let (v1, v2, v3) = (verts[v1i], verts[v2i], verts[v3i]);
+        //let n = crate::geometry::tri_normal(v1, v2, v3);
         None   
     }
 }

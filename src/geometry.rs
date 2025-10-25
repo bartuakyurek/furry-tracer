@@ -104,7 +104,7 @@ mod tests {
                 Vector3::new(0.5, 0.5, 0.),
         ];
         let tri = Triangle { _id: 0, 
-                    indices: vec![0, 1, 2], 
+                    indices: [0, 1, 2], 
                     material_idx: 0, 
                     
                 };
