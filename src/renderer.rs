@@ -29,7 +29,7 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         debug!("Nearplane corners are {:#?}", &cam.get_nearplane_corners());
         
         let (width, height) = cam.get_resolution();
-        let pixel_colors = vec![Vector3::ZERO; width * height]; // Colors range [0, 255], not [0, 1]
+        let mut pixel_colors = vec![Vector3::ZERO; width * height]; // Colors range [0, 255], not [0, 1]
         
         // ------------------------ Pixel Colors ------------------------------
         // 1- Generate primary rays from camera center to pixel centers
@@ -37,11 +37,12 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         let shapes = scene.objects.all();
 
         // 2- Recursive ray tracing here!
-        for ray in rays.iter(){ // TODO: parallelize with rayon, for each pixel 
+        for (i, ray) in rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
             // TODO: later we'll use acceleration structures instead of checking *all* objects like this
             for shape in shapes.iter() {
                 if let Some(hit_record) = shape.intersects_with(ray, &Interval::NONNEGATIVE, &scene.vertex_data){
-                    info!("There is a hit, yippeeee!! {:?}", hit_record);
+                    // info!("There is a hit, yippeeee!! {:?}", hit_record);
+                    pixel_colors[i] = Vector3::new(255., 0., 0.); // red 
                 }
             
             }

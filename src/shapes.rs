@@ -81,7 +81,7 @@ impl Shape for Triangle {
         }
 
         let t = edge_ac.dot(another_perp) * inverse_determinant;
-        info!("todo: convert u,v barycentric to coords");
+        //info!("todo: convert u,v barycentric to coords");
         Some(HitRecord::default()) 
     }
 }
