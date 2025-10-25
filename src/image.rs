@@ -2,7 +2,7 @@
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::BufWriter;
-use tracing::{warn};
+use tracing::{warn, info};
 
 use crate::numeric::{Vector3, Float};
 
@@ -99,7 +99,7 @@ impl ImageData {
         // DISCLAIMER: This function is based on https://docs.rs/png/0.18.0/png/
         let path: PathBuf = self.get_png_fullpath(path);
 
-        let file = File::create(path).unwrap();
+        let file = File::create(path.clone()).unwrap();
         let ref mut w = BufWriter::new(file);
         let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32); // Width is 2 pixels and height is 1.
     
@@ -110,7 +110,7 @@ impl ImageData {
 
         let data = self.to_rgb();
         writer.write_image_data(&data)?; // Save
-        
+        info!("Image saved to {}", path.to_str().unwrap());
         Ok(())
     }
 }
