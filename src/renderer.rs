@@ -69,10 +69,8 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
             let interval = Interval::new(0.0, distance);
             //closest_hit(&shadow_ray, &interval, shapes,  &scene.vertex_data, &mut shadow_hit);
 
-            if any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
-                color = scene.background_color;
-            } 
-            else {
+            if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
+            
                 let light_intensity = point_light.rgb_intensity;
                 color += light_intensity * (1. / distance_squared); // Contribution from light source
             }
@@ -80,8 +78,11 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
 
         // TODO add ambient
         let ambient_intensity = scene.lights.ambient_light;
+        color
    }
-   color
+   else {
+        scene.background_color // no hit
+   }
 }
 
 pub fn render(scene: &Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
