@@ -60,19 +60,12 @@ pub fn render(scene: &Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error
     let mut images: Vec<ImageData> = Vec::new();
     for mut cam in scene.cameras.all() {
         cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
-        debug!("{:#?}", cam);
-        debug!("Nearplane corners are {:#?}", &cam.get_nearplane_corners());
         
-        let (width, height) = cam.get_resolution();
-        let n_pixels = width * height;
+        let n_pixels: usize =  cam.image_resolution[0] * cam.image_resolution[1];
         let mut pixel_colors = vec![scene.background_color; n_pixels]; // Colors range [0, 255], not [0, 1]
-        
-        // ------------------------ Pixel Colors ------------------------------
-        // 1- Generate primary rays from camera center to pixel centers
+
         let eye_rays = cam.generate_primary_rays();
         let shapes: ShapeList = scene.objects.all();
-
-        // 2- Recursive ray tracing here!
         for (i, ray) in eye_rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
            //eprint!("\rComputing {} / {}", i + 1, n_pixels); 
            //io::stdout().flush().unwrap(); TODO: how to do it with tracing crate?

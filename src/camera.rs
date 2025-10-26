@@ -104,10 +104,12 @@ impl Camera {
             info!("Gaze and Up vectors are not perpendicular, correcting v...");
             self.v = self.w.cross(self.u);
         }
-        debug!("Camera w: {}, v: {}, u: {}", self.w, self.v, self.u);    
+          
         debug_assert!(approx_zero(self.u.dot(self.w))); 
         debug_assert!(approx_zero(self.v.dot(self.w))); 
         debug_assert!(approx_zero(self.v.dot(self.u))); 
+        debug!("{:#?}", self);
+        debug!("Nearplane corners are {:#?}", &self.get_nearplane_corners());
     }
 
     pub fn get_resolution(&self) -> (usize, usize) {
