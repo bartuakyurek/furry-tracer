@@ -18,7 +18,7 @@ use tracing::{debug, info, warn};
 use crate::dataforms::VertexData;
 use crate::ray::{HitRecord, Ray};
 use crate::scene::{Scene};
-use crate::numeric::{Vector3, Float};
+use crate::numeric::{Float, Int, Vector3};
 use crate::image::{ImageData};
 use crate::interval::{Interval, FloatConst};
 use crate::shapes::{Shape};
@@ -39,7 +39,7 @@ pub fn closest_hit(ray: &Ray, t_interval: &Interval, shapes: &ShapeList, vertex_
    }
 }
 
-pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 {
+pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
     
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
    let mut color = scene.background_color;
@@ -48,9 +48,27 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 {
    
    if let Some(hit_record) = hit_record {
         // Update color
-        let n = hit_record.normal;
-        color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
-        color = color * 255.0; // scale to [0, 255]
+        //let n = hit_record.normal;
+        //color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
+        //color = color * 255.0; // scale to [0, 255]
+
+        for point_light in scene.lights.point_lights.all() {
+            let pos = point_light.position;
+            let intensity = point_light.rgb_intensity;
+            let origin = hit_record.point + (hit_record.normal * scene.shadow_ray_epsilon);
+            let dir = pos - origin;
+            let shadow_ray = Ray::new(origin, dir);
+            let mut shadow_hit = None;
+            let interval = Interval::NONNEGATIVE;
+            closest_hit(&shadow_ray, &interval, shapes,  &scene.vertex_data, &mut shadow_hit);
+
+            if let Some(shadow_hit) = shadow_hit {
+                color = Vector3::new(255., 0.,0.);  // TODO
+            }
+        }
+
+        // TODO add ambient
+        let ambient_intensity = scene.lights.ambient_light;
    }
    color
 }
