@@ -29,7 +29,7 @@ impl Ray {
 
     #[inline]
     pub fn is_front_face(&self, normal: Vector3) -> bool {
-         self.direction.dot(normal) > 0.0 // TODO: is this correct?
+         self.direction.dot(normal) <= 0.0 
     }
 }
 

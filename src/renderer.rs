@@ -51,7 +51,7 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
                         let n = hit_record.normal;
                         let color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
                         let color = color * 255.0; // scale to [0, 255]
-                        pixel_colors[i] = color; // red 
+                        pixel_colors[i] = color; // normal color
                     }
                   
                 }
