@@ -7,7 +7,7 @@
     @author: bartu
 */
 
-use bevy_math::FloatOrd;
+use bevy_math::{FloatOrd, NormedVectorSpace};
 use serde::{Deserialize};
 use tracing::{info, error};
 use tracing_subscriber::registry::Data;
@@ -93,8 +93,19 @@ impl Shape for Sphere {
 
             let t = if t1 < t2 {t1} else {t2}; // Take the closer root
             debug_assert!(t_interval.contains(t));
-            //Some(HitRecord::new_from(ray, t, self.material_idx)) // TODO: is this correct?
-            Some(HitRecord::default())
+            
+            // TODO: isn't it repeated for other Shape implementations? Perhaps a function to return associated record would be useful
+            let point = ray.at(t);
+            let normal = (point - center).normalize();
+            
+            let record = HitRecord { 
+                point, 
+                normal, 
+                ray_t: t, 
+                material: self.material_idx, 
+                is_front_face: ray.direction.dot(normal) > 0 as Float // TODO: is this correct?
+            };
+            Some(record)
         }
     }
 }
