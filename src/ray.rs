@@ -111,8 +111,10 @@ pub fn ray_triangle_intersection(ray: &Ray, t_interval: &Interval, tri_indices: 
 
         // Get ray t
         let t = edge_ac.dot(another_perp) * inverse_determinant;
-        debug_assert!(t_interval.contains(t));
-
+        if !t_interval.contains(t) {
+            return None;
+        }
+        
         // Construct hit point p
         let p = ray.at(t); // TODO: would it be faster to use barycentric u,v here? 
 
