@@ -36,11 +36,10 @@ use tracing::{warn, error, debug};
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{BoxedMaterial, DiffuseMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
-use crate::shapes::{Shape, Mesh, Plane, Sphere, Triangle};
+use crate::shapes::{Shape, Plane, Sphere, Triangle};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
-use crate::dataforms::{SingleOrVec};
-use crate::dataforms::{VertexData};
+use crate::dataforms::{SingleOrVec, VertexData, DataField};
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
@@ -157,36 +156,6 @@ impl SceneMaterials {
     }
 }
 
-#[derive(Debug, Deserialize, Default)]
-#[serde(default)] // If any of the fields below is missing in the JSON, use default (empty vector, hopefully)
-// #[serde(rename_all = "PascalCase")] // Do NOT do that here, naming is different in json file
-pub struct SceneObjects {
-    #[serde(rename = "Triangle")]
-    pub triangles: SingleOrVec<Triangle>,
-    #[serde(rename = "Sphere")]
-    pub spheres: SingleOrVec<Sphere>,
-    #[serde(rename = "Plane")]
-    pub planes: SingleOrVec<Plane>,
-    #[serde(rename = "Mesh")]
-    pub meshes: SingleOrVec<Mesh>,
-}
-
-impl SceneObjects {
-
-    pub fn all(&self) -> Vec<Rc<dyn Shape>> {
-        // Return a vector of all shapes in the scene
-        warn!("SceneObjects.all( ) assumes there are only triangles, spheres, planes, and meshes. If there are other Shape trait implementations they are not added yet.");
-        let mut shapes: Vec<Rc<dyn Shape>> = Vec::new();
-
-        shapes.extend(self.triangles.all().into_iter().map(|t| Rc::new(t) as Rc<dyn Shape>));
-        shapes.extend(self.spheres.all().into_iter().map(|s| Rc::new(s) as Rc<dyn Shape>));
-        shapes.extend(self.planes.all().into_iter().map(|p| Rc::new(p) as Rc<dyn Shape>));
-        shapes.extend(self.meshes.all().into_iter().map(|m| Rc::new(m) as Rc<dyn Shape>));
-
-        shapes
-    }
-
-}
 
 fn parse_single_material(value: serde_json::Value) -> BoxedMaterial {
     
@@ -216,4 +185,94 @@ fn parse_material(value: serde_json::Value) -> Vec<BoxedMaterial> {
             vec![]
         }
     }
+}
+
+
+
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct Mesh {
+    #[serde(deserialize_with = "deser_usize")]
+    pub _id: usize,
+    #[serde(rename = "Material", deserialize_with = "deser_usize")]
+    pub material_idx: usize,
+    #[serde(rename = "Faces")]
+    pub faces: FaceType,
+}
+
+type FaceType = DataField<usize>;
+impl FaceType {
+    pub fn len(&self) -> usize {
+        debug_assert!(self._type == "triangle"); // Only triangle meshes are supported
+        (self._data.len() as f64 / 3.) as usize
+    }
+
+    pub fn get_indices(&self, i: usize) -> [usize; 3] {
+        debug_assert!(self._type == "triangle");
+        let start = i * 3;
+        [self._data[start], self._data[start + 1], self._data[start + 2]]
+    }
+}
+
+
+#[derive(Debug, Deserialize, Default)]
+#[serde(default)] // If any of the fields below is missing in the JSON, use default (empty vector, hopefully)
+// #[serde(rename_all = "PascalCase")] // Do NOT do that here, naming is different in json file
+pub struct SceneObjects {
+    #[serde(rename = "Triangle")]
+    pub triangles: SingleOrVec<Triangle>,
+    #[serde(rename = "Sphere")]
+    pub spheres: SingleOrVec<Sphere>,
+    #[serde(rename = "Plane")]
+    pub planes: SingleOrVec<Plane>,
+    #[serde(rename = "Mesh")]
+    pub meshes: SingleOrVec<Mesh>,
+}
+
+impl SceneObjects {
+
+    pub fn all(&self) -> Vec<Rc<dyn Shape>> {
+        // Return a vector of all shapes in the scene
+        warn!("SceneObjects.all( ) assumes there are only triangles, spheres, planes, and meshes. If there are other Shape trait implementations they are not added yet.");
+        let mut shapes: Vec<Rc<dyn Shape>> = Vec::new();
+
+        shapes.extend(self.triangles.all().into_iter().map(|t| Rc::new(t) as Rc<dyn Shape>));
+        shapes.extend(self.spheres.all().into_iter().map(|s| Rc::new(s) as Rc<dyn Shape>));
+        shapes.extend(self.planes.all().into_iter().map(|p| Rc::new(p) as Rc<dyn Shape>));
+        //shapes.extend(self.meshes.all().into_iter().map(|m| Rc::new(m) as Rc<dyn Shape>));
+
+        // Convert meshes to triangles 
+        for mesh in self.meshes.all() {
+            let triangles = mesh_to_triangles(&mesh);
+            shapes.extend(triangles.into_iter().map(|t| Rc::new(t) as Rc<dyn Shape>));
+        }
+
+        shapes
+    }
+
+}
+
+
+// Helper function to convert a Mesh into individual Triangles
+fn mesh_to_triangles(mesh: &Mesh) -> Vec<Triangle> {
+    
+    let id_offset = 10_000_000 * mesh._id; // TODO: crates for creating unique ids? this fails if mesh faces exceed that magic number
+    if mesh.faces._type != "triangle" {
+        panic!(">> Expected triangle faces in mesh_to_triangles, got '{}'.", mesh.faces._type);
+    }
+    
+    let n_faces = mesh.faces.len();
+    let mut triangles = Vec::with_capacity(n_faces);
+    
+    for i in 0..n_faces {
+        let indices = mesh.faces.get_indices(i);
+        triangles.push(Triangle {
+            _id: id_offset + i, 
+            indices,
+            material_idx: mesh.material_idx,
+            //cache: None, // TODO: Fill cache
+        });
+    }
+    
+    triangles
 }

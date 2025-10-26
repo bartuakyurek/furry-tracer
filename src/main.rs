@@ -35,7 +35,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
         warn!("No arguments were provided, setting default scene path...");
-        &String::from("./assets/simple.json")
+        &String::from("./assets/test.json")
     } else if args.len() == 2 {
         &args[1]
     } else {
@@ -71,10 +71,5 @@ fn main() {
             eprintln!("Failed to save {}: {}", imagefolder, e);
         }
     }
-
-    // TODO: remove these reminder errors
-    error!("Intersection trait is not implemented for Plane!");
-    error!("Intersection trait is not implemented for Sphere!");
-    error!("Intersection trait is not implemented for Mesh!");
     info!("Finished execution.");
 }
