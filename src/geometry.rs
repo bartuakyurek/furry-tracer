@@ -48,6 +48,19 @@ pub struct CoordLike {
     zs: Vec<Float>,
 }
 
+impl CoordLike {
+    pub fn new_from(coords: Vec<Vector3>) -> Self {
+        let xs = (0..coords.len()).map(|i| coords[i*3]).collect();
+        let ys = (0..coords.len()).map(|i| coords[i*3 + 1]).collect();
+        let zs = (0..coords.len()).map(|i| coords[i*3 + 2]).collect();
+        Self {
+            xs,
+            ys,
+            zs,
+        }
+    }
+}
+
 impl StructofArrays for CoordLike {
     type Item = Vector3;
 
