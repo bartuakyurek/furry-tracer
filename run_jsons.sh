@@ -11,7 +11,7 @@ json_files=(
 for json_file in "${json_files[@]}"; do
     if [ -f "$json_file" ]; then
         echo "Running cargo for $json_file ..."
-        cargo run -- "$json_file"
+        cargo run --release -- "$json_file"
         echo "---------------------------------------"
     else
         echo "File not found: $json_file"
