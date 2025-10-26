@@ -52,12 +52,12 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
         for point_light in scene.lights.point_lights.all() {
             let light_pos = point_light.position;
             let ray_origin = hit_record.point + (hit_record.normal * scene.shadow_ray_epsilon);
-            let dir = light_pos - ray_origin;
-            let shadow_ray = Ray::new(ray_origin, dir);
-            let mut shadow_hit = None;
             let distance_vec = light_pos - ray_origin;
             let distance_squared = distance_vec.norm_squared();
             let distance = distance_squared.sqrt();
+            let dir = distance_vec / distance;
+            let shadow_ray = Ray::new(ray_origin, dir);
+            let mut shadow_hit = None;
             let interval = Interval::new(0.0, distance);
             closest_hit(&shadow_ray, &interval, shapes,  &scene.vertex_data, &mut shadow_hit);
 
