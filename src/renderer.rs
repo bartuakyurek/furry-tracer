@@ -13,6 +13,7 @@
 
 use std::rc::Rc;
 use std::io::{self, Write};
+use bevy_math::NormedVectorSpace;
 use tracing::{debug, info, warn};
 
 use crate::dataforms::VertexData;
@@ -42,28 +43,30 @@ pub fn closest_hit(ray: &Ray, t_interval: &Interval, shapes: &ShapeList, vertex_
 pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
     
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
-   let mut color = scene.background_color;
+   let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
    let mut hit_record = None;
    closest_hit(ray, &t_interval, shapes, &scene.vertex_data, &mut hit_record);
    
    if let Some(hit_record) = hit_record {
-        // Update color
-        //let n = hit_record.normal;
-        //color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
-        //color = color * 255.0; // scale to [0, 255]
-
+        // Generate shadow rays 
         for point_light in scene.lights.point_lights.all() {
-            let pos = point_light.position;
-            let intensity = point_light.rgb_intensity;
-            let origin = hit_record.point + (hit_record.normal * scene.shadow_ray_epsilon);
-            let dir = pos - origin;
-            let shadow_ray = Ray::new(origin, dir);
+            let light_pos = point_light.position;
+            let ray_origin = hit_record.point + (hit_record.normal * scene.shadow_ray_epsilon);
+            let dir = light_pos - ray_origin;
+            let shadow_ray = Ray::new(ray_origin, dir);
             let mut shadow_hit = None;
-            let interval = Interval::NONNEGATIVE;
+            let distance_vec = light_pos - ray_origin;
+            let distance_squared = distance_vec.norm_squared();
+            let distance = distance_squared.sqrt();
+            let interval = Interval::new(0.0, distance);
             closest_hit(&shadow_ray, &interval, shapes,  &scene.vertex_data, &mut shadow_hit);
 
             if let Some(shadow_hit) = shadow_hit {
-                color = Vector3::new(255., 0.,0.);  // TODO
+                color = scene.background_color;
+            } 
+            else {
+                let light_intensity = point_light.rgb_intensity;
+                color += light_intensity * (1. / distance_squared); // Contribution from light source
             }
         }
 
