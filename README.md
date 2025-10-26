@@ -8,10 +8,10 @@ This is a ray tracer developed for METU graduate level course CENG 795.
 Author: Bartu
 
 ---
-For debug:
+For debugging:
 ``$ RUST_LOG=debug cargo run``
 
-For fastest:
+For fastest run:
 ``$ cargo run --release``
 
 For unit tests:
@@ -25,16 +25,15 @@ For more suggestions to improve code:
 > [!IMPORTANT]
 > Binaries are placed under ./target/debug/ or ./target/release depending on cargo run commands above. By default it is under debug but for faster runs compiling with --release is recommended.
 
-#TODO 
+# TODO 
 ---
 - [x] Vertex indices start from 1, not 0, make sure to handle that correctly
 - [x] Ambient light is declared only once, change implementation to return a single vec3, Not vector of vec3. 
+- [ ] Consider utilizing CoordLike implementation in geometry.rs  
+- [ ] Unit tests missing
+- [ ] Consider explicitly marking your function with #[inline] or #[inline(always)] to see if it improves performance. (source: https://softwaremill.com/rust-static-vs-dynamic-dispatch/)
 
-- [] Consider utilizing CoordLike implementation in geometry.rs 
-
-- [] Consider explicitly marking your function with #[inline] or #[inline(always)] to see if it improves performance. (source: https://softwaremill.com/rust-static-vs-dynamic-dispatch/)
-
-- [] Every shape in this class has material_idx so there could be a struct
+- [ ] Every shape in this class has material_idx so there could be a struct
     dedicated to such data unrelated to shapes but required for HitRecord. But
     Rust does not allow implicit inheritance so we cannot just:
     ```
