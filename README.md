@@ -26,9 +26,8 @@ debug but for faster runs compiling with --release is recommended.
 
 #TODO 
 ---
-- Vertex indices start from 1, not 0, make sure to handle that correctly
-- Ambient light is declared only once, change implementation to return a single vec3, 
-Not vector of vec3. 
+[OK] Vertex indices start from 1, not 0, make sure to handle that correctly
+[OK] Ambient light is declared only once, change implementation to return a single vec3, Not vector of vec3. 
 
 - Consider explicitly marking your function with #[inline] or #[inline(always)] to see if it improves performance. (source: https://softwaremill.com/rust-static-vs-dynamic-dispatch/)
 
