@@ -66,7 +66,7 @@ impl HitRecord {
 }
 
 
-pub fn ray_triangle_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<Float> {
+pub fn ray_triangle_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<(Vector3, Float)> {
 
     // Based on Möller-Trumbore algorithm
         //
@@ -103,8 +103,12 @@ pub fn ray_triangle_intersection(ray: &Ray, t_interval: &Interval, tri_indices: 
             return None;
         }
 
+        // Get ray t
         let t = edge_ac.dot(another_perp) * inverse_determinant;
         debug_assert!(t_interval.contains(t));
 
-        Some(t)
+        // Construct hit point p
+        let p = ray.at(t); // TODO: would it be faster to use barycentric u,v here? 
+
+        Some((p, t))
 }

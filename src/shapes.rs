@@ -119,6 +119,7 @@ impl Shape for Plane {
         let  t = dist.dot(self.normal) / ray.direction.dot(self.normal);
 
         if t_interval.contains(t) {
+            // Construct Hit Record
             let point = ray.at(t);
             let record = HitRecord { 
                 point, 
@@ -175,7 +176,7 @@ impl Shape for Mesh {
         for i in 0..n_faces {
             
             let indices = self.faces.get_indices(i); // Assume triangle!
-            if let Some(t) = ray_triangle_intersection(ray, t_interval, indices, verts) {
+            if let Some((p, t)) = ray_triangle_intersection(ray, t_interval, indices, verts) {
                 return Some(HitRecord::default())  // dont forget to use t
             }
         }
