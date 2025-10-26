@@ -11,6 +11,7 @@ use bevy_math::{FloatOrd, NormedVectorSpace};
 use serde::{Deserialize};
 use tracing::{info, error};
 use tracing_subscriber::registry::Data;
+use crate::geometry::get_tri_normal;
 use crate::json_parser::*;
 use crate::interval::{Interval};
 use crate::dataforms::{DataField, VertexData};
@@ -32,6 +33,9 @@ pub struct Triangle {
     pub indices: [usize; 3],
     #[serde(rename = "Material", deserialize_with = "deser_usize")]
     pub material_idx: usize,
+
+    #[serde(skip)]
+    cache: TrianglesCache,
 }
 
 impl Shape for Triangle {
@@ -48,8 +52,13 @@ impl Shape for Triangle {
         // shape refers to this data for their coordinates. 
         
         //info!("todo: convert u,v barycentric to coords");
-        if let Some(t) = ray_triangle_intersection(ray, t_interval, self.indices, verts) {
-            Some(HitRecord::default()) 
+        if let Some((p, t)) = ray_triangle_intersection(ray, t_interval, self.indices, verts) {
+            // TODO: Cache tri normals
+            // Normal of the triangle (WARNING: no vertex normal used here)
+            let [v1, v2, v3] = self.indices.map(|i| verts[i]);
+            let tri_normal = get_tri_normal(&v1, &v2, &v3);
+            let front_face = ray.is_front_face(tri_normal);
+            Some(HitRecord::new(p, tri_normal, t, self.material_idx, front_face)) 
         }
         else {
             None
@@ -94,8 +103,7 @@ impl Shape for Sphere {
             let t = if t1 < t2 {t1} else {t2}; // Take the closer root
             debug_assert!(t_interval.contains(t));
             
-            // TODO: isn't it repeated for other Shape implementations? Perhaps a function to return associated record would be useful
-            let point = ray.at(t);
+            let point = ray.at(t); // Note that this computation is done inside new_from as well
             let normal = (point - center).normalize(); // TODO: is this correct?
             Some(HitRecord::new_from(ray, normal, t, self.material_idx))
         }
@@ -140,6 +148,9 @@ pub struct Mesh {
     material_idx: usize,
     #[serde(rename = "Faces")]
     faces: DataField<usize>,
+
+    #[serde(skip)]
+    cache: TrianglesCache,
 }
 
 type FaceType = DataField<usize>;
@@ -154,6 +165,31 @@ impl FaceType {
         let start = i * 3;
         [self._data[start], self._data[start + 1], self._data[start + 2]]
     }
+}
+
+#[derive(Debug, Clone, Default)] // Clone was needed for Deserialize bounds?
+struct TrianglesCache {
+    pub face_normals: Option<Vec<Vector3>>,
+    pub vertex_normals: Option<Vec<Vector3>>,
+}
+
+impl TrianglesCache {
+    // I tried below but if new members are added to 
+    // cache, it requires manual adjustments here, so I dropped it.
+    //pub fn init_capacity(&mut self, n_faces: usize, n_verts: usize) -> bool {
+    //    let mut flag = false;
+    //    if self.face_normals == None {
+    //        self.face_normals = Some(Vec::with_capacity(n_faces));
+    //        flag = true;
+    //    }
+    //    if self.vertex_normals == None {
+    //        self.vertex_normals = Some(Vec::with_capacity(n_verts));
+    //        flag = true;
+    //    }
+    //    flag // indicate if anything is changed 
+    //}
+    
+    //pub fn set_vert_normals(&mut self, tris: )
 }
 
 impl Mesh {
@@ -172,7 +208,13 @@ impl Shape for Mesh {
             
             let indices = self.faces.get_indices(i); // Assume triangle!
             if let Some((p, t)) = ray_triangle_intersection(ray, t_interval, indices, verts) {
-                return Some(HitRecord::default())  // dont forget to use t
+                // TODO: THIS IS WRONG, you need to check the closest intersection, so gather all the hitrecord first
+                // TODO: Cache tri normals
+                // Normal of the triangle (WARNING: no vertex normal used here)
+                let [v1, v2, v3] = indices.map(|i| verts[i]);
+                let tri_normal = get_tri_normal(&v1, &v2, &v3);
+                let front_face = ray.is_front_face(tri_normal);
+                return Some(HitRecord::new(p, tri_normal, t, self.material_idx, front_face)) 
             }
         }
         None

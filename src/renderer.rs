@@ -42,7 +42,10 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
             for shape in shapes.iter() {
                 if let Some(hit_record) = shape.intersects_with(ray, &Interval::NONNEGATIVE, &scene.vertex_data){
                     // info!("There is a hit, yippeeee!! {:?}", hit_record);
-                    pixel_colors[i] = Vector3::new(255., 0., 0.); // red 
+                    let n = hit_record.normal;
+                    let color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
+                    let color = color * 255.0; // scale to [0, 255]
+                    pixel_colors[i] = color; // red 
                 }
             
             }

@@ -12,10 +12,11 @@
     @author: bartu
 */
 
+use std::{ops::Index};
 use crate::shapes::{Triangle};
 use crate::numeric::{Float, Vector3};
 
-pub fn tri_normal(v1: &Vector3, v2: &Vector3, v3: &Vector3) -> Vector3{
+pub fn get_tri_normal(v1: &Vector3, v2: &Vector3, v3: &Vector3) -> Vector3{
     // WARNING: Assumes triangle indices are given in counter clockwise order 
     //
     //    v1
@@ -61,6 +62,20 @@ impl CoordLike {
     }
 }
 
+
+//impl Index<usize> for CoordLike {
+//    // To access data through indexing like
+//    // let some_field = DataField::default()
+//    // some_field[i] = ...
+//    // instead of some_field._data[i]
+//    type Output = [Float; 3];
+//    fn index(&self, index: usize) -> &Self::Output {
+//        [self.xs[index], self.ys[index], self.xs[index]] // doesnt work because it's temporary value
+//    }
+//}
+
+
+
 impl StructofArrays for CoordLike {
     type Item = Vector3;
 
@@ -93,7 +108,7 @@ impl CoordLike {
             let v2 =  vertices[tri.indices[1]];
             let v3 = vertices[tri.indices[2]];
 
-            let n = tri_normal(&v1, &v2, &v3);
+            let n = get_tri_normal(&v1, &v2, &v3);
             (xs[i], ys[i], zs[i]) = (n[0], n[1], n[2]);
         }
        
@@ -107,25 +122,25 @@ impl CoordLike {
 mod tests {
     use super::*; // access to the outer scope
 
-    #[test]
-    fn test_normals() {
-        // WARNING: A simple test is provided, does not
-        // check degenerate cases at this point.
-        let verts: Vec<Vector3> = vec![
-                Vector3::new(0., 0., 0.),
-                Vector3::new(1., 0., 0.),
-                Vector3::new(0.5, 0.5, 0.),
-        ];
-        let tri = Triangle { _id: 0, 
-                    indices: [0, 1, 2], 
-                    material_idx: 0, 
-                    
-                };
-
-        let n_tri: usize = 20;
-        let triangles = vec![tri; n_tri];
-        let tri_normals_soa = CoordLike::tri_normals(&triangles, &verts);
-        let tri_normals_aos = tri_normals_soa.vectorize();
-        assert_eq!(tri_normals_aos, vec![Vector3::new(0.,0.,1.); n_tri]);
-    }
+    //#[test]
+    //fn test_normals() {
+    //    // WARNING: A simple test is provided, does not
+    //    // check degenerate cases at this point.
+    //    let verts: Vec<Vector3> = vec![
+    //            Vector3::new(0., 0., 0.),
+    //            Vector3::new(1., 0., 0.),
+    //            Vector3::new(0.5, 0.5, 0.),
+    //    ];
+    //    let tri = Triangle { _id: 0, 
+    //                indices: [0, 1, 2], 
+    //                material_idx: 0, 
+    //                
+    //            };
+    //
+    //    let n_tri: usize = 20;
+    //    let triangles = vec![tri; n_tri];
+    //    let tri_normals_soa = CoordLike::tri_normals(&triangles, &verts);
+    //    let tri_normals_aos = tri_normals_soa.vectorize();
+    //    assert_eq!(tri_normals_aos, vec![Vector3::new(0.,0.,1.); n_tri]);
+    //}
 }

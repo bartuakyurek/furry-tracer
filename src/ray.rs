@@ -26,6 +26,11 @@ impl Ray {
     pub fn at(&self, t: Float) -> Vector3 {
         self.origin + self.direction * t // r(t) = o + dt
     }
+
+    #[inline]
+    pub fn is_front_face(&self, normal: Vector3) -> bool {
+         self.direction.dot(normal) > 0.0 // TODO: is this correct?
+    }
 }
 
 
@@ -55,7 +60,7 @@ impl HitRecord {
         }
     }
     pub fn new_from(ray: &Ray, n: Vector3, t: Float, material: usize) -> Self {
-        let is_front_face = ray.direction.dot(n) > 0.0; // TODO: is this correct?
+        let is_front_face = ray.is_front_face(n);
         Self {
             point: ray.at(t),
             normal: if is_front_face {n} else {-n}, // TODO: is this correct?
