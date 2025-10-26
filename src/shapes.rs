@@ -95,9 +95,14 @@ impl Shape for Sphere {
             let t1 = (-d_dot_oc + discriminant) / d_dot_d;
             let t2 = (-d_dot_oc - discriminant) / d_dot_d;
 
-            let t = if t1 < t2 {t1} else {t2}; // Take the closer root
-            debug_assert!(t_interval.contains(t));
-            
+             let t = if t_interval.contains(t1) {
+                t1 // t1 is always < t2
+            } else if t_interval.contains(t2) {
+                t2
+            } else {
+                return None;  // No valid intersection
+            };
+
             let point = ray.at(t); // Note that this computation is done inside new_from as well
             let normal = (point - center).normalize(); // TODO: is this correct?
             Some(HitRecord::new_from(ray, normal, t, self.material_idx))
