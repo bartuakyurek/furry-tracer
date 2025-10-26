@@ -35,7 +35,7 @@ impl Ray {
 // but ray origin so t=0 is at ray origin, smaller t is, closer the object is.  
 //
 // DISCLAIMER: This struct is based on the approach presented in Ray Tracing in One Weekend book.
-#[derive(Debug, Default)] // TODO: Remove default! 
+#[derive(Debug)]  
 pub struct HitRecord {
     pub point: Vector3,
     pub normal: Vector3,
