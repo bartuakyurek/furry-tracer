@@ -11,167 +11,62 @@
     @author: Bartu
 */
 
-use std::fs::File;
-use std::path::{Path, PathBuf};
-use std::io::BufWriter;
-use tracing::{debug, warn};
+use std::f32::INFINITY;
+use std::io::{self, Write};
+use tracing::{debug, info, warn};
 
+use crate::ray::Ray;
 use crate::scene::{Scene};
-use crate::numeric::{Vector3, Float, Index};
-
-#[derive(Clone)]
-pub struct ImageData {
-    pixel_colors : Vec<Vector3>, // Vector of RGB per pixel
-    pixel_centers: Vec<Vector3>,
-    width : usize,
-    height: usize,
-    scale: Float,   
-    name: String, // TODO: width, height, name info actually is stored under camera as well
-                  // is it wise to copy those into ImageData? I thought it is more organized this way.
-}
-
-//pub fn pixel_centers(width: usize, height: usize, scale: Float, offset: Vector3) -> Vec<Vector3>{
-//    // Given width and height of 
-//    // Returns 3d locations of each pixel's center point
-//    // set offset to Vector3::ZERO if image is centered to camera (as assumed in this course)
-//    // TODO: fill here.... 
-//    {
-//
-//         let width: Float = width as Float * scale;
-//         let height: Float = height as Float * scale;
-//         let half_pixel = scale / 2.0;
-//         
-//         for y in 0..height {
-//                for x in 0..width {
-//                    let px = x + half_pixel + offset[0];
-//                    let py = y + half_pixel + offset[1];
-//                    let pz = 0.0 as Float; // TODO: What if image plane is rotated? I don't think this is the right way to do it
-//                    Vector3::new(px, py, pz); 
-//                }
-//            }
-//    }
-//}
-
-impl ImageData {
-
-    pub fn new(resolution: [usize; 2], name: String, background: Vector3) -> Self {
-        // Create a new image of specified background color
-        // Set background to Vector3::ZERO for black background
-        let scale: Float = 1.0;
-        let (width, height) = (resolution[0], resolution[1]);
-        let pixel_colors = vec![background; width * height];
-        Self::new_from(width, height, scale, name, pixel_colors)
-    }
-
-    pub fn new_from(width: usize, height: usize, scale: Float, name: String, pixel_colors: Vec<Vector3>) -> Self {
-        
-        //let pixel_centers = pixel_centers(width, height, scale, Vector3::ZERO);
-        let pixel_centers = vec![Vector3::ZERO; width*height];
-        ImageData {
-            pixel_colors,
-            pixel_centers,
-            width,
-            height,
-            scale,
-            name,
-        }
-    }
-
-    pub fn flatten_color(self) -> Vec<Float> {
-        // Return [R1, G1, B1, R2, G2, B2, ...] vector
-        // where each triplet is RGB color of a pixel.
-        self.pixel_colors.into_iter().flat_map(|v| [v.x, v.y, v.z]).collect()
-    }
-    pub fn to_rgb(self) -> Vec<u8> {
-        let rgb_vec = self.flatten_color().into_iter().map(|x| {
-            if x < 0.0 || x > 255.0 {
-                warn!("Clamping applied to x={} value for RGB conversion.", x);
-            }
-            x.clamp(0.0, 255.0) as u8
-        }).collect();
-
-        rgb_vec
-    } 
-
-    pub fn check_extension(self, path: &PathBuf, extension: &str) -> bool {
-        path.extension().unwrap().to_str().unwrap() == extension
-    }
-
-    pub fn get_fullpath(&self, path: &str) -> PathBuf {
-        // Check if provided path is a folder 
-        // if so, create a .png under this folder
-        // otherwise use the provided path as is
-        let extension = "png";
-        {
-            let path = Path::new(path);
-            let mut finalpath: PathBuf = path.to_path_buf();
-            if path.is_dir() {
-                // create <imagename>.png under this directory 
-                finalpath = path.join(self.name.clone());
-            } 
-            if finalpath.set_extension(extension) {
-                warn!("Extension changed to .{}", extension);
-            }
-            finalpath
-        }
-    }
-
-    pub fn save_png(self, path: &str) -> Result<(), Box<dyn std::error::Error>>{
-        // Path is either a folder name or
-        // full path including <imagename>.png
-        // If full path is not provided it will use 
-        // stored image name.
-        //
-        // WARNING: Assumes RGB is used (no transparency available atm)
-        // WARNING: Only png accepted for now, if specified image name has another
-        // extension it will be silently converted to .png
-        //
-        // DISCLAIMER: This function is based on https://docs.rs/png/0.18.0/png/
-        let path: PathBuf = self.get_fullpath(path);
-
-        let file = File::create(path).unwrap();
-        let ref mut w = BufWriter::new(file);
-        let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32); // Width is 2 pixels and height is 1.
-    
-        encoder.set_color(png::ColorType::Rgb);
-        encoder.set_depth(png::BitDepth::Eight);
-
-        encoder.set_source_gamma(png::ScaledFloat::from_scaled(45455)); // 1.0 / 2.2, scaled by 100000
-        encoder.set_source_gamma(png::ScaledFloat::new(1.0 / 2.2));     // 1.0 / 2.2, unscaled, but rounded
-        let source_chromaticities = png::SourceChromaticities::new(     // Using unscaled instantiation here
-            (0.31270, 0.32900),
-            (0.64000, 0.33000),
-            (0.30000, 0.60000),
-            (0.15000, 0.06000)
-        );
-        encoder.set_source_chromaticities(source_chromaticities);
-        let mut writer = encoder.write_header().unwrap();
-
-        let data = self.to_rgb();
-        writer.write_image_data(&data)?; // Save
-        
-        Ok(())
-    }
-}
+use crate::numeric::{Vector3, Float};
+use crate::image::{ImageData};
+use crate::interval::{Interval};
 
 
 pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
 {
     let mut images: Vec<ImageData> = Vec::new();
-    for mut cam in scene.cameras{
+    for mut cam in scene.cameras.all() {
         cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
-        debug!("{:?}", cam);
-
-        // TODO: Return Vec<ImageData>
-        let (width, height) = cam.get_resolution();
-        warn!("Use Camera.ImageResolution for width and Height.");
-
-        let pixel_colors = vec![Vector3::ZERO; width * height];
-        let pixel_centers = vec![Vector3::ZERO; width * height];
-
-        let scale = 1.0 as Float;
-        let im = ImageData { pixel_colors, pixel_centers, width, height, scale, name: cam.image_name };
+        debug!("{:#?}", cam);
+        debug!("Nearplane corners are {:#?}", &cam.get_nearplane_corners());
         
+        let (width, height) = cam.get_resolution();
+        let n_pixels = width * height;
+        let mut pixel_colors = vec![scene.background_color; n_pixels]; // Colors range [0, 255], not [0, 1]
+        
+        // ------------------------ Pixel Colors ------------------------------
+        // 1- Generate primary rays from camera center to pixel centers
+        let rays = cam.generate_primary_rays();
+        let shapes = scene.objects.all();
+
+        // 2- Recursive ray tracing here!
+        for (i, ray) in rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
+           // TODO: later we'll use acceleration structures instead of checking *all* objects like this
+           //eprint!("\rComputing {} / {}", i + 1, n_pixels); 
+           //io::stdout().flush().unwrap(); TODO: how to do it with tracing crate?
+            
+            let mut t_min = INFINITY as Float;
+            let t_interval = Interval::positive(scene.intersection_test_epsilon);
+            for shape in shapes.iter() {
+               
+                if let Some(hit_record) = shape.intersects_with(ray, &t_interval, &scene.vertex_data){
+                    
+                    if t_min > hit_record.ray_t {
+                        // Only update color if the hit object is closer than previous
+                        t_min = hit_record.ray_t;
+                        let n = hit_record.normal;
+                        let color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
+                        let color = color * 255.0; // scale to [0, 255]
+                        pixel_colors[i] = color; // normal color
+                    }
+                  
+                }
+            }
+        }
+       
+        // --------------------------------------------------------------------
+        
+        let im = ImageData::new_from_colors(cam.image_resolution, cam.image_name, pixel_colors);
         images.push(im);
     }
     

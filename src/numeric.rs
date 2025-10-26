@@ -14,14 +14,15 @@
     @author: Bartu
 */
 
-use bevy_math::{DVec3, U8Vec3};
-
-pub type RGB = U8Vec3;  // For final RGB colors
+use bevy_math::{DVec3};
 pub type Int = i32;
 pub type Float = f64;
 pub type Vector3 = DVec3; // f64
-pub type Index = usize;
 
+//#[derive(Clone, Copy, Debug, Default)]
+//pub struct Vector3(pub DVec3); // To declare a type and use impl traits on this type
+// TODO: Use your own Vector3 to implement its deserialization 
+// this requires trait bounds to be satisfied, so it breaks most of the code atm
 
 pub fn approx_zero(x: Float) -> bool {
     x.abs() < 1e-8

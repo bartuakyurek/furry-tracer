@@ -22,117 +22,332 @@
     @author: bartu 
 */
 
+use std::fmt::{self};
+use std::marker::PhantomData;
+use std::str::FromStr;
+use std::fs::File;
+use std::io::BufReader;
 
-use tracing::{error, warn, info, debug};
-use std::{str::FromStr, fmt, collections::HashSet, rc::Rc};
-use serde_json::{Value};
-use crate::numeric::{Float, Vector3, Int, Index};
-use crate::dataforms::{From3, SingleOrVec};
-use crate::scene::{self, Scene, SceneLights, PointLight};
-use crate::camera::{Camera, NearPlane};
-use crate::material::{Material};
+use void::Void;
+use serde::{Deserialize, Deserializer};
+use serde::de::{self, Visitor, SeqAccess, MapAccess};
+use tracing::{debug, warn};
 
-type BoxedError = Box<dyn std::error::Error>;
+use crate::scene::{RootScene};
+use crate::camera::{NearPlane};
+use crate::numeric::{Int, Float, Vector3};
 
-
-pub fn import_scene_json(json_path: &str) -> Result<Scene, Box<dyn std::error::Error>> {
-    /*  Return Scene loaded from .json file content.
-        
-        Example use: 
-            // create an empty scene Scene::EMPTY
-            // call import_json(path, scene)
-        
-        WARNING: To import multiple scenes, some object ids also need
-        to be merged. This function directly maps a json file to scene.
-        In future providing a root scene to aggregate multiple 
-        scenes into one might be useful.
+pub fn parse_json795(path: &str) -> Result<RootScene, Box<dyn std::error::Error>> {
+    /*
+        Parse JSON files in CENG 795 format.
     */
-    let data = std::fs::read_to_string(json_path)?;
-    let json_value: Value = serde_json::from_str(&data)?;
-    let scene_value = &json_value["Scene"];
+
+    let span = tracing::span!(tracing::Level::INFO, "load_scene");
+    let _enter = span.enter();
+
+    // Open file
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    debug!("Reading file from {}", path);
     
-    let mut scene = Scene::new();
-    let mut handler = JsonHandler::new(scene_value);
-
-    // Scene attributes
-    handler.get_optional(&mut scene.max_recursion_depth, "MaxRecursionDepth", parse_integer)?;
-    handler.get_optional(&mut scene.background_color , "BackgroundColor", parse_vector3_float)?;
-    handler.get_optional(&mut scene.shadow_ray_epsilon, "ShadowRayEpsilon", parse_float)?;
-    handler.get_optional(&mut  scene.intersection_test_epsilon, "IntersectionTestEpsilon", parse_float)?;
-
-    // Cameras, Lights, Materials, Objects
-    load_lights(&mut scene, &mut handler)?;
-    load_cameras(&mut scene, &mut handler)?;
-    load_materials(&mut scene, &mut handler)?;
-    load_objects(&mut scene, &mut handler)?;
-
-    handler.warn_extra(); // WARNING: This misses extra subfields, only valid for outer scope
-    scene.validate()?;
-    Ok(scene)
-}
-
-fn load_cameras(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError> {
-    
-    if let Some(cameras_value) = handler.get_subobject("Cameras") {
-        let mut cameras_handler = JsonHandler::new(cameras_value);
-        // get Camera 
-        // id 
-        // poisition
-        // gaze
-        
-    }
-
-    Ok(())
-}
+    // Parse JSON into Scene
+    let root: RootScene = serde_json::from_reader(reader)?;
+    Ok(root) 
 
 
-fn load_materials(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError> {
-    
-    //if let Some(materials_value) = handler.get_subobject("Materials") {
-    //}
-
-    Ok(())
-}
-
-fn load_objects(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError> {
-    
-    //if let Some(objects_value) = handler.get_subobject("Objects") {
-    //}
-
-    Ok(())
 }
 
 
 
-fn load_lights(scene: &mut Scene, handler: &mut JsonHandler) -> Result<(), BoxedError>{
-    // Lights
-    if let Some(lights_value) = handler.get_subobject("Lights") {
-        let mut lights_handler = JsonHandler::new(lights_value);
-        lights_handler.get_optional(&mut scene.lights.ambient,"AmbientLight", parse_vector3_float)?;
-        
-        let point_lights: SingleOrVec<PointLight> = lights_handler.get_single_or_vec("PointLight", |v| {
-        let mut pl = PointLight::default();
-        if let Some(id) = v.get("_id") { pl._id = parse_index(id.as_str().ok_or("Invalid _id for Point Light")?)?; }
-        if let Some(pos) = v.get("Position") { pl.position = parse_vector3_float(pos.as_str().ok_or("Invalid Position for Point Light")?)?; }
-        if let Some(inten) = v.get("Intensity") { pl.intensity = parse_vector3_float(inten.as_str().ok_or("Invalid Intensity for Point Light")?)?; }
-        Ok(pl)
-        })?;    
-        scene.lights.point_lights = point_lights.all();
-    }
-    Ok(())
-}
-
-fn parse_scalar<T>(s: &str) -> Result<T, BoxedError> 
+pub fn deser_usize<'de, D>(deserializer: D) -> Result<usize, D::Error>
 where
-    T: std::str::FromStr,
-    T::Err: std::error::Error + 'static,
+    D: Deserializer<'de>,
 {
-    s.parse::<T>()
-        .map_err(|e| Box::new(e) as BoxedError)
+    /*
+        Deserialize usize type given as either string or number in JSON
+        TODO: This is code duplication, use generics to combine
+        deser_float, deser_int, deser_usize
+    */
+    let s: serde_json::Value = Deserialize::deserialize(deserializer)?;
+    match s {
+        serde_json::Value::Number(n) => n.as_i64()
+            .map(|v| v as usize)
+            .ok_or_else(|| de::Error::custom("Invalid integer")),
+        serde_json::Value::String(s) => s.parse::<usize>()
+            .map_err(|_| de::Error::custom("Failed to parse integer from string")),
+        t => Err(de::Error::custom(format!("Expected int or string, found {:#?}", t))),
+    }
+}
+
+pub fn deser_int<'de, D>(deserializer: D) -> Result<Int, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    /*
+        Deserialize integer type given as either string or number in JSON
+    */
+    let s: serde_json::Value = Deserialize::deserialize(deserializer)?;
+    match s {
+        serde_json::Value::Number(n) => n.as_i64()
+            .map(|v| v as Int)
+            .ok_or_else(|| de::Error::custom("Invalid integer")),
+        serde_json::Value::String(s) => s.parse::<Int>()
+            .map_err(|_| de::Error::custom("Failed to parse integer from string")),
+        t => Err(de::Error::custom(format!("Expected int or string, found {t}"))),
+    }
+}
+
+// Handles floats as string or number
+pub fn deser_float<'de, D>(deserializer: D) -> Result<Float, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    /*
+        Deserialize float type given as either string or number in JSON
+    */
+    let s: serde_json::Value = Deserialize::deserialize(deserializer)?;
+    match s {
+        serde_json::Value::Number(n) => n.as_f64()
+            .map(|v| v as Float)
+            .ok_or_else(|| de::Error::custom("Invalid float")),
+        serde_json::Value::String(s) => s.parse::<Float>()
+            .map_err(|_| de::Error::custom("Failed to parse float from string")),
+        t => Err(de::Error::custom(format!("Expected float or string, found {t}"))),
+    }
+}
+
+pub trait From3<T>: Sized {
+    fn new(x: T, y: T, z: T) -> Self;
+}
+
+impl From3<f32> for bevy_math::Vec3 {
+    fn new(x: f32, y: f32, z: f32) -> Self {
+        Self::new(x, y, z)
+    }
+}
+
+impl From3<f64> for bevy_math::DVec3 {
+    fn new(x: f64, y: f64, z: f64) -> Self {
+        Self::new(x, y, z)
+    }
+}
+
+pub fn deser_vec3<'de, D, V, F>(deserializer: D) -> Result<V, D::Error>
+where
+    D: Deserializer<'de>,
+    F: Deserialize<'de> + FromStr,
+    F::Err: fmt::Display,
+    V: From3<F>,
+{
+    struct Vec3Visitor<V, F>(PhantomData<(V, F)>);
+
+    impl<'de, V, F> Visitor<'de> for Vec3Visitor<V, F>
+    where
+        F: Deserialize<'de> + FromStr,
+        F::Err: fmt::Display,
+        V: From3<F>,
+    {
+        type Value = V;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a Vec3 as a string 'x y z' or an array [x, y, z]")
+        }
+
+        // Given "X Y Z"
+        fn visit_str<E>(self, value: &str) -> Result<V, E>
+        where
+            E: de::Error,
+        {
+            parse_vec3_str(value).map_err(de::Error::custom)
+        }
+
+        // Given [X, Y, Z]
+        fn visit_seq<A>(self, mut seq: A) -> Result<V, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let x: F = seq
+                .next_element()?
+                .ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
+            let y: F = seq
+                .next_element()?
+                .ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
+            let z: F = seq
+                .next_element()?
+                .ok_or_else(|| de::Error::custom("Expected 3 elements in Vec3 array"))?;
+            if seq.next_element::<F>()?.is_some() {
+                return Err(de::Error::custom("Expected only 3 elements in Vec3 array"));
+            }
+            Ok(V::new(x, y, z))
+        }
+    }
+
+    deserializer.deserialize_any(Vec3Visitor(PhantomData))
+}
+
+
+pub fn deser_pair<'de, D, T>(deserializer: D) -> Result<[T; 2], D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de> + FromStr,
+    T::Err: fmt::Display,
+{
+    struct Vec2Visitor<T>(PhantomData<T>);
+
+    impl<'de, T> Visitor<'de> for Vec2Visitor<T>
+    where
+        T: Deserialize<'de> + FromStr,
+        T::Err: fmt::Display,
+    {
+        type Value = [T; 2];
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("an array of 2 numbers or a string e.g. 'width height'")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<[T; 2], E>
+        where
+            E: de::Error,
+        {
+            let parts: Vec<&str> = value.split_whitespace().collect();
+            if parts.len() != 2 {
+                return Err(E::custom("Expected 2 components for Vec2 string"));
+            }
+            let x = parts[0]
+                .parse::<T>()
+                .map_err(|_| E::custom("Failed parsing first component"))?;
+            let y = parts[1]
+                .parse::<T>()
+                .map_err(|_| E::custom("Failed parsing second component"))?;
+            Ok([x, y])
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<[T; 2], A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let x: T = seq.next_element()?.ok_or_else(|| de::Error::custom("expected 2 elements"))?;
+            let y: T = seq.next_element()?.ok_or_else(|| de::Error::custom("expected 2 elements"))?;
+            if seq.next_element::<T>()?.is_some() {
+                return Err(de::Error::custom("expected only 2 elements"));
+            }
+            Ok([x, y])
+        }
+    }
+
+    deserializer.deserialize_any(Vec2Visitor::<T>(PhantomData))
+}
+
+pub fn deser_numeric_vec<'de, D, N>(deserializer: D) -> Result<Vec<N>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    N: FromStr, 
+    N::Err: fmt::Display,
+{
+    // Deserialize string of numbers separated by whitespace
+    // into a vector of numbers, e.g. "0 2 3" in .json is deserialized
+    // to Vec<N> where N is number-like (see deser_usize_vec and deser_int_vec 
+    // wrappers for usize and Int (which is defined in numeric.rs) types.
+    let s: String = Deserialize::deserialize(deserializer)?;
+    let numbers = s
+        .split_whitespace()
+        .map(|x| x.parse::<N>().map_err(serde::de::Error::custom))
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(numbers)
+}
+
+// Wrapper for deser_numeric_vec<usize>
+pub fn deser_usize_vec<'de, D>(deserializer: D) -> Result<Vec<usize>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    deser_numeric_vec::<D, usize>(deserializer)
+}
+
+
+// Wrapper for deser_numeric_vec<Int>
+pub fn deser_int_vec<'de, D>(deserializer: D) -> Result<Vec<Int>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    deser_numeric_vec::<D, Int>(deserializer)
+}
+
+pub fn deser_usize_array<'de, D, const N: usize>(deserializer: D) -> Result<[usize; N], D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let v = deser_usize_vec(deserializer)?;
+    if v.len() != N {
+        return Err(serde::de::Error::custom(format!(
+            "expected {} elements, got {}",
+            N, v.len()
+        )));
+    }
+
+    // Convert Vec<usize> to [usize; N] array 
+    v.try_into()
+        .map_err(|_| serde::de::Error::custom("failed to convert Vec to array"))
+}
+
+pub fn deser_nearplane<'de, D>(deserializer: D) -> Result<NearPlane, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    let parts: Vec<&str> = s.split_whitespace().collect();
+    if parts.len() > 4 {
+        warn!("Expected 4 floats for nearplane definition found extra elements in size {} (most likely 5 floats are received, ignoring parts after 4th value)", parts.len())
+        // return Err(de::Error::custom("Expected 5 elements for NearPlane"));
+    }
+    Ok(NearPlane {
+        left: parts[0].parse().map_err(|_| de::Error::custom("Failed parsing left"))?,
+        right: parts[1].parse().map_err(|_| de::Error::custom("Failed parsing right"))?,
+        bottom: parts[2].parse().map_err(|_| de::Error::custom("Failed parsing bottom"))?,
+        top: parts[3].parse().map_err(|_| de::Error::custom("Failed parsing top"))?,
+    })
+}
+
+pub fn deser_vecvec3<'de, D>(deserializer: D) -> Result<Vec<Vector3>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    // Deserialize a vector of Vector3
+    // given either a single string of "X Y Z" or 
+    // array of strings ["X1 Y1 Z1", "X2 Y2 Z2", ...]
+    struct VecVec3Visitor;
+
+    impl<'de> Visitor<'de> for VecVec3Visitor {
+        type Value = Vec<Vector3>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string 'X Y Z' or an array of such strings")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(vec![parse_vec3_str(v).map_err(de::Error::custom)?])
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let mut vec = Vec::new();
+            while let Some(elem) = seq.next_element::<String>()? {
+                vec.push(parse_vec3_str(&elem).map_err(de::Error::custom)?);
+            }
+            Ok(vec)
+        }
+    }
+
+    deserializer.deserialize_any(VecVec3Visitor)
 }
 
 /// Helper function: parse a string like "25 25 25" into Vector3
-fn parse_vector3<V, F>(s: &str) -> Result<V, String> 
+fn parse_vec3_str<V, F>(s: &str) -> Result<V, String> 
 where 
     F: FromStr,
     F::Err: fmt::Display,
@@ -149,118 +364,82 @@ where
 }
 
 
-fn parse_vec<T: std::str::FromStr>(s: &str) -> Result<Vec<T>, BoxedError>
+pub fn deser_vertex_data<'de, D>(deserializer: D) -> Result<Vec<Vector3>, D::Error>
 where
-    T::Err: std::error::Error + 'static
+    D: serde::Deserializer<'de>,
 {
-    s.split_whitespace()
-        .map(|x| x.parse::<T>().map_err(|e| Box::new(e) as BoxedError))
-        .collect()
+    let s: String = Deserialize::deserialize(deserializer)?;
+    parse_string_vecvec3(&s).map_err(serde::de::Error::custom)
 }
 
 
-// Concrete type wrappers
-fn parse_vector3_float(s: &str) -> Result<Vector3, BoxedError> {
-    parse_vector3::<Vector3, Float>(s).map_err(|e| e.into())
+pub fn parse_string_vecvec3(s: &str) -> Result<Vec<Vector3>, String> {
+    parse_string_vec(s, 3, |chunk| Ok(Vector3::new(chunk[0], chunk[1], chunk[2])))
 }
 
-fn parse_float(s: &str) -> Result<Float, BoxedError> {
-    parse_scalar::<Float>(s)
+fn parse_string_vec<T, F>(s: &str, chunk_len: usize, mut f: F) -> Result<Vec<T>, String>
+where
+    F: FnMut(&[f64]) -> Result<T, String>,
+{
+    let nums: Vec<f64> = s
+        .split_whitespace()
+        .map(|x| x.parse::<f64>().map_err(|e| e.to_string()))
+        .collect::<Result<_, _>>()?;
+
+    if nums.len() % chunk_len != 0 {
+        return Err(format!("Input length not divisible by {}", chunk_len));
+    }
+
+    nums.chunks(chunk_len)
+        .map(|chunk| f(chunk))
+        .collect::<Result<Vec<_>, _>>()
 }
 
 
-fn parse_integer(s: &str) -> Result<Int, BoxedError> {
-    parse_scalar::<Int>(s)
-}
+// DISCLAIMER: This function is taken from
+// https://serde.rs/string-or-struct.html
+pub fn deser_string_or_struct<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+where
+    T: Deserialize<'de> + FromStr<Err = Void>,
+    D: Deserializer<'de>,
+{
+    // This is a Visitor that forwards string types to T's `FromStr` impl and
+    // forwards map types to T's `Deserialize` impl. The `PhantomData` is to
+    // keep the compiler from complaining about T being an unused generic type
+    // parameter. We need T in order to know the Value type for the Visitor
+    // impl.
+    struct StringOrStruct<T>(PhantomData<fn() -> T>);
 
-fn parse_index(s: &str) -> Result<Index, BoxedError> {
-    parse_scalar::<Index>(s)
-}
+    impl<'de, T> Visitor<'de> for StringOrStruct<T>
+    where
+        T: Deserialize<'de> + FromStr<Err = Void>,
+    {
+        type Value = T;
 
-// For debug purposes
-fn print_json_keys(v: &Value) {
-    if let Some(obj) = v.as_object() {
-        info!("Found keys:");
-        for key in obj.keys() {
-            info!("  - {}", key);
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("string or map")
         }
-    } else {
-        error!("Value is not a JSON object.");
-    }
-}
 
-struct JsonHandler<'a> {
-    value: &'a Value,
-    handled_keys: HashSet<String>,
-}
-
-impl<'a> JsonHandler<'a> {
-    fn new(value: &'a Value) -> Self {
-        Self { value, handled_keys: HashSet::new() }
-    }
-
-    /// Get an optional field and track it automatically
-    fn get_optional<T>(
-        &mut self,
-        data: &mut Option<T>,
-        key: &str,
-        parser: fn(&str) -> Result<T, Box<dyn std::error::Error>>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(v) = self.value.get(key) {
-            let s = v.as_str().ok_or("Expected string")?;
-            let parsed = parser(s)?;
-            *data = Some(parsed);
-            self.handled_keys.insert(key.to_string());
-            Ok(())
-        } else {
-            error!("No field '{}' found in JSON, data is not updated.", key);
-            Ok(())
+        fn visit_str<E>(self, value: &str) -> Result<T, E>
+        where
+            E: de::Error,
+        {
+            Ok(FromStr::from_str(value).unwrap())
         }
-    }
 
-    /// Get a sub-object and track its key
-    fn get_subobject(&mut self, key: &str) -> Option<&Value> {
-        if let Some(v) = self.value.get(key) {
-            self.handled_keys.insert(key.to_string());
-            Some(v)
-        } else {
-            None
+        fn visit_map<M>(self, map: M) -> Result<T, M::Error>
+        where
+            M: MapAccess<'de>,
+        {
+            // `MapAccessDeserializer` is a wrapper that turns a `MapAccess`
+            // into a `Deserializer`, allowing it to be used as the input to T's
+            // `Deserialize` implementation. T then deserializes itself using
+            // the entries from the map visitor.
+            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
         }
     }
 
-    fn get_single_or_vec<T>(
-        &mut self,
-        key: &str,
-        parser: fn(&Value) -> Result<T, BoxedError>,
-    ) -> Result<SingleOrVec<T>, BoxedError> {
-        if let Some(v) = self.value.get(key) {
-            self.handled_keys.insert(key.to_string());
-            match v {
-                Value::Array(arr) => {
-                    let mut vec = Vec::with_capacity(arr.len());
-                    for item in arr {
-                        vec.push(parser(item)?);
-                    }
-                    Ok(SingleOrVec::Multiple(vec))
-                }
-                Value::Object(_) => Ok(SingleOrVec::Single(parser(v)?)),
-                _ => Ok(SingleOrVec::None),
-            }
-        } else {
-            Ok(SingleOrVec::None)
-        }
-    }
-
-
-    /// Check for extra fields
-    fn warn_extra(&self) {
-        if let Value::Object(map) = self.value {
-            for key in map.keys() {
-                if !self.handled_keys.contains(key) {
-                    error!("Warning: extra key '{}'", key);
-                }
-            }
-        }
-    }
-
+    deserializer.deserialize_any(StringOrStruct(PhantomData))
 }
+
+
