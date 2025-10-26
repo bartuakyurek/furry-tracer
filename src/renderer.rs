@@ -12,7 +12,6 @@
 */
 
 use std::rc::Rc;
-use std::f32::INFINITY;
 use std::io::{self, Write};
 use tracing::{debug, info, warn};
 
@@ -20,21 +19,20 @@ use crate::ray::Ray;
 use crate::scene::{Scene};
 use crate::numeric::{Vector3, Float};
 use crate::image::{ImageData};
-use crate::interval::{Interval};
+use crate::interval::{Interval, FloatConst};
 use crate::shapes::{Shape};
 
 type ShapeList = Vec<Rc<dyn Shape>>;
 
 pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 {
     
-   let mut t_min = INFINITY as Float;
+   let mut t_min = FloatConst::INF;
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
    let mut color = scene.background_color;
    for shape in shapes.iter() {
        if let Some(hit_record) = shape.intersects_with(ray, &t_interval, &scene.vertex_data){
            
-           if t_min > hit_record.ray_t {
-               // Only update color if the hit object is closer than previous
+           if t_min > hit_record.ray_t { // Only update color if the hit object is closer than previous
                t_min = hit_record.ray_t;
                let n = hit_record.normal;
                color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
