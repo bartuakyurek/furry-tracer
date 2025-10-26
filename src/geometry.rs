@@ -49,7 +49,7 @@ pub struct CoordLike {
 }
 
 impl CoordLike {
-    pub fn new_from(coords: Vec<Vector3>) -> Self {
+    pub fn new_from(coords: &Vec<Vector3>) -> Self {
         let xs = (0..coords.len()).map(|i| coords[i][0]).collect();
         let ys = (0..coords.len()).map(|i| coords[i][1]).collect();
         let zs = (0..coords.len()).map(|i| coords[i][2]).collect();
