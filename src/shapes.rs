@@ -119,7 +119,15 @@ impl Shape for Plane {
         let  t = dist.dot(self.normal) / ray.direction.dot(self.normal);
 
         if t_interval.contains(t) {
-            Some(HitRecord::default()) // TODO: construct it 
+            let point = ray.at(t);
+            let record = HitRecord { 
+                point, 
+                normal: self.normal, 
+                ray_t: t, 
+                material: self.material_idx, 
+                is_front_face: ray.direction.dot(self.normal) > 0 as Float // TODO: is this correct?
+            };
+            Some(record)
         }
         else {
             None // t is not within the limits
