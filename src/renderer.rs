@@ -42,8 +42,10 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         for (i, ray) in rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
             // TODO: later we'll use acceleration structures instead of checking *all* objects like this
             let mut t_min = INFINITY as Float;
+            let t_interval = Interval::positive(scene.intersection_test_epsilon);
             for shape in shapes.iter() {
-                if let Some(hit_record) = shape.intersects_with(ray, &Interval::NONNEGATIVE, &scene.vertex_data){
+               
+                if let Some(hit_record) = shape.intersects_with(ray, &t_interval, &scene.vertex_data){
                     
                     if t_min > hit_record.ray_t {
                         // Only update color if the hit object is closer than previous
