@@ -10,6 +10,7 @@
 use bevy_math::FloatOrd;
 use serde::{Deserialize};
 use tracing::{info, error};
+use tracing_subscriber::registry::Data;
 use crate::json_parser::*;
 use crate::interval::{Interval};
 use crate::dataforms::{DataField, VertexData};
@@ -167,6 +168,14 @@ pub struct Mesh {
     faces: DataField<usize>,
 }
 
+type FaceType = DataField<usize>;
+impl FaceType {
+    pub fn len(&self) -> usize {
+        debug_assert!(self._type == "triangle"); // Only triangle meshes are supported
+        (self._data.len() as f64 / 3.) as usize
+    }
+}
+
 impl Mesh {
     // to_triangles ( )
 }
@@ -178,7 +187,16 @@ impl Shape for Mesh {
         if self.faces._type != "triangle" {
             panic!(">> Expected triangle faces in Ray-Mesh intersection, got '{}'.", self.faces._type);
         }
-        //for face in self.faces
+        let n_faces = self.faces.len() ; //TODO: cache
+        for i in 0..n_faces {
+            
+            let tri = Triangle {
+                _id: 9999 + i, // I wanted to give a unique ID but that's a horrible way to do it
+                indices: [verts[i1], verts[i2], verts[i3]],
+                material_idx: self.material_idx, // TODO: Isn't this unnecessary?
+            }
+
+        }
         None
     }
 }

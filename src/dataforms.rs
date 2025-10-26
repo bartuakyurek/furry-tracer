@@ -24,6 +24,10 @@ pub struct DataField<T> {
 }
 
 impl<T> Index<usize> for DataField<T> {
+    // To access data through indexing like
+    // let some_field = DataField::default()
+    // some_field[i] = ...
+    // instead of some_field._data[i]
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
