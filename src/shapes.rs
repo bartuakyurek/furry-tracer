@@ -96,16 +96,8 @@ impl Shape for Sphere {
             
             // TODO: isn't it repeated for other Shape implementations? Perhaps a function to return associated record would be useful
             let point = ray.at(t);
-            let normal = (point - center).normalize();
-            
-            let record = HitRecord { 
-                point, 
-                normal, 
-                ray_t: t, 
-                material: self.material_idx, 
-                is_front_face: ray.direction.dot(normal) > 0 as Float // TODO: is this correct?
-            };
-            Some(record)
+            let normal = (point - center).normalize(); // TODO: is this correct?
+            Some(HitRecord::new_from(ray, normal, t, self.material_idx))
         }
     }
 }
@@ -131,15 +123,7 @@ impl Shape for Plane {
 
         if t_interval.contains(t) {
             // Construct Hit Record
-            let point = ray.at(t);
-            let record = HitRecord { 
-                point, 
-                normal: self.normal, 
-                ray_t: t, 
-                material: self.material_idx, 
-                is_front_face: ray.direction.dot(self.normal) > 0 as Float // TODO: is this correct?
-            };
-            Some(record)
+            Some(HitRecord::new_from(ray, self.normal, t, self.material_idx))
         }
         else {
             None // t is not within the limits

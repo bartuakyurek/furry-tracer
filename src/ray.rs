@@ -55,12 +55,13 @@ impl HitRecord {
         }
     }
     pub fn new_from(ray: &Ray, n: Vector3, t: Float, material: usize) -> Self {
+        let is_front_face = ray.direction.dot(n) > 0.0; // TODO: is this correct?
         Self {
             point: ray.at(t),
-            normal: n,
+            normal: if is_front_face {n} else {-n}, // TODO: is this correct?
             ray_t: t,
             material: material, 
-            is_front_face: false,
+            is_front_face,
         }
     }
 }
