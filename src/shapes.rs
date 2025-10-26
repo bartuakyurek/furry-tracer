@@ -15,7 +15,7 @@ use crate::json_parser::*;
 use crate::interval::{Interval};
 use crate::dataforms::{DataField, VertexData};
 use crate::numeric::{Float, Vector3};
-use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
+use crate::ray::{Ray, HitRecord, ray_triangle_intersection}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
 pub trait Shape {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
@@ -47,44 +47,14 @@ impl Shape for Triangle {
         // this is not handled yet and our assumption is VertexData is the only source of vertices, every
         // shape refers to this data for their coordinates. 
         
-        // Based on Möller-Trumbore algorithm
-        //
-        //     a (pivot)
-        //    / \
-        //  b  -  c
-        // 
-        // WARNING: Assumes given interval has incorporated relevant epsilon e.g.
-        // instead of [0.0, inf], [0.0001, inf] is given otherwise there might be
-        // floating point errors.
-        let [tri_pivot, tri_left, tri_right] = self.indices.map(|i| verts[i]);        
-        let edge_ab = tri_left - tri_pivot;
-        let edge_ac = tri_right - tri_pivot;
-
-        // Scalar triple product https://youtu.be/fK1RPmF_zjQ
-        let perp = ray.direction.cross(edge_ac);
-        let determinant: Float = perp.dot(edge_ab);
-        if determinant > - t_interval.min && determinant < t_interval.min {
-            return None;
-        }
-
-        let inverse_determinant = 1.0 as Float / determinant;
-        let dist = ray.origin - tri_pivot;
-
-        let barycentric_u = dist.dot(perp) * inverse_determinant;
-        if barycentric_u < 0.0 || barycentric_u > 1.0 {
-            return None;
-        }
-
-        let another_perp = dist.cross(edge_ab);
-        let barycentric_v = ray.direction.dot(another_perp) * inverse_determinant;
-        if barycentric_v < 0.0 || barycentric_u + barycentric_v > 1.0 {
-            return None;
-        }
-
-        let t = edge_ac.dot(another_perp) * inverse_determinant;
-        debug_assert!(t_interval.contains(t));
         //info!("todo: convert u,v barycentric to coords");
-        Some(HitRecord::default()) 
+        if let Some(t) = ray_triangle_intersection(ray, t_interval, self.indices, verts) {
+            Some(HitRecord::default()) 
+        }
+        else {
+            None
+        }
+        
     }
 }
 
@@ -174,6 +144,12 @@ impl FaceType {
         debug_assert!(self._type == "triangle"); // Only triangle meshes are supported
         (self._data.len() as f64 / 3.) as usize
     }
+
+    pub fn get_indices(&self, i: usize) -> [usize; 3] {
+        debug_assert!(self._type == "triangle");
+        let start = i * 3;
+        [self._data[start], self._data[start + 1], self._data[start + 2]]
+    }
 }
 
 impl Mesh {
@@ -187,14 +163,17 @@ impl Shape for Mesh {
         if self.faces._type != "triangle" {
             panic!(">> Expected triangle faces in Ray-Mesh intersection, got '{}'.", self.faces._type);
         }
-        let n_faces = self.faces.len() ; //TODO: cache
+        let n_faces = self.faces.len() ; //TODO: cache it?
         for i in 0..n_faces {
             
-            let tri = Triangle {
-                _id: 9999 + i, // I wanted to give a unique ID but that's a horrible way to do it
-                indices: [verts[i1], verts[i2], verts[i3]],
-                material_idx: self.material_idx, // TODO: Isn't this unnecessary?
+            let indices = self.faces.get_indices(i); // Assume triangle!
+            if let Some(t) = ray_triangle_intersection(ray, t_interval, indices, verts) {
+                return Some(HitRecord::default())  // dont forget to use t
             }
+            else {
+                return None
+            }
+            
 
         }
         None

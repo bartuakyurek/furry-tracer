@@ -3,6 +3,7 @@
 
 use bevy_math::curve::derivatives;
 
+use crate::dataforms::VertexData;
 use crate::material;
 use crate::numeric::{Vector3, Float};
 use crate::interval::{Interval};
@@ -62,4 +63,48 @@ impl HitRecord {
             is_front_face: false,
         }
     }
+}
+
+
+pub fn ray_triangle_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<Float> {
+
+    // Based on Möller-Trumbore algorithm
+        //
+        //     a (pivot)
+        //    / \
+        //  b  -  c
+        // 
+        // WARNING: Assumes given interval has incorporated relevant epsilon e.g.
+        // instead of [0.0, inf], [0.0001, inf] is given otherwise there might be
+        // floating point errors.
+        let tri_coords = tri_indices.map(|i| verts[i]);
+        let [tri_pivot, tri_left, tri_right] = tri_coords;        
+        let edge_ab = tri_left - tri_pivot;
+        let edge_ac = tri_right - tri_pivot;
+
+        // Scalar triple product https://youtu.be/fK1RPmF_zjQ
+        let perp = ray.direction.cross(edge_ac);
+        let determinant: Float = perp.dot(edge_ab);
+        if determinant > - t_interval.min && determinant < t_interval.min {
+            return None;
+        }
+
+        let inverse_determinant = 1.0 as Float / determinant;
+        let dist = ray.origin - tri_pivot;
+
+        let barycentric_u = dist.dot(perp) * inverse_determinant;
+        if barycentric_u < 0.0 || barycentric_u > 1.0 {
+            return None;
+        }
+
+        let another_perp = dist.cross(edge_ab);
+        let barycentric_v = ray.direction.dot(another_perp) * inverse_determinant;
+        if barycentric_v < 0.0 || barycentric_u + barycentric_v > 1.0 {
+            return None;
+        }
+
+        let t = edge_ac.dot(another_perp) * inverse_determinant;
+        debug_assert!(t_interval.contains(t));
+
+        Some(t)
 }
