@@ -81,6 +81,7 @@ impl Shape for Triangle {
         }
 
         let t = edge_ac.dot(another_perp) * inverse_determinant;
+        debug_assert!(t_interval.contains(t));
         //info!("todo: convert u,v barycentric to coords");
         Some(HitRecord::default()) 
     }
@@ -102,7 +103,27 @@ pub struct Sphere {
 impl Shape for Sphere {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
         
-        None
+        // Based on Slides 01_B, p.11, Ray-Sphere Intersection 
+        let center = verts[self.center_idx];
+        let o_minus_c = ray.origin - center;
+        let d_dot_d: Float = ray.direction.dot(ray.direction);
+        let oc_dot_oc: Float = o_minus_c.dot(o_minus_c);
+        let d_dot_oc: Float = ray.direction.dot(o_minus_c);
+        let discriminant_left: Float = d_dot_oc.powi(2) as Float;
+        let discriminant_right: Float = d_dot_d * (oc_dot_oc - self.radius.powi(2)) as Float; // TODO: cache radius squared?
+        let discriminant: Float = discriminant_left - discriminant_right;
+        if discriminant < 0. { // Negative square root
+            None
+        }
+        else {
+            let discriminant = discriminant.sqrt();
+            let t1 = (-d_dot_oc + discriminant) / d_dot_d;
+            let t2 = (-d_dot_oc - discriminant) / d_dot_d;
+
+            let t = if t1 < t2 {t1} else {t2}; // Take the closer root
+            debug_assert!(t_interval.contains(t));
+            Some(HitRecord::default()) // TODO: Create the actual hit record!!!
+        }
     }
 }
 
@@ -142,6 +163,7 @@ impl Mesh {
 impl Shape for Mesh {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
         
+        // TODO: debug_assert!(t_interval.contains(t));
         None
     }
 }
