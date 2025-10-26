@@ -9,7 +9,7 @@
 use smart_default::SmartDefault;
 use serde::{Deserialize};
 use tracing::{info, debug};
-use crate::image;
+use crate::{image, ray};
 use crate::ray::Ray;
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec};
@@ -128,8 +128,9 @@ impl Camera {
 
         let ray_origin = self.position;
         let mut rays = Vec::<Ray>::with_capacity(pixel_centers.len());
-        for center_ptr in pixel_centers.iter() {
-            rays.push(Ray::new(ray_origin, *center_ptr));
+        for pixel_center in pixel_centers.iter() {            
+            let direction = (pixel_center - ray_origin).normalize(); 
+            rays.push(Ray::new(ray_origin, direction));
         }
         rays
     }
