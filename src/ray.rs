@@ -34,7 +34,7 @@ impl Ray {
 // but ray origin so t=0 is at ray origin, smaller t is, closer the object is.  
 //
 // DISCLAIMER: This struct is based on the approach presented in Ray Tracing in One Weekend book.
-#[derive(Debug, Default)]
+#[derive(Debug, Default)] // TODO: Remove default! 
 pub struct HitRecord {
     pub point: Vector3,
     pub normal: Vector3,
@@ -44,13 +44,22 @@ pub struct HitRecord {
 }
 
 impl HitRecord {
-    pub fn new_from(point: Vector3, t: Float, material: usize) -> Self {
+    pub fn new(point: Vector3, normal: Vector3, ray_t: Float, material: usize, is_front_face: bool) -> Self {
         Self {
-            point: point,
+            point,
+            normal,
+            ray_t,
+            material,
+            is_front_face,
+        }
+    }
+    pub fn new_from(ray: &Ray, n: Vector3, t: Float, material: usize) -> Self {
+        Self {
+            point: ray.at(t),
+            normal: n,
             ray_t: t,
-            material: material, // in order not to accidentally set to default
+            material: material, 
             is_front_face: false,
-            ..Default::default()
         }
     }
 }
