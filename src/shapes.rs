@@ -102,10 +102,11 @@ impl Shape for Sphere {
             } else {
                 return None;  // No valid intersection
             };
-
+            
             let point = ray.at(t); // Note that this computation is done inside new_from as well
             let normal = (point - center).normalize(); // TODO: is this correct?
             Some(HitRecord::new_from(ray, normal, t, self.material_idx))
+            
         }
     }
 }
@@ -138,31 +139,3 @@ impl Shape for Plane {
         }
     }
 }
-
-
-//impl Mesh {
-//    // to_triangles ( )
-//}
-//
-//impl Shape for Mesh {
-//    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
-//        
-//        // TODO: do not iterate over triangles like this
-//        
-//        let n_faces = self.faces.len() ; //TODO: cache it?
-//        for i in 0..n_faces {
-//            
-//            let indices = self.faces.get_indices(i); // Assume triangle!
-//            if let Some((p, t)) = ray_triangle_intersection(ray, t_interval, indices, verts) {
-//                // TODO: THIS IS WRONG, you need to check the closest intersection, so gather all the hitrecord first
-//                // TODO: Cache tri normals
-//                // Normal of the triangle (WARNING: no vertex normal used here)
-//                let [v1, v2, v3] = indices.map(|i| verts[i]);
-//                let tri_normal = get_tri_normal(&v1, &v2, &v3);
-//                let front_face = ray.is_front_face(tri_normal);
-//                return Some(HitRecord::new(p, tri_normal, t, self.material_idx, front_face)) 
-//            }
-//        }
-//        None
-//    }
-//}
