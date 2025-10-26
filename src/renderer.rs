@@ -11,6 +11,7 @@
     @author: Bartu
 */
 
+use std::rc::Rc;
 use std::f32::INFINITY;
 use std::io::{self, Write};
 use tracing::{debug, info, warn};
@@ -20,9 +21,32 @@ use crate::scene::{Scene};
 use crate::numeric::{Vector3, Float};
 use crate::image::{ImageData};
 use crate::interval::{Interval};
+use crate::shapes::{Shape};
 
+type ShapeList = Vec<Rc<dyn Shape>>;
 
-pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
+pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 {
+    
+   let mut t_min = INFINITY as Float;
+   let t_interval = Interval::positive(scene.intersection_test_epsilon);
+   let mut color = scene.background_color;
+   for shape in shapes.iter() {
+       if let Some(hit_record) = shape.intersects_with(ray, &t_interval, &scene.vertex_data){
+           
+           if t_min > hit_record.ray_t {
+               // Only update color if the hit object is closer than previous
+               t_min = hit_record.ray_t;
+               let n = hit_record.normal;
+               color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
+               color = color * 255.0; // scale to [0, 255]
+               
+           }
+       }
+   }
+   color
+}
+
+pub fn render(scene: &Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>>
 {
     let mut images: Vec<ImageData> = Vec::new();
     for mut cam in scene.cameras.all() {
@@ -36,32 +60,15 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         
         // ------------------------ Pixel Colors ------------------------------
         // 1- Generate primary rays from camera center to pixel centers
-        let rays = cam.generate_primary_rays();
-        let shapes = scene.objects.all();
+        let eye_rays = cam.generate_primary_rays();
+        let shapes: ShapeList = scene.objects.all();
 
         // 2- Recursive ray tracing here!
-        for (i, ray) in rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
+        for (i, ray) in eye_rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
            // TODO: later we'll use acceleration structures instead of checking *all* objects like this
            //eprint!("\rComputing {} / {}", i + 1, n_pixels); 
            //io::stdout().flush().unwrap(); TODO: how to do it with tracing crate?
-            
-            let mut t_min = INFINITY as Float;
-            let t_interval = Interval::positive(scene.intersection_test_epsilon);
-            for shape in shapes.iter() {
-               
-                if let Some(hit_record) = shape.intersects_with(ray, &t_interval, &scene.vertex_data){
-                    
-                    if t_min > hit_record.ray_t {
-                        // Only update color if the hit object is closer than previous
-                        t_min = hit_record.ray_t;
-                        let n = hit_record.normal;
-                        let color = 0.5 * (n + Vector3::new(1.0, 1.0, 1.0)); // shift to [0, 1]
-                        let color = color * 255.0; // scale to [0, 255]
-                        pixel_colors[i] = color; // normal color
-                    }
-                  
-                }
-            }
+            pixel_colors[i] = get_color(ray, scene, &shapes);
         }
        
         // --------------------------------------------------------------------

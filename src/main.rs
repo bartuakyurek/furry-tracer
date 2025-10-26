@@ -60,7 +60,7 @@ fn main() {
 
     // Render image and return array of RGB
     let start = Instant::now();
-    let images = match renderer::render(root.scene) {
+    let images = match renderer::render(&root.scene) {
         Ok(image_data) => {info!("Render completed."); image_data}
         Err(e) => {error!("Failed to render scene: {}", e); return;}
     };
