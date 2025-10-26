@@ -7,8 +7,8 @@
 
 */
 
-use std::{self, env};
-use tracing::{info, warn, error};
+use std::{self, env, time::Instant};
+use tracing::{info, warn, error, debug};
 use tracing_subscriber;
 
 mod ray;
@@ -35,7 +35,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
         warn!("No arguments were provided, setting default scene path...");
-        &String::from("./assets/bunny_with_plane.json")
+        &String::from("./assets/simple.json")
     } else if args.len() == 2 {
         &args[1]
     } else {
@@ -55,14 +55,16 @@ fn main() {
         }
     };
     root.scene.setup_after_json(); // TODO: This created actural structs for materials etc. but should be done in a different way
-    info!("Scene is setup successfully.\n {:#?}", root);
+    debug!("Scene is setup successfully.\n {:#?}", root);
     let root = root; // Shadow mutatability before render
 
     // Render image and return array of RGB
+    let start = Instant::now();
     let images = match renderer::render(root.scene) {
         Ok(image_data) => {info!("Render completed."); image_data}
         Err(e) => {error!("Failed to render scene: {}", e); return;}
     };
+    info!("Rendering of {} image(s) took: {:?}", images.len(), start.elapsed()); 
 
     // Write images to .png files
     for im in images.into_iter() {
