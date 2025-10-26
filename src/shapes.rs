@@ -170,11 +170,6 @@ impl Shape for Mesh {
             if let Some(t) = ray_triangle_intersection(ray, t_interval, indices, verts) {
                 return Some(HitRecord::default())  // dont forget to use t
             }
-            else {
-                return None
-            }
-            
-
         }
         None
     }
