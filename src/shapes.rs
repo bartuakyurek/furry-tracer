@@ -94,13 +94,13 @@ impl Shape for Sphere {
             
             let discriminant = discriminant.sqrt();
             let t1 = (-d_dot_oc + discriminant) / d_dot_d;
-            let t2 = (-d_dot_oc - discriminant) / d_dot_d;
-            let t = if t1 < t2 {t1} else {t2};
+            let t2 = (-d_dot_oc - discriminant) / d_dot_d; // t2 < t1 
+            
+            let t= if t2 > 0.0 {t2} else {t1}; // Pick smaller first
             if !t_interval.contains(t) {
-                //info!("invalid!");
                 return None;  // Invalid intersection
             };
-            info!("Found intersection!!");
+            
             let point = ray.at(t); // Note that this computation is done inside new_from as well
             let normal = (point - center).normalize(); // TODO: is this correct?
             

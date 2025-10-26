@@ -12,7 +12,7 @@
 */
 
 use std::f32::INFINITY;
-
+use std::io::{self, Write};
 use tracing::{debug, info, warn};
 
 use crate::ray::Ray;
@@ -31,7 +31,8 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
         debug!("Nearplane corners are {:#?}", &cam.get_nearplane_corners());
         
         let (width, height) = cam.get_resolution();
-        let mut pixel_colors = vec![scene.background_color; width * height]; // Colors range [0, 255], not [0, 1]
+        let n_pixels = width * height;
+        let mut pixel_colors = vec![scene.background_color; n_pixels]; // Colors range [0, 255], not [0, 1]
         
         // ------------------------ Pixel Colors ------------------------------
         // 1- Generate primary rays from camera center to pixel centers
@@ -40,7 +41,10 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
 
         // 2- Recursive ray tracing here!
         for (i, ray) in rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
-            // TODO: later we'll use acceleration structures instead of checking *all* objects like this
+           // TODO: later we'll use acceleration structures instead of checking *all* objects like this
+           //eprint!("\rComputing {} / {}", i + 1, n_pixels); 
+           //io::stdout().flush().unwrap(); TODO: how to do it with tracing crate?
+            
             let mut t_min = INFINITY as Float;
             let t_interval = Interval::positive(scene.intersection_test_epsilon);
             for shape in shapes.iter() {
@@ -57,7 +61,6 @@ pub fn render(scene: Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error>
                     }
                   
                 }
-            
             }
         }
        
