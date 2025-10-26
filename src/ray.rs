@@ -2,6 +2,7 @@
 
 
 use bevy_math::curve::derivatives;
+use bevy_math::NormedVectorSpace;
 
 use crate::dataforms::VertexData;
 use crate::material;
@@ -23,8 +24,20 @@ impl Ray {
         }
     }
 
+    #[inline] // TODO: does it matter? could you benchmark?
     pub fn at(&self, t: Float) -> Vector3 {
         self.origin + self.direction * t // r(t) = o + dt
+    }
+
+    #[inline]
+    pub fn squared_distance_at(&self, t: Float) -> Float {
+        // Squared distance between ray origin and ray(t) point
+        (self.at(t) - self.origin).norm_squared()
+    }
+
+    #[inline]
+    pub fn distance_at(&self, t: Float) -> Float {
+        (self.at(t) - self.origin).norm()
     }
 
     #[inline]
@@ -114,7 +127,7 @@ pub fn ray_triangle_intersection(ray: &Ray, t_interval: &Interval, tri_indices: 
         if !t_interval.contains(t) {
             return None;
         }
-        
+
         // Construct hit point p
         let p = ray.at(t); // TODO: would it be faster to use barycentric u,v here? 
 
