@@ -14,7 +14,7 @@
 
 use std::{ops::Index};
 use crate::shapes::{Triangle};
-use crate::numeric::{Float, Vector3};
+use crate::numeric::{Float, Vector3, approx_zero};
 
 pub fn get_tri_normal(v1: &Vector3, v2: &Vector3, v3: &Vector3) -> Vector3{
     // WARNING: Assumes triangle indices are given in counter clockwise order 
@@ -28,7 +28,7 @@ pub fn get_tri_normal(v1: &Vector3, v2: &Vector3, v3: &Vector3) -> Vector3{
     let mut normal = right.cross(left); 
     normal = normal.normalize();
     
-    debug_assert_eq!(normal.length(), 1.0);
+    debug_assert!(approx_zero(normal.length() - 1.0));
     normal
 }
 
