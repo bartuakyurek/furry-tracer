@@ -122,7 +122,8 @@ impl Shape for Sphere {
 
             let t = if t1 < t2 {t1} else {t2}; // Take the closer root
             debug_assert!(t_interval.contains(t));
-            Some(HitRecord::default()) // TODO: Create the actual hit record!!!
+            //Some(HitRecord::new_from(ray, t, self.material_idx)) // TODO: is this correct?
+            Some(HitRecord::default())
         }
     }
 }
@@ -141,7 +142,17 @@ pub struct Plane {
 
 impl Shape for Plane {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
-        None
+       // Based on Slides 01_B, p.9, Ray-Plane Intersection 
+        let a_point_on_plane = verts[self.point_idx];
+        let dist = a_point_on_plane - ray.origin;
+        let  t = dist.dot(self.normal) / ray.direction.dot(self.normal);
+
+        if t_interval.contains(t) {
+            Some(HitRecord::default()) // TODO: construct it 
+        }
+        else {
+            None // t is not within the limits
+        }
     }
 }
 
@@ -163,7 +174,11 @@ impl Mesh {
 impl Shape for Mesh {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
         
-        // TODO: debug_assert!(t_interval.contains(t));
+        // TODO: do not iterate over triangles like this
+        if self.faces._type != "triangle" {
+            panic!(">> Expected triangle faces in Ray-Mesh intersection, got '{}'.", self.faces._type);
+        }
+        //for face in self.faces
         None
     }
 }
