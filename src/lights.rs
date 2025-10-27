@@ -22,8 +22,6 @@ use crate::interval::{Interval};
 pub struct LightContext {
     pub view_dir : Vector3, // w_o in slides TODO: these could be references but that requires lifetime annotations
     pub out_dir: Vector3, // TODO: Heap allocation?
-    //pub distance: Float,
-    //pub intensity: Vector3, // RGB
     pub normal: Vector3,
     pub irradiance: Vector3, // Cache for 1 / distance_squared
 }
@@ -42,19 +40,16 @@ impl LightContext {
         Self {
             view_dir: - eye_dir,
             out_dir: shadow_dir,
-            //distance: light_distance,
-            //intensity: light_intensity,
             normal,
             irradiance,
         }
     }
 
-    pub fn from_mirror(eye_dir: Vector3, normal: Vector3) -> Self {
+    pub fn from_mirror(eye_dir: Vector3, normal: Vector3, irradiance: Vector3) -> Self {
         // See Slides 02, p.4
         // WARNING: eye_dir is assumed to be the incoming view ray, s.t. w_o = -eye_dir
         let w_o = -eye_dir;  
         let w_r = -w_o + 2. * normal * (normal.dot(w_o));
-        let irradiance = 
         debug_assert!(eye_dir.is_normalized());
         Self {
             view_dir: w_o,

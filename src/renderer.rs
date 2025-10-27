@@ -106,8 +106,8 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => shade_diffuse(scene, shapes, &hit_record, &ray, mat),
             "mirror" => {
-                let recursed_color = get_color(ray, scene, shapes, depth + 1);
-                let light_context = LightContext::from_mirror(ray.direction, hit_record.normal);
+                let recursed_color = get_color(ray, scene, shapes, depth + 1); // L_i
+                let light_context = LightContext::from_mirror(ray.direction, hit_record.normal, recursed_color);
                 mat.radiance(&light_context) 
             }, 
             _ => {
