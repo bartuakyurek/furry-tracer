@@ -118,7 +118,7 @@ impl Default for SceneLights {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct PointLight {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
-    pub id: Int, // or String if you prefer
+    pub _id: Int, // or String if you prefer
 
     #[serde(rename = "Position", deserialize_with = "deser_vec3")]
     pub position: Vector3,
@@ -135,7 +135,7 @@ pub struct SceneMaterials {
     raw_materials: SingleOrVec<serde_json::Value>, // Parse the json value later separately
 
     #[serde(skip)]
-    materials: Vec<BoxedMaterial>,
+    pub materials: Vec<BoxedMaterial>,
 }
 
 impl SceneMaterials {

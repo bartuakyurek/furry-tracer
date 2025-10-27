@@ -2,7 +2,7 @@
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::BufWriter;
-use tracing::{warn, info};
+use tracing::{warn, info, debug};
 
 use crate::numeric::{Vector3, Float};
 
@@ -53,7 +53,7 @@ impl ImageData {
     pub fn to_rgb(self) -> Vec<u8> {
         let rgb_vec = self.flatten_color().into_iter().map(|x| {
             if x < 0.0 || x > 255.0 {
-                warn!("Clamping applied to x={} value for RGB conversion.", x);
+                debug!("Clamping applied to x={} value for RGB conversion.", x);
             }
             x.clamp(0.0, 255.0) as u8
         }).collect();

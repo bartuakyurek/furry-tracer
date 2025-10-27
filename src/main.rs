@@ -35,7 +35,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
         warn!("No arguments were provided, setting default scene path...");
-        &String::from("./assets/simple.json")
+        &String::from("./assets/bunny.json")
     } else if args.len() == 2 {
         &args[1]
     } else {

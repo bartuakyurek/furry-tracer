@@ -51,6 +51,7 @@ pub fn any_hit(ray: &Ray, t_interval: &Interval, shapes: &ShapeList, vertex_data
    }
    false
 }
+
 pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
     
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
@@ -72,7 +73,8 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
             
                 let light_intensity = point_light.rgb_intensity;
-                color += light_intensity * (1. / distance_squared); // Contribution from light source
+                let perp_irradiance = Vector3::new(0., 0., 0.);
+                color += scene.materials.materials[hit_record.material - 1].radiance(perp_irradiance); 
             }
         }
 
@@ -102,7 +104,7 @@ pub fn render(scene: &Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error
             pixel_colors[i] = get_color(ray, scene, &shapes);
         }
        
-        // --------------------------------------------------------------------
+        // -------------------------------------------------------------------- 
         
         let im = ImageData::new_from_colors(cam.image_resolution, cam.image_name, pixel_colors);
         images.push(im);

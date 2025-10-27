@@ -11,7 +11,7 @@
     @author: Bartu
 
 */
-
+use std::cmp::max;
 use tracing::{error};
 use serde::Deserialize;
 use crate::json_parser::*;
@@ -37,6 +37,8 @@ pub trait Material : std::fmt::Debug + Send + Sync  {
             }
         }
     }
+
+    fn radiance(&self, perp_irradiance: Vector3) -> Vector3;
 }
 
 pub type BoxedMaterial = Box<dyn Material>;
@@ -74,9 +76,20 @@ impl Default for DiffuseMaterial {
     }
 }
 
+impl DiffuseMaterial {
+    fn specular(&self, n: Vector3, h: Vector3, received_irradiance: Vector3) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.80)
+        let p = self.phong_exponent;
+        let cos_a = n.dot(h).max(0.0);
+        self.specular_rf * cos_a.powf(p) * received_irradiance
+    }   
+}
+
 
 impl Material for DiffuseMaterial{
-
+    fn radiance(&self, perp_irradiance: Vector3) -> Vector3 {
+        Vector3::new(0.0, 0., 0.0)
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,8 +127,11 @@ impl Default for MirrorMaterial {
     }
 }
 
-impl Material for MirrorMaterial {
 
+impl Material for MirrorMaterial {
+    fn radiance(&self, perp_irradiance: Vector3) -> Vector3 {
+        Vector3::new(0.0, 0., 0.0)
+    }
 }
 
 // TODO: impl Default for Mirrorclear
