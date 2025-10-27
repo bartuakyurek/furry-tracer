@@ -85,7 +85,7 @@ impl DiffuseMaterial {
     fn diffuse(&self, light_context: &LightContext) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.73)
         // TODO: reduce the verbosity here
-        let w_i = light_context.shadow_dir;
+        let w_i = light_context.out_dir;
         debug_assert!(w_i.is_normalized());
         let n = light_context.normal;
         debug_assert!(n.is_normalized());
@@ -96,8 +96,8 @@ impl DiffuseMaterial {
 
     fn specular(&self, light_context: &LightContext) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.80)
-        let w_o = light_context.eye_dir;
-        let w_i = light_context.shadow_dir;
+        let w_o = light_context.view_dir;
+        let w_i = light_context.out_dir;
         debug_assert!(w_o.is_normalized());
         debug_assert!(w_i.is_normalized());
 
@@ -167,6 +167,44 @@ impl Default for MirrorMaterial {
     }
 }
 
+// TODO: apologies for the duplicate code here (copy pasted from Diffuse Material above)
+impl MirrorMaterial {
+
+    fn diffuse(&self, light_context: &LightContext) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.73)
+        // TODO: reduce the verbosity here
+        let w_i = light_context.out_dir;
+        debug_assert!(w_i.is_normalized());
+        let n = light_context.normal;
+        debug_assert!(n.is_normalized());
+
+        let cos_theta = w_i.dot(n).max(0.0);
+        self.diffuse_rf * cos_theta * light_context.irradiance
+    }
+
+    fn specular(&self, light_context: &LightContext) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.80)
+        let w_o = light_context.view_dir;
+        let w_i = light_context.out_dir;
+        debug_assert!(w_o.is_normalized());
+        debug_assert!(w_i.is_normalized());
+
+        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
+        let n = light_context.normal;
+        debug_assert!(h.is_normalized());
+        debug_assert!(n.is_normalized());
+
+        let p = self.phong_exponent;
+        let cos_a = n.dot(h).max(0.0);
+        self.specular_rf * cos_a.powf(p) * light_context.irradiance
+    }
+
+    fn reflected_radiance(&self, light_context: &LightContext) -> Vector3 {
+        // TODO: irradiance is inferred from LightContext but wouldn't it be better if Material
+        // was responsible from generating the new rays given incoming ray and surface normal?
+        self.mirror_rf * light_context.irradiance
+    }
+}
 
 impl Material for MirrorMaterial {
 
@@ -176,12 +214,12 @@ impl Material for MirrorMaterial {
     
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
         //info!("Computing ambient radiance for Mirror ...");
-        Vector3::ZERO
+        self.ambient_rf * ambient_light
     }
 
     fn radiance(&self, light_context: &LightContext) -> Vector3 {
         //info!("Computing outgoing radiance for Mirror ...");
-        Vector3::ZERO
+        self.diffuse(light_context) + self.specular(light_context) + self.reflected_radiance(light_context)
     }
 }
 
