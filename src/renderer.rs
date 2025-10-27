@@ -93,7 +93,7 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
    // TODO: Shouldn't we box the scene or even Rc<scene> here? otherwise it lives on the stack
    // and it's a huge struct, isn't it?
    if depth >= scene.max_recursion_depth {
-    ??
+        return scene.background_color;
    }
    
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
