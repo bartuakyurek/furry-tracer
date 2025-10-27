@@ -48,7 +48,7 @@ impl Shape for Triangle {
         // shape refers to this data for their coordinates. 
         
         //info!("todo: convert u,v barycentric to coords");
-        if let Some((p, t)) = moller_trumbore_intersection(ray, t_interval, self.indices, verts) {
+        if let Some((p, t)) = lengthy_but_simple_intersection(ray, t_interval, self.indices, verts) {
             // TODO: Cache tri normals
             // Normal of the triangle (WARNING: no vertex normal used here)
             let [v1, v2, v3] = self.indices.map(|i| verts[i]);
@@ -63,6 +63,26 @@ impl Shape for Triangle {
     }
 }
 
+fn lengthy_but_simple_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<(Vector3, Float)> {
+    // Slides 01_B, p.14
+    //
+    //  n    a  
+    //   \  / \
+    //     /   \
+    //   b ----- c
+    let [a, b, c] = tri_indices.map(|i| verts[i]);
+    let n = (c - b).cross(a - b); // TODO: let edge_ab = a - b;
+
+    // f(p) = (p - a) . n = 0  where p is the intersection point
+    let p: Vector3;
+    let vp = (p - b).cross(a - b);
+    let vc = (c- b).cross(a - b);
+    if vp.dot(vc) > 0.0 {
+
+    }
+
+}
+
 fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<(Vector3, Float)> {
     // Based on Möller-Trumbore algorithm
         //
@@ -73,6 +93,7 @@ fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [
         // WARNING: Assumes given interval has incorporated relevant epsilon e.g.
         // instead of [0.0, inf], [0.0001, inf] is given otherwise there might be
         // floating point errors.
+        // TODO: Is there something wrong in this function?
         let tri_coords = tri_indices.map(|i| verts[i]);
         let [tri_pivot, tri_left, tri_right] = tri_coords;        
         let edge_ab = tri_left - tri_pivot;
