@@ -78,7 +78,7 @@ pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, 
             let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
                 let (shadow_dir, eye_dir) = (shadow_ray.direction, ray.direction); 
-                let light_context = LightContext::new_from(&point_light, interval.max, shadow_dir, -eye_dir, hit_record.normal); // WARNING: w_o is reverse of primary ray, see slide 01_B p.78
+                let light_context = LightContext::from_shadow(&point_light, interval.max, shadow_dir, eye_dir, hit_record.normal); // WARNING: w_o is reverse of primary ray, see slide 01_B p.78
                 // TODO WARNING: This assumes ray interval has light distance information inside... prone to error. 
                 color += mat.radiance(&light_context); 
             }
@@ -105,7 +105,11 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
         let mat_type = mat.get_type();
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => shade_diffuse(scene, shapes, &hit_record, &ray, mat),
-            "mirror" => shade_diffuse(scene, shapes, &hit_record, &ray, mat), // get_color but with the new ray
+            "mirror" => {
+                let recursed_color = get_color(ray, scene, shapes, depth + 1);
+                let light_context = LightContext::from_mirror(ray.direction, hit_record.normal);
+                mat.radiance(&light_context) 
+            }, 
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)
                 panic!(">> Unknown material type '{}'! Shading function for this material is missing.", mat_type); 

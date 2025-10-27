@@ -20,8 +20,8 @@ use crate::numeric::{Float, Vector3};
 use crate::interval::{Interval};
 
 pub struct LightContext {
-    pub eye_dir : Vector3, // TODO: these could be references but that requires lifetime annotations
-    pub shadow_dir: Vector3, // TODO: Heap allocation?
+    pub view_dir : Vector3, // w_o in slides TODO: these could be references but that requires lifetime annotations
+    pub out_dir: Vector3, // TODO: Heap allocation?
     //pub distance: Float,
     //pub intensity: Vector3, // RGB
     pub normal: Vector3,
@@ -29,26 +29,36 @@ pub struct LightContext {
 }
 
 impl LightContext {
-    //pub fn new() -> Self {
-    //    Self {
-    //        
-    //    }
-    //}
-
-    pub fn new_from(point_light: &PointLight, light_distance: Float, w_i: Vector3, w_o: Vector3, normal: Vector3) -> Self {
-        // w_o direction of eye ray
+   
+    pub fn from_shadow(point_light: &PointLight, light_distance: Float, shadow_dir: Vector3, eye_dir: Vector3, normal: Vector3) -> Self {
+        // w_o direction of - eye ray
         // w_i direction of shadow ray
         // see slides 01_B for the notation
-        debug_assert!(w_i.is_normalized());
-        debug_assert!(w_o.is_normalized());
+        debug_assert!(shadow_dir.is_normalized());
+        debug_assert!(eye_dir.is_normalized());
 
         let light_intensity = point_light.rgb_intensity;
         let irradiance = light_intensity / light_distance.powi(2);
         Self {
-            eye_dir: w_o,
-            shadow_dir: w_i,
+            view_dir: - eye_dir,
+            out_dir: shadow_dir,
             //distance: light_distance,
             //intensity: light_intensity,
+            normal,
+            irradiance,
+        }
+    }
+
+    pub fn from_mirror(eye_dir: Vector3, normal: Vector3) -> Self {
+        // See Slides 02, p.4
+        // WARNING: eye_dir is assumed to be the incoming view ray, s.t. w_o = -eye_dir
+        let w_o = -eye_dir;  
+        let w_r = -w_o + 2. * normal * (normal.dot(w_o));
+        let irradiance = 
+        debug_assert!(eye_dir.is_normalized());
+        Self {
+            view_dir: w_o,
+            out_dir: w_r,
             normal,
             irradiance,
         }
