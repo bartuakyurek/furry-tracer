@@ -66,14 +66,13 @@ pub fn get_shadow_ray(point_light: &PointLight, hit_record: &HitRecord, epsilon:
 }
 
 pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
-    
+   // TODO: Shouldn't we box the scene or even Rc<scene> here? otherwise it lives on the stack
+   // and it's a huge struct, isn't it?
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
    //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
    if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
 
-        // Set color to ambient 
         let mut color = ambient_radiance;
-        // Generate shadow rays 
         for point_light in scene.lights.point_lights.all() {
             
             let (shadow_ray, interval) = get_shadow_ray(&point_light, &hit_record, scene.shadow_ray_epsilon);

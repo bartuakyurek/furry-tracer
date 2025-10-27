@@ -34,7 +34,7 @@ use serde::{Deserialize};
 use tracing::{warn, error, debug};
 
 use crate::json_parser::{deser_string_or_struct};
-use crate::material::{BoxedMaterial, DiffuseMaterial, Material, MirrorMaterial};
+use crate::material::{HeapAllocMaterial, DiffuseMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
 use crate::shapes::{Shape, Plane, Sphere, Triangle};
 use crate::camera::{Cameras};
@@ -135,7 +135,7 @@ pub struct SceneMaterials {
     raw_materials: SingleOrVec<serde_json::Value>, // Parse the json value later separately
 
     #[serde(skip)]
-    pub materials: Vec<BoxedMaterial>,
+    pub materials: Vec<HeapAllocMaterial>,
 }
 
 impl SceneMaterials {
@@ -147,7 +147,7 @@ impl SceneMaterials {
                         .collect();
     }
 
-    pub fn all(&mut self) -> &Vec<BoxedMaterial> {
+    pub fn all(&mut self) -> &Vec<HeapAllocMaterial> {
         if self.materials.is_empty() && !self.raw_materials.all().is_empty() {
             warn!("Calling SceneMaterials.finalize() to fully deserialize materials from JSON file...");
             self.finalize(); 
@@ -157,7 +157,7 @@ impl SceneMaterials {
 }
 
 
-fn parse_single_material(value: serde_json::Value) -> BoxedMaterial {
+fn parse_single_material(value: serde_json::Value) -> HeapAllocMaterial {
     
     debug!("Parsing material JSON: {:#?}", value);
 
@@ -176,7 +176,7 @@ fn parse_single_material(value: serde_json::Value) -> BoxedMaterial {
     }
 }
 
-fn parse_material(value: serde_json::Value) -> Vec<BoxedMaterial> {
+fn parse_material(value: serde_json::Value) -> Vec<HeapAllocMaterial> {
     match value {
         Value::Array(arr) => arr.into_iter().map(parse_single_material).collect(),
         Value::Object(_) => vec![parse_single_material(value)],

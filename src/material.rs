@@ -41,7 +41,7 @@ pub trait Material : std::fmt::Debug + Send + Sync  {
     //fn radiance(&self, perp_irradiance: Vector3) -> Vector3;
 }
 
-pub type BoxedMaterial = Box<dyn Material>;
+pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// 
