@@ -13,7 +13,7 @@
 */
 use std::fmt::Debug;
 use std::cmp::max;
-use bevy_math::NormedVectorSpace;
+use bevy_math::{NormedVectorSpace, VectorSpace};
 use tracing::{error, info};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
@@ -99,7 +99,7 @@ impl DiffuseMaterial {
         debug_assert!(w_o.is_normalized());
         debug_assert!(w_i.is_normalized());
 
-        let h = (w_i + w_o) / (w_i + w_o).norm();
+        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
         let n = light_context.normal;
         debug_assert!(h.is_normalized());
         debug_assert!(n.is_normalized());
@@ -119,7 +119,8 @@ impl Material for DiffuseMaterial{
 
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.75)
-        self.ambient_rf * ambient_light
+        // e.g. for test.json it is [25, 25, 25]
+        self.ambient_rf * ambient_light // * 10. -> this was to debug there exists ambient light
     }
 
 }
@@ -162,12 +163,12 @@ impl Default for MirrorMaterial {
 
 impl Material for MirrorMaterial {
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
-        info!("Computing ambient radiance for Mirror ...");
+        //info!("Computing ambient radiance for Mirror ...");
         Vector3::ZERO
     }
 
     fn radiance(&self, light_context: &LightContext) -> Vector3 {
-        info!("Computing outgoing radiance for Mirror ...");
+        //info!("Computing outgoing radiance for Mirror ...");
         Vector3::ZERO
     }
 }

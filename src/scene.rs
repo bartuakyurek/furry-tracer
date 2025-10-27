@@ -100,7 +100,7 @@ impl Scene {
 #[serde(rename_all = "PascalCase")]
 pub struct SceneLights {
     #[serde(rename = "AmbientLight", deserialize_with = "deser_vec3")]
-    pub ambient_light: Vector3,
+    pub ambient_light: Vector3, // Refers to ambient radience in p.75
 
     #[serde(rename = "PointLight")]
     pub point_lights: SingleOrVec<PointLight>, 

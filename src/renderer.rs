@@ -81,7 +81,7 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
             let (shadow_ray, interval) = get_shadow_ray(&point_light, &hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
                 let (shadow_dir, eye_dir) = (shadow_ray.direction, ray.direction); 
-                let light_context = LightContext::new_from(&point_light, interval.max, shadow_dir, eye_dir, n);
+                let light_context = LightContext::new_from(&point_light, interval.max, shadow_dir, -eye_dir, n); // WARNING: w_o is reverse of primary ray, see slide 01_B p.78
                 // TODO WARNING: This assumes ray interval has light distance information inside... prone to error. 
                 color += mat.radiance(&light_context); 
             }
