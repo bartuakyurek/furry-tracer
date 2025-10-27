@@ -71,16 +71,36 @@ fn lengthy_but_simple_intersection(ray: &Ray, t_interval: &Interval, tri_indices
     //     /   \
     //   b ----- c
     let [a, b, c] = tri_indices.map(|i| verts[i]);
-    let n = (c - b).cross(a - b); // TODO: let edge_ab = a - b;
+    let edge_ba = a - b;
+    let edge_ca = a - c;
+    let edge_ac = c - a;
+    let edge_bc = c - b;
+    let edge_cb = b - c;
+    let n = (edge_bc).cross(edge_ba); 
 
     // f(p) = (p - a) . n = 0  where p is the intersection point
     let p: Vector3;
-    let vp = (p - b).cross(a - b);
-    let vc = (c- b).cross(a - b);
-    if vp.dot(vc) > 0.0 {
 
+    // Check for edge BA 
+    let vp = (p - b).cross(edge_ba); // TODO: we can use the same vp for other checks, right?
+    let vc = (edge_bc).cross(edge_ba);
+    if vp.dot(vc) <= 0.0 {
+        return None;
     }
 
+    // Check for AC
+    let vb = (edge_bc).cross(edge_ac);
+    if vp.dot(vb) <= 0.0 {
+        return None;
+    }
+
+    // Check for CB
+    let va = (edge_ca).cross(edge_cb);
+    if vp.dot(va) <= 0.0 {
+        return None;
+    }
+
+    Some((p, t))
 }
 
 fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<(Vector3, Float)> {
