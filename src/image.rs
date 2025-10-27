@@ -53,7 +53,7 @@ impl ImageData {
     pub fn to_rgb(self) -> Vec<u8> {
         let rgb_vec = self.flatten_color().into_iter().map(|x| {
             if x < 0.0 || x > 255.0 {
-                debug!("Clamping applied to x={} value for RGB conversion.", x);
+                // debug!("Clamping applied to x={} value for RGB conversion.", x); // sorry it prints too much 
             }
             x.clamp(0.0, 255.0) as u8
         }).collect();

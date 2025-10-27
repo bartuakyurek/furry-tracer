@@ -90,8 +90,19 @@ impl Scene {
 
         // 3- Add a dummy vertex at index 0 because JSON vertex ids start from 1
         self.vertex_data.insert_dummy_at_the_beginning();
-        warn!("Inserted a dummy vertex at the beginning to use vertex IDs beginning from 1.")
+        warn!("Inserted a dummy vertex at the beginning to use vertex IDs beginning from 1.");
 
+        // TODO: Below is a terrible way to set defaults, if Scene is decoupled from JSON
+        // then it can impl Default for Scene and there we can specify default values
+        // without secretly changing like we do below:
+        if self.shadow_ray_epsilon < 1e-16 {
+            self.shadow_ray_epsilon = 1e-6; 
+            warn!("Shadow Ray epsilon found 0, setting it to default: {}.", self.shadow_ray_epsilon);
+        }
+        if self.intersection_test_epsilon < 1e-16 {
+            self.intersection_test_epsilon = 1e-6;
+            warn!("Intersection Ray epsilon found 0, setting it to default: {}.", self.intersection_test_epsilon);
+        }
     }
 }
 

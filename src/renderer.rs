@@ -57,6 +57,7 @@ pub fn any_hit(ray: &Ray, t_interval: &Interval, shapes: &ShapeList, vertex_data
 
 pub fn get_shadow_ray(point_light: &PointLight, hit_record: &HitRecord, epsilon: Float) -> (Ray, Interval) { // TODO: Should we box hitrecord here?
     let light_pos = point_light.position;
+    debug_assert!(hit_record.normal.is_normalized());
     let ray_origin = hit_record.point + (hit_record.normal * epsilon);
     let distance_vec = light_pos - ray_origin;
     let distance_squared = distance_vec.norm_squared();
@@ -85,6 +86,9 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
                 // TODO WARNING: This assumes ray interval has light distance information inside... prone to error. 
                 color += mat.radiance(&light_context); 
             }
+            //else { // TODO: For debugging shadow acne!! Remove this else part later
+            //    color = Vector3::new(255. , 0., 0.);
+            //}
         }
         color
    }
