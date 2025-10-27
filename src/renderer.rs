@@ -20,6 +20,7 @@ use tracing::{debug, info, warn};
 use crate::camera::Camera;
 use crate::dataforms::VertexData;
 use crate::lights::LightContext;
+use crate::material::{DiffuseMaterial, Material, HeapAllocMaterial};
 use crate::ray::{HitRecord, Ray};
 use crate::scene::{PointLight, Scene};
 use crate::numeric::{Float, Int, Vector3};
@@ -69,14 +70,15 @@ pub fn get_shadow_ray(point_light: &PointLight, hit_record: &HitRecord, epsilon:
     (shadow_ray, interval)
 }
 
-pub fn shade_diffuse() -> Vector3 {
+// TODO: Wait why there is both scene and shapes where scene already should contain shapes?
+pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, ray: &Ray, mat: &HeapAllocMaterial) -> Vector3 {
     let mut color = Vector3::ZERO;
     for point_light in scene.lights.point_lights.all() {
             
-            let (shadow_ray, interval) = get_shadow_ray(&point_light, &hit_record, scene.shadow_ray_epsilon);
+            let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
                 let (shadow_dir, eye_dir) = (shadow_ray.direction, ray.direction); 
-                let light_context = LightContext::new_from(&point_light, interval.max, shadow_dir, -eye_dir, n); // WARNING: w_o is reverse of primary ray, see slide 01_B p.78
+                let light_context = LightContext::new_from(&point_light, interval.max, shadow_dir, -eye_dir, hit_record.normal); // WARNING: w_o is reverse of primary ray, see slide 01_B p.78
                 // TODO WARNING: This assumes ray interval has light distance information inside... prone to error. 
                 color += mat.radiance(&light_context); 
             }
@@ -97,12 +99,12 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
    //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
    if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
-        let n = hit_record.normal;
-        let mat = &scene.materials.materials[hit_record.material - 1];
+        
+        let mat: &HeapAllocMaterial = &scene.materials.materials[hit_record.material - 1];
         let mut color = mat.ambient_radiance(scene.lights.ambient_light);
         let mat_type = mat.get_type();
-        color += match mat_type.to_lowercase(){ // lowercase is redundant but also a safeguard
-            "diffuse" => shade_diffuse(),
+        color += match mat_type{ // WARNING: Expecting lowercase material
+            "diffuse" => shade_diffuse(scene, shapes, &hit_record, &ray, mat),
             "mirror" => , // get_color but with the new ray
             _ => error!("Unknown material type {}! Using diffuse shading...", mat_type); ,
         };
