@@ -15,7 +15,7 @@ use std::rc::Rc;
 use std::io::{self, Write};
 use bevy_math::NormedVectorSpace;
 use tracing::span::Record;
-use tracing::{debug, info, warn};
+use tracing::{debug, info, warn, error};
 
 use crate::camera::Camera;
 use crate::dataforms::VertexData;
@@ -105,8 +105,11 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
         let mat_type = mat.get_type();
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => shade_diffuse(scene, shapes, &hit_record, &ray, mat),
-            "mirror" => , // get_color but with the new ray
-            _ => error!("Unknown material type {}! Using diffuse shading...", mat_type); ,
+            "mirror" => shade_diffuse(scene, shapes, &hit_record, &ray, mat), // get_color but with the new ray
+            _ => {
+                // WARNING: Below never panics because json parser defaults the material type to Diffuse
+                panic!(">> Unknown material type {}! Shading function for this material is missing.", mat_type); 
+            },
         };
         color
    }
