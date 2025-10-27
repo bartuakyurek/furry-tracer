@@ -77,6 +77,19 @@ impl Default for DiffuseMaterial {
 }
 
 impl DiffuseMaterial {
+
+    fn diffuse(&self, light_intensity: Vector3, light_distance: Float, w_i: Vector3, n: Vector3) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.73)
+        let cos_theta = w_i.dot(n).max(0.0);
+        let received_irradiance = light_intensity / light_distance.powi(2);
+        self.diffuse_rf * cos_theta * received_irradiance
+    }
+
+    fn ambient(&self, ambient_radiance: Vector3) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.75)
+        self.ambient_rf * ambient_radiance
+    }
+
     fn specular(&self, n: Vector3, h: Vector3, received_irradiance: Vector3) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.80)
         let p = self.phong_exponent;
