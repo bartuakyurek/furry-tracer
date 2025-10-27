@@ -13,10 +13,11 @@
 */
 use std::fmt::Debug;
 use std::cmp::max;
+use bevy_math::NormedVectorSpace;
 use tracing::{error, info};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
-use crate::numeric::{Float, Vector3};
+use crate::numeric::{approx_zero, Float, Vector3};
 use crate::lights::LightContext; // TODO: rename it to light or lighting, not lights?
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,16 +82,31 @@ impl DiffuseMaterial {
 
     fn diffuse(&self, light_context: &LightContext) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.73)
+        // TODO: reduce the verbosity here
+        let w_i = light_context.shadow_dir;
+        debug_assert!(w_i.is_normalized());
+        let n = light_context.normal;
+        debug_assert!(n.is_normalized());
+
         let cos_theta = w_i.dot(n).max(0.0);
-        let received_irradiance = light_intensity / light_distance.powi(2);
-        self.diffuse_rf * cos_theta * received_irradiance
+        self.diffuse_rf * cos_theta * light_context.irradiance
     }
 
     fn specular(&self, light_context: &LightContext) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.80)
+        let w_o = light_context.eye_dir;
+        let w_i = light_context.shadow_dir;
+        debug_assert!(w_o.is_normalized());
+        debug_assert!(w_i.is_normalized());
+
+        let h = (w_i + w_o) / (w_i + w_o).norm();
+        let n = light_context.normal;
+        debug_assert!(h.is_normalized());
+        debug_assert!(n.is_normalized());
+
         let p = self.phong_exponent;
         let cos_a = n.dot(h).max(0.0);
-        self.specular_rf * cos_a.powf(p) * received_irradiance
+        self.specular_rf * cos_a.powf(p) * light_context.irradiance
     }   
 }
 
