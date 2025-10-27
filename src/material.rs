@@ -17,6 +17,7 @@ use tracing::{error};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
 use crate::numeric::{Float, Vector3};
+use crate::lights::LightContext; // TODO: rename it to light or lighting, not lights?
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// 
@@ -38,8 +39,8 @@ pub trait Material : Debug + Send + Sync  {
             }
         }
     }
-
-    //fn radiance(&self, perp_irradiance: Vector3) -> Vector3;
+    fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3;
+    fn radiance(&self, light_context: LightContext) -> Vector3;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon

@@ -73,7 +73,7 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
    //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
    if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
         let mat = scene.materials.materials[hit_record.material - 1];
-        let mut color = mat.ambient(scene.lights.ambient_light);
+        let mut color = mat.ambient_radiance(scene.lights.ambient_light);
         for point_light in scene.lights.point_lights.all() {
             
             let (shadow_ray, interval) = get_shadow_ray(&point_light, &hit_record, scene.shadow_ray_epsilon);
