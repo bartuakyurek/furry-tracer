@@ -57,4 +57,5 @@ For more suggestions to improve code:
     }```
 
     however I'm not sure if this is helpful in our case or if it adds unnecessary complexity.
-    In case this becomes necessary, check out this crate https://docs.rs/delegate/latest/delegate/
+    In case this becomes necessary, check out this crate https://docs.rs/delegate/latest/delegate/. 
+    Update: I completely forgot why I had this discussion, now I remember another reason: some materials share reflectance coefficients and I'd like to have specular( ) diffuse( ) functions taking material.specular_rf but traits do not allow holding data, rather we could use composition to have that information (I guess a struct like BRDF?)
