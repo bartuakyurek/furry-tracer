@@ -19,7 +19,7 @@ use tracing::{debug, info, warn};
 
 use crate::dataforms::VertexData;
 use crate::ray::{HitRecord, Ray};
-use crate::scene::{Scene};
+use crate::scene::{PointLight, Scene};
 use crate::numeric::{Float, Int, Vector3};
 use crate::image::{ImageData};
 use crate::interval::{Interval, FloatConst};
@@ -28,6 +28,7 @@ use crate::shapes::{Shape};
 type ShapeList = Vec<Rc<dyn Shape>>;
 
 pub fn closest_hit(ray: &Ray, t_interval: &Interval, shapes: &ShapeList, vertex_data: &VertexData) -> Option<HitRecord>{
+    // Refers to p.91 of slide 01_b, lines 3-7
     let mut rec = None;
     let mut t_min = FloatConst::INF;
     for shape in shapes.iter() { // TODO: later we'll use acceleration structures instead of checking *all* objects like this
@@ -52,24 +53,30 @@ pub fn any_hit(ray: &Ray, t_interval: &Interval, shapes: &ShapeList, vertex_data
    false
 }
 
+pub fn get_shadow_ray(point_light: &PointLight, hit_record: &HitRecord, epsilon: Float) -> (Ray, Interval) { // TODO: Should we box hitrecord here?
+    let light_pos = point_light.position;
+    let ray_origin = hit_record.point + (hit_record.normal * epsilon);
+    let distance_vec = light_pos - ray_origin;
+    let distance_squared = distance_vec.norm_squared();
+    let distance = distance_squared.sqrt();
+    let dir = distance_vec / distance;
+    let shadow_ray = Ray::new(ray_origin, dir);
+    let interval = Interval::new(0.0, distance + epsilon); // TODO: Is it correct add epsilon here as well?
+    (shadow_ray, interval)
+}
+
 pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
     
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
-   let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
+   //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
    if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
+
+        // Set color to ambient 
+        let mut color = ambient_radiance;
         // Generate shadow rays 
         for point_light in scene.lights.point_lights.all() {
-            let light_pos = point_light.position;
-            let ray_origin = hit_record.point + (hit_record.normal * scene.shadow_ray_epsilon);
-            let distance_vec = light_pos - ray_origin;
-            let distance_squared = distance_vec.norm_squared();
-            let distance = distance_squared.sqrt();
-            let dir = distance_vec / distance;
-            let shadow_ray = Ray::new(ray_origin, dir);
-            //let mut shadow_hit = None;
-            let interval = Interval::new(0.0, distance);
-            //closest_hit(&shadow_ray, &interval, shapes,  &scene.vertex_data, &mut shadow_hit);
-
+            
+            let (shadow_ray, interval) = get_shadow_ray(&point_light, &hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
             
                 let light_intensity = point_light.rgb_intensity;
@@ -77,9 +84,6 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
                 color += scene.materials.materials[hit_record.material - 1].radiance(perp_irradiance); 
             }
         }
-
-        // TODO add ambient
-        let ambient_intensity = scene.lights.ambient_light;
         color
    }
    else {

@@ -38,7 +38,7 @@ pub trait Material : std::fmt::Debug + Send + Sync  {
         }
     }
 
-    fn radiance(&self, perp_irradiance: Vector3) -> Vector3;
+    //fn radiance(&self, perp_irradiance: Vector3) -> Vector3;
 }
 
 pub type BoxedMaterial = Box<dyn Material>;
@@ -100,9 +100,9 @@ impl DiffuseMaterial {
 
 
 impl Material for DiffuseMaterial{
-    fn radiance(&self, perp_irradiance: Vector3) -> Vector3 {
-        Vector3::new(0.0, 0., 0.0)
-    }
+    //fn radiance(&self, perp_irradiance: Vector3) -> Vector3 {
+    //    self.diffuse(light_intensity, light_distance, w_i, n) + self.ambient(ambient_radiance) + self.specular(n, h, received_irradiance)
+    //}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,9 +142,9 @@ impl Default for MirrorMaterial {
 
 
 impl Material for MirrorMaterial {
-    fn radiance(&self, perp_irradiance: Vector3) -> Vector3 {
-        Vector3::new(0.0, 0., 0.0)
-    }
+    //fn radiance(&self, perp_irradiance: Vector3) -> Vector3 {
+    //    Vector3::new(0.0, 0., 0.0)
+    //}
 }
 
 // TODO: impl Default for Mirrorclear
