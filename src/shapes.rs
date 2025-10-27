@@ -118,13 +118,6 @@ fn lengthy_but_simple_intersection(ray: &Ray, t_interval: &Interval, tri_indices
     //     /   \
     //   b ----- c
     let [a, b, c] = tri_indices.map(|i| verts[i]);
-    let edge_ba = a - b;
-    let edge_ca = a - c;
-    let edge_ac = c - a;
-    let edge_bc = c - b;
-    let edge_cb = b - c;
-    let n = (edge_bc).cross(edge_ba); 
-
     let (beta, gamma, t) = get_beta_gamma_t(a, b, c, ray.origin, ray.direction);
 
     // Conditions at p.32
@@ -142,21 +135,26 @@ fn lengthy_but_simple_intersection(ray: &Ray, t_interval: &Interval, tri_indices
     let p = a + (beta * (b - a)) + (gamma * (c - a)); // p.27
 
     // Check for edge BA 
+    let edge_ba = a - b;
+    let edge_bc = c - b;
+    let n = (edge_bc).cross(edge_ba); // vc in p.16
     let vp = (p - b).cross(edge_ba); // TODO: we can use the same vp for other checks, right?
-    let vc = (edge_bc).cross(edge_ba);
-    if vp.dot(vc) <= 0.0 {
+    if vp.dot(n) <= 0.0 {
         return None;
     }
 
     // Check for AC
+    let edge_ca = a - c;
+    let edge_ac = c - a;
     let vb = (edge_bc).cross(edge_ac);
-    if vp.dot(vb) <= 0.0 {
+    if vb.dot(n) <= 0.0 {
         return None;
     }
 
     // Check for CB
+    let edge_cb = b - c;
     let va = (edge_ca).cross(edge_cb);
-    if vp.dot(va) <= 0.0 {
+    if va.dot(n) <= 0.0 {
         return None;
     }
 
