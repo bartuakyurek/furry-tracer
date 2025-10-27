@@ -52,6 +52,7 @@ pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will
 /// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Deserialize, Clone)]
+#[serde(default)]
 pub struct DiffuseMaterial {
     #[serde(deserialize_with = "deser_usize")]
     pub _id: usize,
@@ -132,6 +133,7 @@ impl Material for DiffuseMaterial{
 /// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Deserialize, Clone)]
+#[serde(default)]
 pub struct MirrorMaterial {
     #[serde(deserialize_with = "deser_usize")]
     pub _id: usize,
