@@ -79,6 +79,7 @@ fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [
         let edge_ac = tri_right - tri_pivot;
 
         // Scalar triple product https://youtu.be/fK1RPmF_zjQ
+        debug_assert!(ray.direction.is_normalized());
         let perp = ray.direction.cross(edge_ac);
         let determinant: Float = perp.dot(edge_ab);
         if (determinant > -t_interval.min) && (determinant < t_interval.min) {
