@@ -107,8 +107,8 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
             "diffuse" => shade_diffuse(scene, shapes, &hit_record, &ray, mat),
             "mirror" => shade_diffuse(scene, shapes, &hit_record, &ray, mat), // get_color but with the new ray
             _ => {
-                // WARNING: Below never panics because json parser defaults the material type to Diffuse
-                panic!(">> Unknown material type {}! Shading function for this material is missing.", mat_type); 
+                // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)
+                panic!(">> Unknown material type '{}'! Shading function for this material is missing.", mat_type); 
             },
         };
         color
