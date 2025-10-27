@@ -14,7 +14,7 @@ use crate::json_parser::*;
 use crate::interval::{Interval};
 use crate::dataforms::{VertexData};
 use crate::numeric::{Float, Vector3};
-use crate::ray::{Ray, HitRecord, ray_triangle_intersection}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
+use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
 pub trait Shape {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
@@ -47,7 +47,7 @@ impl Shape for Triangle {
         // shape refers to this data for their coordinates. 
         
         //info!("todo: convert u,v barycentric to coords");
-        if let Some((p, t)) = ray_triangle_intersection(ray, t_interval, self.indices, verts) {
+        if let Some((p, t)) = moller_trumbore_intersection(ray, t_interval, self.indices, verts) {
             // TODO: Cache tri normals
             // Normal of the triangle (WARNING: no vertex normal used here)
             let [v1, v2, v3] = self.indices.map(|i| verts[i]);
@@ -62,6 +62,52 @@ impl Shape for Triangle {
     }
 }
 
+fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<(Vector3, Float)> {
+    // Based on Möller-Trumbore algorithm
+        //
+        //     a (pivot)
+        //    / \
+        //  b  -  c
+        // 
+        // WARNING: Assumes given interval has incorporated relevant epsilon e.g.
+        // instead of [0.0, inf], [0.0001, inf] is given otherwise there might be
+        // floating point errors.
+        let tri_coords = tri_indices.map(|i| verts[i]);
+        let [tri_pivot, tri_left, tri_right] = tri_coords;        
+        let edge_ab = tri_left - tri_pivot;
+        let edge_ac = tri_right - tri_pivot;
+
+        // Scalar triple product https://youtu.be/fK1RPmF_zjQ
+        let perp = ray.direction.cross(edge_ac);
+        let determinant: Float = perp.dot(edge_ab);
+        if determinant > - t_interval.min && determinant < t_interval.min {
+            return None;
+        }
+
+        let inverse_determinant = 1.0 as Float / determinant;
+        let dist = ray.origin - tri_pivot;
+
+        let barycentric_u = dist.dot(perp) * inverse_determinant;
+        if barycentric_u < 0.0 || barycentric_u > 1.0 {
+            return None;
+        }
+
+        let another_perp = dist.cross(edge_ab);
+        let barycentric_v = ray.direction.dot(another_perp) * inverse_determinant;
+        if barycentric_v < 0.0 || barycentric_u + barycentric_v > 1.0 {
+            return None;
+        }
+
+        // Get ray t
+        let t = edge_ac.dot(another_perp) * inverse_determinant;
+        if !t_interval.contains(t) {
+            return None;
+        }
+
+        // Construct hit point p
+        let p = ray.at(t); // TODO: would it be faster to use barycentric u,v here? 
+        Some((p, t))
+}
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Sphere {
