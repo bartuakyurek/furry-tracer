@@ -7,6 +7,7 @@
     @author: bartu
 */
 
+
 use serde::{Deserialize};
 use tracing::{info, error};
 use crate::geometry::get_tri_normal;
@@ -80,7 +81,7 @@ fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [
         // Scalar triple product https://youtu.be/fK1RPmF_zjQ
         let perp = ray.direction.cross(edge_ac);
         let determinant: Float = perp.dot(edge_ab);
-        if determinant > - t_interval.min && determinant < t_interval.min {
+        if (determinant > -t_interval.min) && (determinant < t_interval.min) {
             return None;
         }
 
@@ -88,13 +89,13 @@ fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [
         let dist = ray.origin - tri_pivot;
 
         let barycentric_u = dist.dot(perp) * inverse_determinant;
-        if barycentric_u < 0.0 || barycentric_u > 1.0 {
+        if (barycentric_u < 0.0) || (barycentric_u > 1.0) {
             return None;
         }
 
         let another_perp = dist.cross(edge_ab);
         let barycentric_v = ray.direction.dot(another_perp) * inverse_determinant;
-        if barycentric_v < 0.0 || barycentric_u + barycentric_v > 1.0 {
+        if (barycentric_v < 0.0) || ((barycentric_u + barycentric_v) > 1.0) {
             return None;
         }
 
