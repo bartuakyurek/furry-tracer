@@ -125,8 +125,21 @@ fn lengthy_but_simple_intersection(ray: &Ray, t_interval: &Interval, tri_indices
     let edge_cb = b - c;
     let n = (edge_bc).cross(edge_ba); 
 
-    // f(p) = (p - a) . n = 0  where p is the intersection point
-    let p: Vector3;
+    let (beta, gamma, t) = get_beta_gamma_t(a, b, c, ray.origin, ray.direction);
+
+    // Conditions at p.32
+    if !t_interval.contains(t) {
+        return None;
+    }
+    if (beta + gamma) <= 1. {
+        return None;
+    }
+    if (0. <= beta) || (0. <= gamma) {
+        return None;
+    }
+
+    // Construct p from barycentric coords
+    let p = a + (beta * (b - a)) + (gamma * (c - a)); // p.27
 
     // Check for edge BA 
     let vp = (p - b).cross(edge_ba); // TODO: we can use the same vp for other checks, right?
