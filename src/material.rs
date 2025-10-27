@@ -11,9 +11,10 @@
     @author: Bartu
 
 */
+use std::fmt::Debug;
 use std::cmp::max;
 use tracing::{error};
-use serde::Deserialize;
+use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
 use crate::numeric::{Float, Vector3};
 
@@ -22,12 +23,12 @@ use crate::numeric::{Float, Vector3};
 /// MATERIAL TRAIT
 /// 
 /// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pub trait Material : std::fmt::Debug + Send + Sync  {
+pub trait Material : Debug + Send + Sync  {
     // TODO: fn radiance() 
 
     fn new_from(value: &serde_json::Value) -> Self 
     where
-        Self: Sized + serde::de::DeserializeOwned + Default,
+        Self: Sized + DeserializeOwned + Default,
     {
         match serde_json::from_value::<Self>(value.clone()) {
             Ok(m) => m,
