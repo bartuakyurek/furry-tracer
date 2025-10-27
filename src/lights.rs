@@ -14,10 +14,14 @@
 
 */
 
+use crate::ray::Ray;
 use crate::scene::{Scene, SceneLights};
+use crate::numeric::{Float, Vector3};
 
-struct LightContext {
-
+pub struct LightContext {
+    pub w_o : Ray, // TODO: these could be references but that requires lifetime annotations
+    pub w_i: Ray,
+    pub light_distance: Float,
 }
 
 impl LightContext {
@@ -27,7 +31,7 @@ impl LightContext {
         }
     }
 
-    pub fn new_from(lights: SceneLights) -> Self {
+    pub fn new_from(lights: SceneLights, eye_ray: Ray) -> Self {
         Self {
 
         }
