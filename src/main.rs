@@ -15,6 +15,7 @@ mod ray;
 mod image;
 mod scene;
 mod camera;
+mod lights;
 mod shapes;
 mod numeric;
 mod interval;
@@ -24,7 +25,7 @@ mod geometry;
 mod dataforms;
 mod json_parser;
 use crate::{json_parser::parse_json795};
-
+// TODO: How to group these mods better to declutter main?
 
 fn main() {
 
