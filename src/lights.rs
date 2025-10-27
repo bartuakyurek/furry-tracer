@@ -14,24 +14,26 @@
 
 */
 
-use crate::ray::Ray;
-use crate::scene::{Scene, SceneLights};
+use crate::ray::{HitRecord, Ray};
+use crate::scene::{PointLight, Scene, SceneLights};
 use crate::numeric::{Float, Vector3};
 
 pub struct LightContext {
-    pub w_o : Ray, // TODO: these could be references but that requires lifetime annotations
-    pub w_i: Ray,
+    pub eye_ray : Ray, // TODO: these could be references but that requires lifetime annotations
+    pub shadow_ray: Ray, // TODO: Heap allocation?
     pub light_distance: Float,
+    pub light_intensity: Vector3, // RGB
+    pub normal: Vector3,
 }
 
 impl LightContext {
-    pub fn new() -> Self {
-        Self {
+    //pub fn new() -> Self {
+    //    Self {
+    //        
+    //    }
+    //}
 
-        }
-    }
-
-    pub fn new_from(lights: SceneLights, eye_ray: Ray) -> Self {
+    pub fn new_from(point_light: &PointLight, hit_record: &HitRecord) -> Self {
         Self {
 
         }
