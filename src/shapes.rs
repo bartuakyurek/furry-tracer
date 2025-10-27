@@ -14,7 +14,7 @@ use crate::geometry::get_tri_normal;
 use crate::json_parser::*;
 use crate::interval::{Interval};
 use crate::dataforms::{VertexData};
-use crate::numeric::{Float, Vector3};
+use crate::numeric::{Float, Vector3, Matrix3};
 use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
 pub trait Shape {
@@ -61,6 +61,53 @@ impl Shape for Triangle {
         }
         
     }
+}
+
+//fn get_tri_area(a: Vector3, b: Vector3, c: Vector3) -> Float { // TODO: This belongs to geometry.rs
+
+//}
+
+fn get_beta_gamma_t(a: Vector3, b: Vector3, c: Vector3, o: Vector3, d: Vector3) -> (Float, Float, Float) { 
+    // Helper function for computations in Slides 01_B, p.30
+    // a, b, c are triangle corners
+    // o, d are ray's origin and direction r(t) = o + d * t
+    //
+    // TODO: reduce verbosity and unnecessary operations
+    // I've written in naive way for the beginning
+    let (ax, ay, az) = (a[0], a[1], a[2]);
+    let (bx, by, bz) = (b[0], b[1], b[2]);
+    let (cx, cy, cz) = (c[0], c[1], c[2]);
+    let (ox, oy, oz) = (o[0], o[1], o[2]);
+    let (dx, dy, dz) = (d[0], d[1], d[2]);
+
+    // Construct A
+    let A_x = Vector3::new(ax - bx, ay - by, az - bz);
+    let A_y = Vector3::new(ax - cx, ay - cy, az - cz);
+    let A_z = Vector3::new(dx, dy, dz);
+    let A = Matrix3::from_cols(A_x, A_y, A_z);
+    let A_determinant = A.determinant();
+
+    // Construct beta 
+    let beta_x = Vector3::new(ax - ox, ay - oy, az - oz);
+    let beta_y = Vector3::new(ax - cx, ay - cy, az - cz);
+    let beta_z = Vector3::new(dx, dy, dx);
+    let beta_matrix = Matrix3::from_cols(beta_x, beta_y, beta_z);
+    let beta = beta_matrix.determinant() / A_determinant;
+
+    // Construct gamma
+    let gamma_x = Vector3::new(ax - bx, ay - by, az - bz);
+    let gamma_y = Vector3::new(ax - ox, ay - oy, az - oz);
+    let gamma_z = Vector3::new(dx, dy, dz);
+    let gamma_matrix = Matrix3::from_cols(gamma_x, gamma_y, gamma_z);
+    let gamma = gamma_matrix.determinant() / A_determinant;
+
+    let t_x = Vector3::new(ax - bx, ay - by, az - bz);
+    let t_y = Vector3::new(ax - cx, ay - cy, az - cz);
+    let t_z = Vector3::new(ax - ox, ay - oy, az - oz);
+    let t_matrix = Matrix3::from_cols(t_x, t_y, t_z);
+    let t = t_matrix.determinant() / A_determinant;
+
+    (beta, gamma, t)
 }
 
 fn lengthy_but_simple_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<(Vector3, Float)> {
