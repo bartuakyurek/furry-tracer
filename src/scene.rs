@@ -51,8 +51,8 @@ pub struct RootScene {
 #[serde(rename_all = "PascalCase")]
 #[serde(default)]
 pub struct Scene {
-    #[serde(deserialize_with = "deser_int")]
-    pub max_recursion_depth: Int,
+    #[serde(deserialize_with = "deser_usize")]
+    pub max_recursion_depth: usize,
 
     #[serde(deserialize_with = "deser_vec3")]
     pub background_color: Vector3,
@@ -102,6 +102,11 @@ impl Scene {
         if self.intersection_test_epsilon < 1e-16 {
             self.intersection_test_epsilon = 1e-6;
             warn!("Intersection Ray epsilon found 0, setting it to default: {}.", self.intersection_test_epsilon);
+        }
+
+        if self.max_recursion_depth == 0 {
+            self.max_recursion_depth = 1;
+            warn!("Found max recursion depth 0, setting it to {} as default. If that zero was intentional please update your code.", self.max_recursion_depth);
         }
     }
 }
