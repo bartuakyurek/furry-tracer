@@ -56,28 +56,22 @@ pub fn any_hit(ray: &Ray, t_interval: &Interval, shapes: &ShapeList, vertex_data
 }
 
 pub fn get_shadow_ray(point_light: &PointLight, hit_record: &HitRecord, epsilon: Float) -> (Ray, Interval) { // TODO: Should we box hitrecord here?
-    let light_pos = point_light.position;
+    
     debug_assert!(hit_record.normal.is_normalized());
     let ray_origin = hit_record.point + (hit_record.normal * epsilon);
-    let distance_vec = light_pos - ray_origin;
-    let distance_squared = distance_vec.norm_squared();
+    let distance_vec = point_light.position - ray_origin;
+    let distance_squared = distance_vec.norm_squared(); // TODO: Cache?
     let distance = distance_squared.sqrt();
     let dir = distance_vec / distance;
+    debug_assert!(dir.is_normalized());
     let shadow_ray = Ray::new(ray_origin, dir);
     let interval = Interval::new(0.0, distance); 
     (shadow_ray, interval)
 }
 
-pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
-   // TODO: Shouldn't we box the scene or even Rc<scene> here? otherwise it lives on the stack
-   // and it's a huge struct, isn't it?
-   let t_interval = Interval::positive(scene.intersection_test_epsilon);
-   //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
-   if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
-        let n = hit_record.normal;
-        let mat = &scene.materials.materials[hit_record.material - 1];
-        let mut color = mat.ambient_radiance(scene.lights.ambient_light);
-        for point_light in scene.lights.point_lights.all() {
+pub fn shade_diffuse() -> Vector3 {
+    let mut color = Vector3::ZERO;
+    for point_light in scene.lights.point_lights.all() {
             
             let (shadow_ray, interval) = get_shadow_ray(&point_light, &hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
@@ -89,7 +83,25 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
             //else { // TODO: For debugging shadow acne!! Remove this else part later
             //    color = Vector3::new(255. , 0., 0.);
             //}
-        }
+    }
+    color
+}
+
+pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
+   // TODO: Shouldn't we box the scene or even Rc<scene> here? otherwise it lives on the stack
+   // and it's a huge struct, isn't it?
+   let t_interval = Interval::positive(scene.intersection_test_epsilon);
+   //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
+   if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
+        let n = hit_record.normal;
+        let mat = &scene.materials.materials[hit_record.material - 1];
+        let mut color = mat.ambient_radiance(scene.lights.ambient_light);
+        let mat_type = mat.get_type();
+        color += match mat_type.to_lowercase(){ // lowercase is redundant but also a safeguard
+            "diffuse" => shade_diffuse(),
+            "mirror" => ,
+            _ => error!("Unknown material type {}! Using diffuse shading...", mat_type); ,
+        };
         color
    }
    else {

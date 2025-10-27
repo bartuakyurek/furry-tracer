@@ -41,6 +41,7 @@ pub trait Material : Debug + Send + Sync  {
     }
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3; // TODO: whould ambient_shade be a better name? 
     fn radiance(&self, light_context: &LightContext) -> Vector3;
+    fn get_type(&self) -> &str;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
@@ -114,6 +115,10 @@ impl DiffuseMaterial {
 
 impl Material for DiffuseMaterial{
 
+    fn get_type(&self) -> &str {
+        "diffuse"
+    }
+
     fn radiance(&self, light_context: &LightContext) -> Vector3 {
         self.diffuse(light_context) + self.specular(light_context)
     }
@@ -164,6 +169,11 @@ impl Default for MirrorMaterial {
 
 
 impl Material for MirrorMaterial {
+
+    fn get_type(&self) -> &str {
+        "mirror"
+    }
+    
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
         //info!("Computing ambient radiance for Mirror ...");
         Vector3::ZERO
