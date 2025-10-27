@@ -131,10 +131,10 @@ fn lengthy_but_simple_intersection(ray: &Ray, t_interval: &Interval, tri_indices
     if !t_interval.contains(t) {
         return None;
     }
-    if (beta + gamma) <= 1. {
+    if (beta + gamma) > 1. {
         return None;
     }
-    if (0. <= beta) || (0. <= gamma) {
+    if (0. > beta) || (0. > gamma) {
         return None;
     }
 
