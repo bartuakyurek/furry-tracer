@@ -17,6 +17,7 @@ use bevy_math::NormedVectorSpace;
 use tracing::span::Record;
 use tracing::{debug, info, warn};
 
+use crate::camera::Camera;
 use crate::dataforms::VertexData;
 use crate::lights::LightContext;
 use crate::ray::{HitRecord, Ray};
@@ -62,7 +63,7 @@ pub fn get_shadow_ray(point_light: &PointLight, hit_record: &HitRecord, epsilon:
     let distance = distance_squared.sqrt();
     let dir = distance_vec / distance;
     let shadow_ray = Ray::new(ray_origin, dir);
-    let interval = Interval::new(0.0, distance + epsilon); // TODO: Is it correct add epsilon here as well?
+    let interval = Interval::new(0.0, distance); 
     (shadow_ray, interval)
 }
 
@@ -72,14 +73,16 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
    //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
    if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
-        let mat = scene.materials.materials[hit_record.material - 1];
+        let n = hit_record.normal;
+        let mat = &scene.materials.materials[hit_record.material - 1];
         let mut color = mat.ambient_radiance(scene.lights.ambient_light);
         for point_light in scene.lights.point_lights.all() {
             
             let (shadow_ray, interval) = get_shadow_ray(&point_light, &hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
-            
-                let light_context = LightContext::new_from(&point_light, &hit_record);
+                let (shadow_dir, eye_dir) = (shadow_ray.direction, ray.direction); 
+                let light_context = LightContext::new_from(&point_light, interval.max, shadow_dir, eye_dir, n);
+                // TODO WARNING: This assumes ray interval has light distance information inside... prone to error. 
                 color += mat.radiance(&light_context); 
             }
         }
