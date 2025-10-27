@@ -87,9 +87,13 @@ pub fn shade_diffuse() -> Vector3 {
     color
 }
 
-pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
+pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
    // TODO: Shouldn't we box the scene or even Rc<scene> here? otherwise it lives on the stack
    // and it's a huge struct, isn't it?
+   if depth >= scene.max_recursion_depth {
+    ??
+   }
+   
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
    //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
    if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
@@ -99,7 +103,7 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList) -> Vector3 { // T
         let mat_type = mat.get_type();
         color += match mat_type.to_lowercase(){ // lowercase is redundant but also a safeguard
             "diffuse" => shade_diffuse(),
-            "mirror" => ,
+            "mirror" => , // get_color but with the new ray
             _ => error!("Unknown material type {}! Using diffuse shading...", mat_type); ,
         };
         color
@@ -123,7 +127,7 @@ pub fn render(scene: &Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error
         for (i, ray) in eye_rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
            //eprint!("\rComputing {} / {}", i + 1, n_pixels); 
            //io::stdout().flush().unwrap(); TODO: how to do it with tracing crate?
-            pixel_colors[i] = get_color(ray, scene, &shapes);
+            pixel_colors[i] = get_color(ray, scene, &shapes, 0);
         }
        
         // -------------------------------------------------------------------- 
