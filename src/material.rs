@@ -13,7 +13,7 @@
 */
 use std::fmt::Debug;
 use std::cmp::max;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
 use crate::numeric::{approx_zero, Float, Vector3};
@@ -39,7 +39,7 @@ pub trait Material : Debug + Send + Sync  {
         }
     }
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3; // TODO: whould ambient_shade be a better name? 
-    fn radiance(&self, ray_in: &Ray, ray_out: &Option<Ray>, hit_record: &HitRecord) -> Vector3;
+    fn radiance(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
     fn get_type(&self) -> &str;
     //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool;
     fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray;
@@ -117,18 +117,13 @@ impl Material for DiffuseMaterial{
     }
 
     fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray {
-
+        warn!("Scatter not implemented for Diffuse! Only use shadow rays for now.");
+        todo!()
     }
 
-    fn radiance(&self, ray_in: &Ray, ray_out: &Option<Ray>, hit_record: &HitRecord) -> Vector3 {
+    fn radiance(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
 
-        
-        if let Some(ray_out) = ray_out{
-           
-        }
-        else {
-            let ray_out = self.scatter(ray_in, hit_record, ray_out)
-        }
+        let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
 
         let  w_i = ray_out.direction;
         let w_o = - ray_in.direction;
