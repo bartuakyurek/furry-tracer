@@ -103,18 +103,14 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
         let mat: &HeapAllocMaterial = &scene.materials.materials[hit_record.material - 1];
         let mut color = mat.ambient() * scene.lights.ambient_light;
         let mat_type = mat.get_type();
-        
-        // TODO: Update attenuation logic (see below)
-        // What happens if a function *adds* something instead of overriding to attenuation? 
-        // Currently I assume attenuation is overridden, but we cannot guarantee that.
         let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? Seems like yes, visually checked with other epsilon vs. given output image 
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => {
                 shade_diffuse(scene, shapes, &hit_record, &ray_in, mat)
             },
             "mirror" => {
-                    let attenuation = mat.attenuate_reflect(ray_in, hit_record.ray_t); 
-                    if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon) {
+                    //let attenuation = mat.attenuate_reflect(ray_in, hit_record.ray_t); 
+                    if let Some((reflected_ray, attenuation)) = mat.reflect(ray_in, &hit_record, epsilon) {
                         shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + attenuation * get_color(&reflected_ray, scene, shapes, depth + 1) 
                     }
                     else {
@@ -122,26 +118,24 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
                         Vector3::ZERO // Perfect mirror always reflects so this hopefully is not triggered
                     }
             }, 
-            "dielectric" => {
+           "dielectric" => {
                 let mut tot_radiance = Vector3::ZERO;
-
+                
                 // Only add diffuse, specular, and ambient components if front face (see slides 02, p.29)
                 if hit_record.is_front_face { 
                     tot_radiance += shade_diffuse(scene, shapes, &hit_record, &ray_in, mat);
                 }
-
+ 
                 // Reflected
-                if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon) {
-                        let attenuation = mat.attenuate_reflect(ray_in, hit_record.ray_t); 
-                        tot_radiance +=  attenuation * get_color(&reflected_ray, scene, shapes, depth + 1) 
+                if let Some((reflected_ray, attenuation)) = mat.reflect(ray_in, &hit_record, epsilon) {
+                        tot_radiance += attenuation * get_color(&reflected_ray, scene, shapes, depth + 1);
                 }
-
+        
                 // Refracted 
-                if let Some(refracted_ray) = mat.refract(ray_in, &hit_record, epsilon) {
-                        let attenuation = mat.attenuate_refract(ray_in, hit_record.ray_t); 
-                        tot_radiance +=  attenuation * get_color(&refracted_ray, scene, shapes, depth + 1) 
+                // TODO: Should we check !is_front_face here? 
+                if let Some((refracted_ray, attenuation)) = mat.refract(ray_in, &hit_record, epsilon) {
+                        tot_radiance += attenuation * get_color(&refracted_ray, scene, shapes, depth + 1);
                 }
-
                 tot_radiance
             }
             _ => {

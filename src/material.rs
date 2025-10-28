@@ -13,6 +13,7 @@
 */
 use std::fmt::Debug;
 use std::cmp::max;
+use bevy_math::ops::cos;
 use tracing::{error, info, warn};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
@@ -44,10 +45,14 @@ pub trait Material : Debug + Send + Sync  {
     fn ambient(&self) -> Vector3; 
 
     //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
-    fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3;
-    fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3;
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
+    //fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3;
+    //fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3;
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)>; //(Ray, attenuation)
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)>;
+
+    //fn get_fresnel_ratio(&self, ray_in: &Ray, hit_record: &HitRecord) -> Float {
+    //    0.0 // Default: no fresnel for non-dielectric materials
+    //}
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
@@ -99,24 +104,14 @@ impl Material for DiffuseMaterial{
         "diffuse"
     }
 
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn reflect(&self, _: &Ray, _: &HitRecord, _: Float) -> Option<(Ray, Vector3)> {
         warn!("Reflect not implemented for Diffuse! Only use shadow rays for now.");
         todo!()
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn refract(&self, _: &Ray, _: &HitRecord, _: Float) -> Option<(Ray, Vector3)> {
         warn!("There is no refract for DiffuseMaterial. If this is intentional please delete this warning.");
         None
-    }
-
-    fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
-        //warn!("Attenuate not implemented for Diffuse! Only use shadow rays for now.");
-        Vector3::ONE // No attenuation for diffuse
-    }
-
-    fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
-        //warn!("Attenuate not implemented for Diffuse! Only use shadow rays for now.");
-        Vector3::ONE // No attenuation for diffuse
     }
 
     fn ambient(&self) -> Vector3 {
@@ -199,15 +194,7 @@ impl Material for MirrorMaterial {
         "mirror"
     }
 
-    fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
-        self.mirror_rf 
-    }
-
-    fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
-        Vector3::ONE  
-    }
-
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)> {
         // Reflected ray from Slides 02, p.4 (Perfect Mirror)
         // wr ​= - wo ​+ 2 n (n . wo)
         // WARNING: Assume ray_in.direction = wi = - wo
@@ -215,11 +202,13 @@ impl Material for MirrorMaterial {
         let w_i = ray_in.direction;
         let w_r = w_i - 2. * n * (n.dot(w_i));
         debug_assert!(w_r.is_normalized());
-
-        Some(Ray::new(hit_record.point + (n * epsilon), w_r)) // Always reflects
+        
+        let ray = Ray::new(hit_record.point + (n * epsilon), w_r);
+        let attenuation = self.mirror_rf;
+        Some((ray, attenuation)) // Always reflects
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn refract(&self, _: &Ray, _: &HitRecord, _: Float) -> Option<(Ray, Vector3)> {
         None // Never refract
     }
     
@@ -259,6 +248,15 @@ impl Material for MirrorMaterial {
 /// 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[derive(Default, Debug)]
+struct FresnelData {
+    cos_theta: Float,
+    cos_phi: Float,
+    f_r: Float,
+    f_t: Float,
+    n_ratio: Float,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct DielectricMaterial {
@@ -297,10 +295,20 @@ impl Default for DielectricMaterial {
 
 impl DielectricMaterial {
 
-    fn fresnel_reflection_ratio(&self, ray_in: &Ray, hit_record: &HitRecord) ->  Float {
+    fn get_beers_law_attenuation(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
+        // Slides 02, p.27, only e^(-Cx) part
+        // where C is the absorption coefficient
+        // WARNING: ray_in.origin is assumed to be the location of the last hit point
+        // i.e. point in p.28 with arrow to L(x)
+        (- self.absorption_coeff * ray_in.distance_at(ray_t)).exp() 
+    }
+
+    fn fresnel(&self, ray_in: &Ray, hit_record: &HitRecord, fresnel: &mut FresnelData) ->  bool {
         // returns reflection ratio F_r
         // (for transmissoion use 1 - F_r )
         // see slides 02, p.20 for notation
+        // Update: now it should fill FresnelData
+        // return false if total reflection occurs
 
         // d: incoming normalized ray
         // n: surface normal
@@ -309,7 +317,8 @@ impl DielectricMaterial {
         debug_assert!(d.is_normalized());
         debug_assert!(n.is_normalized());
         let cos_theta = n.dot(-d);
-
+        
+        // TODO: Would it be more flexible if we read it from FresnelData?
         let mut n1 = 1.00029 as Float; // Assuming Air in slides 02, p.22
         let mut n2 = self.refraction_index;
         if !hit_record.is_front_face {
@@ -322,11 +331,11 @@ impl DielectricMaterial {
         let inside_of_sqrt: Float = 1. - (ratio_squared * one_minus_cossqrd);
 
         let cos_phi: Float = if inside_of_sqrt < 0. {
-            info!("Total internal reflection occured!");
-            return 1.; // TODO No need to compute, right? I assume it is total internal reflection (p.16)
+            //info!("Total internal reflection occured!");
+            return false; // TODO No need to compute, right? I assume it is total internal reflection (p.16)
         }
         else {
-            inside_of_sqrt.sqrt()
+            inside_of_sqrt.sqrt() // TODO: do we need sqrt here or could we use sin^2 = 1 - cos^2?
         };
 
         let n1cos_p = n1 * cos_phi;
@@ -341,7 +350,13 @@ impl DielectricMaterial {
 
         let f_r = 0.5 * (r_parallel.powi(2) + r_perp.powi(2));
         debug_assert!( (f_r > 1e-20) && (f_r < 1.+1e-20)); // in range [0,1]
-        f_r
+
+        fresnel.n_ratio = n1 / n2;
+        fresnel.cos_theta = cos_theta; 
+        fresnel.cos_phi = cos_phi;
+        fresnel.f_r = f_r;
+        fresnel.f_t = 1. - f_r;
+        true
     }
 }
 
@@ -351,34 +366,46 @@ impl Material for DielectricMaterial {
     fn get_type(&self) -> &str {
         "dielectric"
     }
-
-    fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
-        // Slides 02, p.27, only e^(-Cx) part
-        // where C is the absorption coefficient
-        // WARNING: ray_in.origin is assumed to be the location of the last hit point
-        // i.e. point in p.28 with arrow to L(x)
-        self.mirror_rf
-    }
-
-    fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
-        // Slides 02, p.27, only e^(-Cx) part
-        // where C is the absorption coefficient
-        // WARNING: ray_in.origin is assumed to be the location of the last hit point
-        // i.e. point in p.28 with arrow to L(x)
-        (- self.absorption_coeff * ray_in.distance_at(ray_t)).exp() 
-    }
-
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray)> {
-        // Fresnel reflection 
-        todo!()
-        // Don't forget to set attenuation
-    }
-
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray)> {
-        todo!()
-        // Don't forget to set attenuation
-    }
     
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)> {
+        
+        let mut fresnel = FresnelData::default();
+        self.fresnel(ray_in, hit_record, &mut fresnel);
+        
+        if fresnel.f_r > 1e-6 {
+            let n = hit_record.normal;
+            let w_i = ray_in.direction;
+            let w_r = w_i - 2.0 * n * (n.dot(w_i));
+            debug_assert!(w_r.is_normalized());
+            
+            let ray = Ray::new(hit_record.point + (n * epsilon), w_r);
+            let attenuation = fresnel.f_r * self.mirror_rf; // TODO: Am I doing it right?? scalar times a vector, is that really the attenuation from glass reflectance?
+            Some((ray, attenuation))
+        } else {
+            None
+        }
+    }
+
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)> {
+        
+        let mut frd = FresnelData::default();
+        if self.fresnel(ray_in, hit_record, &mut frd) {
+            
+            let d = ray_in.direction;
+            let n = hit_record.normal;
+            let refracted_direction = ((d + (n * frd.cos_theta)) * frd.n_ratio) + (n * frd.cos_phi);
+            debug_assert!(refracted_direction.is_normalized());
+
+            let ray = Ray::new(hit_record.point - n * epsilon, refracted_direction);
+            let attenuation = frd.f_t *self.get_beers_law_attenuation(ray_in, hit_record.ray_t);
+            Some((ray, attenuation))
+        }
+        else {
+            None // Total internal reflection
+        }
+       
+        
+    }
     fn ambient(&self) -> Vector3 {
         self.ambient_rf  
     }
