@@ -38,8 +38,8 @@ pub trait Material : Debug + Send + Sync  {
             }
         }
     }
-    fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3; // TODO: whould ambient_shade be a better name? 
-    fn radiance(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
+    fn get_ambient(&self) -> Vector3; // TODO: whould ambient_shade be a better name? 
+    fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
     fn get_type(&self) -> &str;
     //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool;
     fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray;
@@ -121,7 +121,7 @@ impl Material for DiffuseMaterial{
         todo!()
     }
 
-    fn radiance(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
+    fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
 
         let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
         let  w_i = ray_out.direction;
@@ -130,10 +130,10 @@ impl Material for DiffuseMaterial{
         self.diffuse(w_i, n) + self.specular(w_o, w_i, n)
     }
 
-    fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
+    fn get_ambient(&self) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.75)
         // e.g. for test.json it is [25, 25, 25]
-        self.ambient_rf * ambient_light // * 10. -> this was to debug there exists ambient light
+        self.ambient_rf 
     }
 
 }
@@ -185,7 +185,7 @@ impl MirrorMaterial {
         debug_assert!(n.is_normalized());
 
         let cos_theta = w_i.dot(n).max(0.0);
-        self.diffuse_rf * cos_theta //* light_context.irradiance
+        self.diffuse_rf * cos_theta  
     }
 
     fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3 {
@@ -199,7 +199,7 @@ impl MirrorMaterial {
         
         let p = self.phong_exponent;
         let cos_a = n.dot(h).max(0.0);
-        self.specular_rf * cos_a.powf(p) //* light_context.irradiance
+        self.specular_rf * cos_a.powf(p)  
     }   
 
     fn reflected_radiance(&self) -> Vector3 {
@@ -217,12 +217,11 @@ impl Material for MirrorMaterial {
         todo!()
     }
     
-    fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
-        //info!("Computing ambient radiance for Mirror ...");
-        self.ambient_rf * ambient_light 
+    fn get_ambient(&self) -> Vector3 {
+        self.ambient_rf  
     }
 
-    fn radiance(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
+    fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
         let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
         let w_i = ray_out.direction;
         let w_o = - ray_in.direction;

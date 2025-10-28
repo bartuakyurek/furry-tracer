@@ -13,7 +13,7 @@
 
 use std::rc::Rc;
 use std::io::{self, Write};
-use bevy_math::NormedVectorSpace;
+use bevy_math::{NormedVectorSpace, VectorSpace};
 use tracing::span::Record;
 use tracing::{debug, info, warn, error};
 
@@ -77,7 +77,7 @@ pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, 
             let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
                 let irradiance = point_light.rgb_intensity / shadow_ray.squared_distance_at(interval.max); // TODO interval is confusing here
-                color += mat.radiance(ray, &Some(shadow_ray), hit_record) * irradiance; 
+                color += mat.get_attenuiation(ray, &mut Some(shadow_ray), hit_record) * irradiance; 
             }
     }
     color
@@ -95,11 +95,12 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
    if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
         
         let mat: &HeapAllocMaterial = &scene.materials.materials[hit_record.material - 1];
-        let mut color = mat.ambient_radiance(scene.lights.ambient_light);
+        let mut color = mat.get_ambient() * scene.lights.ambient_light;
         let mat_type = mat.get_type();
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => shade_diffuse(scene, shapes, &hit_record, &ray, mat),
-            //"mirror" => {
+            "mirror" => {
+
             //   
             //    let mut attenuation = Vector3::ZERO;
             //    let mut rays_out: Vec<Ray> = Vec::new();
@@ -112,7 +113,8 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
             //        }
             //    }
             //    color_tmp
-            //}, 
+                Vector3::ZERO
+            }, 
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)
                 panic!(">> Unknown material type '{}'! Shading function for this material is missing.", mat_type); 
