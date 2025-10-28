@@ -1,7 +1,7 @@
+<p align="center">
+  <b><h1>Fury Tracer</h1></b>
+</p>
 
-<div align="center">
-# Fury Tracer
-</div>
 
 This is a ray tracer developed for METU graduate level course CENG 795.
 
