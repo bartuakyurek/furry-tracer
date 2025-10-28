@@ -21,6 +21,7 @@ pub struct DataField<T> {
     
     pub(crate) _data: Vec<T>,
     pub(crate) _type: String,
+    pub(crate) _ply_file: String,
 }
 
 impl<T> Index<usize> for DataField<T> {
@@ -47,12 +48,16 @@ impl<'de> Deserialize<'de> for DataField<Vector3> {
             _data: Vec<Vector3>,
             #[serde(rename = "_type")]
             _type: String,
+            #[serde(rename = "_plyFile")]
+            #[serde(default)]
+            _ply_file: String,
         }
 
         let helper = Helper::deserialize(deserializer)?;
         Ok(DataField {
             _data: helper._data,
             _type: helper._type,
+            _ply_file: helper._ply_file,
         })
     }
 }
@@ -68,12 +73,16 @@ impl<'de> Deserialize<'de> for DataField<usize> {
             _data: Vec<usize>,
             #[serde(rename = "_type")]
             _type: String,
+             #[serde(rename = "_plyFile")]
+             #[serde(default)]
+            _ply_file: String,
         }
 
         let helper = Helper::deserialize(deserializer)?;
         Ok(DataField {
             _data: helper._data,
             _type: helper._type,
+            _ply_file: helper._ply_file,
         })
     }
 }
@@ -117,6 +126,7 @@ impl FromStr for VertexData {
         Ok(DataField::<Vector3>{
             _data: parse_string_vecvec3(s).unwrap(),
             _type: String::from("xyz"), // Default for VertexData (Note: it would be different from other DataFields)
+            _ply_file: String::from(""),
         })
     }
 }
