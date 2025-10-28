@@ -297,21 +297,18 @@ impl Default for DielectricMaterial {
 
 impl DielectricMaterial {
 
-    fn fresnel(&self, ray_in: &Ray, hit_record: &HitRecord) -> (Vector3, Vector3) {
+    fn fresnel_reflection_ratio(&self, ray_in: &Ray, hit_record: &HitRecord) ->  Float {
+        // returns reflection ratio F_r
+        // (for transmissoion use 1 - F_r )
+        // see slides 02, p.20 for notation
+
         // d: incoming normalized ray
         // n: surface normal
-        // returns parallel and perpendicular 
-        // components for F_r and F_t
-        // see slides 02, p.20 for notation
-        //
-        // TODO: This is called by reflect and refract, but we don't need to 
-        // do the same computation twice. 
         let d = ray_in.direction;
         let n = hit_record.normal;
         debug_assert!(d.is_normalized());
         debug_assert!(n.is_normalized());
         let cos_theta = n.dot(-d);
-
 
         let mut n1 = 1.00029 as Float; // Assuming Air in slides 02, p.22
         let mut n2 = self.refraction_index;
@@ -319,8 +316,23 @@ impl DielectricMaterial {
             n1 = self.refraction_index;
             n2 = 1.00029 as Float;
         }
+        
+        let ratio_squared: Float = (n1 / n2).powi(2);
+        let one_minus_cossqrd: Float = 1. - (cos_theta.powi(2));
+        let inside_of_sqrt: Float = 1. - (ratio_squared * one_minus_cossqrd);
 
-        let cos_phi = todo!();
+        let cos_phi: Float = if inside_of_sqrt < 0. {
+            info!("Total internal reflection occured!");
+            return 1.; // TODO No need to compute, right? I assume it is total internal reflection (p.16)
+        }
+        else {
+            inside_of_sqrt.sqrt()
+        };
+
+        r_parallel: Float = ( ) / ( );
+        r_perp: Float = ( ) / ( );
+
+        0.5 * (r_parallel.pow_i(2) + r_perp.pow_i(2)) // F_r
     }
 }
 
