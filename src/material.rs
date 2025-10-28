@@ -92,7 +92,7 @@ impl DiffuseMaterial {
         debug_assert!(n.is_normalized());
 
         let cos_theta = w_i.dot(n).max(0.0);
-        self.diffuse_rf * cos_theta * light_context.irradiance
+        self.diffuse_rf * cos_theta //* light_context.irradiance
     }
 
     fn specular(&self, light_context: &LightContext) -> Vector3 {
@@ -109,7 +109,7 @@ impl DiffuseMaterial {
 
         let p = self.phong_exponent;
         let cos_a = n.dot(h).max(0.0);
-        self.specular_rf * cos_a.powf(p) * light_context.irradiance
+        self.specular_rf * cos_a.powf(p) //* light_context.irradiance
     }   
 }
 
@@ -185,7 +185,7 @@ impl MirrorMaterial {
         debug_assert!(n.is_normalized());
 
         let cos_theta = w_i.dot(n).max(0.0);
-        self.diffuse_rf * cos_theta * light_context.irradiance
+        self.diffuse_rf * cos_theta //* light_context.irradiance
     }
 
     fn specular(&self, light_context: &LightContext) -> Vector3 {
@@ -202,13 +202,13 @@ impl MirrorMaterial {
 
         let p = self.phong_exponent;
         let cos_a = n.dot(h).max(0.0);
-        self.specular_rf * cos_a.powf(p) * light_context.irradiance
+        self.specular_rf * cos_a.powf(p) //* light_context.irradiance
     }
 
     fn reflected_radiance(&self, light_context: &LightContext) -> Vector3 {
         // TODO: irradiance is inferred from LightContext but wouldn't it be better if Material
         // was responsible from generating the new rays given incoming ray and surface normal?
-        self.mirror_rf * light_context.irradiance
+        self.mirror_rf //* light_context.irradiance
     }
 }
 

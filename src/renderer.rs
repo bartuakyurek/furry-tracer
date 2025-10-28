@@ -78,13 +78,12 @@ pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, 
             let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
                 let (shadow_dir, eye_dir) = (shadow_ray.direction, ray.direction); 
-                let light_context = LightContext::from_shadow(&point_light, interval.max, shadow_dir, eye_dir, hit_record.normal); // WARNING: w_o is reverse of primary ray, see slide 01_B p.78
+                let irradiance = point_light.rgb_intensity / shadow_ray.squared_distance_at(interval.max);
+                let light_context = LightContext::from_shadow(shadow_dir, eye_dir, hit_record.normal); 
+                // WARNING: w_o is reverse of primary ray, see slide 01_B p.78
                 // TODO WARNING: This assumes ray interval has light distance information inside... prone to error. 
-                color += mat.radiance(&light_context); 
+                color += mat.radiance(&light_context) * irradiance; 
             }
-            //else { // TODO: For debugging shadow acne!! Remove this else part later
-            //    color = Vector3::new(255. , 0., 0.);
-            //}
     }
     color
 }
@@ -112,9 +111,9 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
                 let mut color_tmp= Vector3::ZERO;
                 if mat.scatter(ray, &hit_record, &mut attenuation, &mut rays_out) {
                     for new_ray in rays_out {
-                        let received = get_color(&new_ray, scene, shapes, depth + 1); // L_i
-                        let light_context = LightContext::from_mirror(ray.direction, hit_record.normal, received);
-                        color_tmp = mat.radiance(&light_context);
+                        let received_irrad = get_color(&new_ray, scene, shapes, depth + 1); // L_i
+                        let light_context = LightContext::from_mirror(ray.direction, hit_record.normal);
+                        color_tmp = mat.radiance(&light_context) * received_irrad;
                     }
                 }
                 color_tmp
