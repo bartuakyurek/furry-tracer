@@ -44,7 +44,7 @@ pub trait Material : Debug + Send + Sync  {
     fn ambient(&self) -> Vector3; 
 
     //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray;
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Ray;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
@@ -96,7 +96,7 @@ impl Material for DiffuseMaterial{
         "diffuse"
     }
 
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray {
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Ray {
         warn!("Scatter not implemented for Diffuse! Only use shadow rays for now.");
         todo!()
     }
@@ -183,7 +183,6 @@ impl Default for MirrorMaterial {
 impl MirrorMaterial {
 
     
-
     fn reflected_radiance(&self) -> Vector3 {
         self.mirror_rf 
     }
@@ -195,8 +194,17 @@ impl Material for MirrorMaterial {
         "mirror"
     }
 
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray {
-        todo!()
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Ray {
+        
+        // Reflected ray from Slides 02, p.4
+        // wr ​= - wo ​+ 2 n (n . wo)
+        // WARNING: Assume ray_in.direction = wi = - wo
+        let n = hit_record.normal;
+        let w_i = ray_in.direction;
+        let w_r = w_i - 2. * n * (n.dot(w_i));
+        debug_assert!(w_r.is_normalized());
+
+        Ray::new(hit_record.point + epsilon, w_r)
     }
     
     fn ambient(&self) -> Vector3 {

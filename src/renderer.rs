@@ -107,7 +107,8 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
                 shade_diffuse(scene, shapes, &hit_record, &ray_in, mat)
             },
             "mirror" => {
-                    let reflected_ray: Ray = mat.scatter(ray_in, &hit_record);
+                    let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? 
+                    let reflected_ray: Ray = mat.scatter(ray_in, &hit_record, epsilon);
                     shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + get_color(&reflected_ray, scene, shapes, depth + 1)
             }, 
             _ => {
