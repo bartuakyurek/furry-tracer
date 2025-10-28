@@ -287,7 +287,22 @@ impl Default for DielectricMaterial {
 }
 
 impl DielectricMaterial {
- 
+
+    fn fresnel(d: Vector3, n: Vector3) -> (Vector3, Vector3) {
+        // d: incoming normalized ray
+        // n: surface normal
+        // returns parallel and perpendicular 
+        // components for F_r and F_t
+        // see slides 02, p.20 for notation
+        //
+        // TODO: This is called by reflect and refract, but we don't need to 
+        // do the same computation twice. 
+        debug_assert!(d.is_normalized());
+        debug_assert!(n.is_normalized());
+
+        cos_theta = n.dot(-d);
+        cos_phi =  
+    }
 }
 
 
