@@ -25,6 +25,8 @@ For more suggestions to improve code:
 > [!IMPORTANT]
 > Binaries are placed under ./target/debug/ or ./target/release depending on cargo run commands above. By default it is under debug but for faster runs compiling with --release is recommended.
 
+[Elmo Fire](./assets/elmofire.png)
+
 # TODO 
 ---
 - [x] Vertex indices start from 1, not 0, make sure to handle that correctly
