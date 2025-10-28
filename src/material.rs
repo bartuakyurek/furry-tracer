@@ -297,7 +297,7 @@ impl Default for DielectricMaterial {
 
 impl DielectricMaterial {
 
-    fn fresnel(d: Vector3, n: Vector3) -> (Vector3, Vector3) {
+    fn fresnel(&self, ray_in: &Ray, hit_record: &HitRecord) -> (Vector3, Vector3) {
         // d: incoming normalized ray
         // n: surface normal
         // returns parallel and perpendicular 
@@ -306,10 +306,20 @@ impl DielectricMaterial {
         //
         // TODO: This is called by reflect and refract, but we don't need to 
         // do the same computation twice. 
+        let d = ray_in.direction;
+        let n = hit_record.normal;
         debug_assert!(d.is_normalized());
         debug_assert!(n.is_normalized());
-
         let cos_theta = n.dot(-d);
+
+
+        let mut n1 = 1.00029 as Float; // Assuming Air in slides 02, p.22
+        let mut n2 = self.refraction_index;
+        if !hit_record.is_front_face {
+            n1 = self.refraction_index;
+            n2 = 1.00029 as Float;
+        }
+
         let cos_phi = todo!();
     }
 }
