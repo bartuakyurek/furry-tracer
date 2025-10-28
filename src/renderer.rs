@@ -88,7 +88,7 @@ pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, 
     color
 }
 
-pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
+pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> Vector3 { // TODO: add depth & check depth > scene.max_recursion_depth
    // TODO: Shouldn't we box the scene or even Rc<scene> here? otherwise it lives on the stack
    // and it's a huge struct, isn't it?
    if depth >= scene.max_recursion_depth {
@@ -97,18 +97,18 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
    
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
    //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
-   if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
+   if let Some(hit_record) = closest_hit(ray_in, &t_interval, shapes, &scene.vertex_data) {
         
         let mat: &HeapAllocMaterial = &scene.materials.materials[hit_record.material - 1];
         let mut color = mat.ambient() * scene.lights.ambient_light;
         let mat_type = mat.get_type();
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => {
-                shade_diffuse(scene, shapes, &hit_record, &ray, mat)
+                shade_diffuse(scene, shapes, &hit_record, &ray_in, mat)
             },
             "mirror" => {
-                    Vector3::ZERO
-                
+                    let reflected_ray: Ray = mat.scatter(ray_in, &hit_record);
+                    shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + get_color(&reflected_ray, scene, shapes, depth + 1)
             }, 
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)
