@@ -1,6 +1,7 @@
-<p align="center">
-  <b><h1>Fury Tracer</h1></b>
-</p>
+
+<div style="text-align: center;">
+  <h1>˚ˋঌ˖ Fury Tracer ˋঌ </h1>
+</div>
 
 
 This is a ray tracer developed for METU graduate level course CENG 795.
