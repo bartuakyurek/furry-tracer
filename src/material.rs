@@ -393,7 +393,7 @@ impl Material for DielectricMaterial {
             
             let d = ray_in.direction;
             let n = hit_record.normal;
-            let refracted_direction = ((d + (n * frd.cos_theta)) * frd.n_ratio) + (n * frd.cos_phi);
+            let refracted_direction = ((d + (n * frd.cos_theta)) * frd.n_ratio) - (n * frd.cos_phi); // p.15
             debug_assert!(refracted_direction.is_normalized());
 
             let ray = Ray::new(hit_record.point - n * epsilon, refracted_direction);
