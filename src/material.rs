@@ -124,7 +124,6 @@ impl Material for DiffuseMaterial{
     fn radiance(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
 
         let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
-
         let  w_i = ray_out.direction;
         let w_o = - ray_in.direction;
         let n = hit_record.normal;
@@ -136,11 +135,6 @@ impl Material for DiffuseMaterial{
         // e.g. for test.json it is [25, 25, 25]
         self.ambient_rf * ambient_light // * 10. -> this was to debug there exists ambient light
     }
-
-    //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool {
-        // TODO: shadow rays here
-    //    false
-    //}
 
 }
 
@@ -218,26 +212,23 @@ impl Material for MirrorMaterial {
     fn get_type(&self) -> &str {
         "mirror"
     }
+
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray {
+        todo!()
+    }
     
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
         //info!("Computing ambient radiance for Mirror ...");
         self.ambient_rf * ambient_light 
     }
 
-    fn radiance(&self, ray_in: &Ray, ray_out: &Option<Ray>, hit_record: &HitRecord) -> Vector3 {
+    fn radiance(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
+        let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
         let w_i = ray_out.direction;
         let w_o = - ray_in.direction;
         let n = hit_record.normal;
         self.diffuse(w_i, n) + self.specular(w_o, w_i, n)  + self.reflected_radiance()
     }
 
-    //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool {
-    //    
-    //    let w_o = -ray_in.direction;  // TODO: This is also computed in lightcontext... 
-    //    let w_r = -w_o + 2. * hit_record.normal * (hit_record.normal.dot(w_o));
-    //    let new_ray = Ray::new(hit_record.point, w_r.normalize()); // TODO: is normalize necessary?
-    //    let dist_sqrd = ray_in.squared_distance_at(hit_record.ray_t);
-    //    true
-    //}
 }
 
