@@ -329,10 +329,19 @@ impl DielectricMaterial {
             inside_of_sqrt.sqrt()
         };
 
-        r_parallel: Float = ( ) / ( );
-        r_perp: Float = ( ) / ( );
+        let n1cos_p = n1 * cos_phi;
+        let n2cos_p = n2 * cos_phi;
+        let n1cos_t = n1 * cos_theta;
+        let n2cos_t = n2 * cos_theta;
 
-        0.5 * (r_parallel.pow_i(2) + r_perp.pow_i(2)) // F_r
+        let r_parallel: Float = (n2cos_t - n1cos_p) / (n2cos_t + n1cos_p);
+        let r_perp: Float = (n1cos_t - n2cos_p) / (n1cos_t + n2cos_p);
+        // TODO: in slides 02, p.20 this ratio has - in the denominator but that makes the ratio = 1
+        // I assumed this is a typo and checked Fresnel from wikipedia... but I gotta ask for confirmation
+
+        let f_r = 0.5 * (r_parallel.powi(2) + r_perp.powi(2));
+        debug_assert!( (f_r > 1e-20) && (f_r < 1.+1e-20)); // in range [0,1]
+        f_r
     }
 }
 
