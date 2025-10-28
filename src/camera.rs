@@ -9,8 +9,7 @@
 use smart_default::SmartDefault;
 use serde::{Deserialize};
 use tracing::{info, debug};
-use crate::{image, ray};
-use crate::ray::Ray;
+use crate::{image, ray::Ray};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec};
 use crate::numeric::{Int, Float, Vector3, approx_zero};
@@ -39,7 +38,7 @@ pub struct Camera {
     position: Vector3,
 
     #[serde(rename = "Gaze", deserialize_with = "deser_vec3")]
-    gaze: Vector3,
+    gaze_dir: Vector3,
 
     #[serde(rename = "Up", deserialize_with = "deser_vec3")]
     up: Vector3,
@@ -51,7 +50,7 @@ pub struct Camera {
     near_distance: Float,
 
     #[serde(rename = "ImageResolution", deserialize_with = "deser_pair")]
-    pub image_resolution: [usize; 2], // TODO: Should be usize instead of Int but deserialization needs modification to handle Int for i32, usized etc. 
+    pub image_resolution: [usize; 2],  
 
     #[serde(rename = "ImageName")]
     pub image_name: String,
@@ -76,7 +75,7 @@ impl Camera {
         let mut cam = Camera {
             id,
             position,
-            gaze,
+            gaze_dir: gaze,
             up,
             nearplane,
             near_distance,
@@ -96,11 +95,11 @@ impl Camera {
         // corrects Up vector if given Up was not perpendicular to
         // Gaze vector.
 
-        self.w = - self.gaze.normalize();
+        self.w = - self.gaze_dir.normalize();
         self.v = self.up.normalize();
         self.u = self.v.cross(self.w);
 
-        if !approx_zero(self.up.dot(self.gaze)) {
+        if !approx_zero(self.up.dot(self.gaze_dir)) {
             info!("Gaze and Up vectors are not perpendicular, correcting v...");
             self.v = self.w.cross(self.u);
         }
