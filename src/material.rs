@@ -492,6 +492,63 @@ impl Default for ConductorMaterial {
 }
 
 
+impl DielectricMaterial {
+
+    fn fresnel(&self, ray_in: &Ray, hit_record: &HitRecord, fresnel: &mut FresnelData) ->  bool {
+        // TODO: This is copy paste from DielectricMaterial above!
+        // how do I avoid this boilerplate? Oh I could have a private function within this crate...
+        // Even better, we can add n1 and n2 to fresnel so we can avoid &self in the signature! 
+        
+        // d: incoming normalized ray
+        // n: surface normal
+        let d = ray_in.direction;
+        let n = hit_record.normal;
+        debug_assert!(d.is_normalized());
+        debug_assert!(n.is_normalized());
+        let cos_theta = n.dot(-d);
+        
+        // TODO: Would it be more flexible if we read it from FresnelData?
+        let mut n1 = 1.00029 as Float; // Assuming Air in slides 02, p.22
+        let mut n2 = self.refraction_index;
+        if !hit_record.is_front_face {
+            n1 = self.refraction_index;
+            n2 = 1.00029 as Float;
+        }
+        
+        let ratio_squared: Float = (n1 / n2).powi(2);
+        let one_minus_cossqrd: Float = 1. - (cos_theta.powi(2));
+        let inside_of_sqrt: Float = 1. - (ratio_squared * one_minus_cossqrd);
+
+        let cos_phi: Float = if inside_of_sqrt < 0. {
+            //info!("Total internal reflection occured!");
+            return false; // TODO No need to compute, right? I assume it is total internal reflection (p.16)
+        }
+        else {
+            inside_of_sqrt.sqrt() // TODO: do we need sqrt here or could we use sin^2 = 1 - cos^2?
+        };
+
+        let n1cos_p = n1 * cos_phi;
+        let n2cos_p = n2 * cos_phi;
+        let n1cos_t = n1 * cos_theta;
+        let n2cos_t = n2 * cos_theta;
+
+        let r_parallel: Float = (n2cos_t - n1cos_p) / (n2cos_t + n1cos_p);
+        let r_perp: Float = (n1cos_t - n2cos_p) / (n1cos_t + n2cos_p);
+        // TODO: in slides 02, p.20 this ratio has - in the denominator but that makes the ratio = 1
+        // I assumed this is a typo and checked Fresnel from wikipedia... but I gotta ask for confirmation
+
+        let f_r = 0.5 * (r_parallel.powi(2) + r_perp.powi(2));
+        debug_assert!( (f_r > 1e-20) && (f_r < 1.+1e-20)); // in range [0,1]
+
+        fresnel.n_ratio = n1 / n2;
+        fresnel.cos_theta = cos_theta; 
+        fresnel.cos_phi = cos_phi;
+        fresnel.f_r = f_r;
+        fresnel.f_t = 1. - f_r;
+        true
+    }
+}
+
 impl Material for ConductorMaterial {
 
     fn get_type(&self) -> &str {
