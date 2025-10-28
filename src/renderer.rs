@@ -118,7 +118,7 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
                         Vector3::ZERO // Perfect mirror always reflects so this hopefully is not triggered
                     }
             }, 
-           "dielectric" => {
+           "dielectric" | "conductor" => {
                 let mut tot_radiance = Vector3::ZERO;
                 
                 // Only add diffuse, specular, and ambient components if front face (see slides 02, p.29)

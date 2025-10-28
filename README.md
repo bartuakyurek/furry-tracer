@@ -68,7 +68,8 @@ it is dyn Material so ... I guess this wouldn't work.
     Update: I completely forgot why I had this discussion, now I remember another reason: some materials share reflectance coefficients and I'd like to have specular( ) diffuse( ) functions taking material.specular_rf but traits do not allow holding data, rather we could use composition to have that information (I guess a struct like BRDF?)
 
     ---
-    ## How to add more material? 
+    ## How to add more material? (TODO: should reduce the boilerplate here)
     - Declare your CustomMaterialStruct
     - impl material::Material for CustomMaterialStruct 
     - Add match arm to scene::parse_single_material( ) using _type value of JSON (TODO: automatize that?)
+    - Add match arm to scene::get_color( ) for custom reflect / refract 

@@ -529,11 +529,27 @@ impl Material for ConductorMaterial {
     }
     
     fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)> {
+        // TODO: This should be the same reflection logic with dielectric, right? Only fresnel is different?
+        // Also it seems like we don't need FresnelData at all for conductor, since we only need F_r?
+        let mut fresnel = FresnelData::default();
+        self.fresnel(ray_in, hit_record, &mut fresnel);
         
-         todo!()
+        if fresnel.f_r > 1e-6 {
+            let n = hit_record.normal;
+            let w_i = ray_in.direction;
+            let w_r = w_i - 2.0 * n * (n.dot(w_i));
+            debug_assert!(w_r.is_normalized());
+            
+            let ray = Ray::new(hit_record.point + (n * epsilon), w_r);
+            let attenuation = fresnel.f_r * self.mirror_rf; // TODO: Am I doing it right?? scalar times a vector, is that really the attenuation from glass reflectance?
+            Some((ray, attenuation))
+        } else {
+            info!("I expect this message never occurs...");
+            None
+        }
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)> {
+    fn refract(&self, _: &Ray, _: &HitRecord, _: Float) -> Option<(Ray, Vector3)> {
         None // F_t = 0 (see slides 02, p.21)
     }
 

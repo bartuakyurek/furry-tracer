@@ -34,7 +34,7 @@ use serde::{Deserialize};
 use tracing::{warn, error, debug};
 
 use crate::json_parser::{deser_string_or_struct};
-use crate::material::{DielectricMaterial, DiffuseMaterial, HeapAllocMaterial, Material, MirrorMaterial};
+use crate::material::{ConductorMaterial, DielectricMaterial, DiffuseMaterial, HeapAllocMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
 use crate::shapes::{Shape, Plane, Sphere, Triangle};
 use crate::camera::{Cameras};
@@ -181,10 +181,12 @@ fn parse_single_material(value: serde_json::Value) -> HeapAllocMaterial {
     let mat_type = value.get("_type").and_then(|v| v.as_str()).unwrap_or("diffuse");
 
     match mat_type {
+        // TODO: This box will break if you change HeapAllocatedMaterial type! 
         "diffuse" => Box::new(DiffuseMaterial::new_from(&value)),
         "mirror" => Box::new(MirrorMaterial::new_from(&value)),
         "dielectric" => Box::new(DielectricMaterial::new_from(&value)),
-        // TODO: add more materials here
+        "conductor" => Box::new(ConductorMaterial::new_from(&value)),
+        // Add more materials here
 
         other => {
             error!("Unknown material type '{other}', defaulting to DiffuseMaterial");
