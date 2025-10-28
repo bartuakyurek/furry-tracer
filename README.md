@@ -35,7 +35,7 @@ For more suggestions to improve code:
 - [ ] Consider utilizing CoordLike implementation in geometry.rs  
 - [ ] Unit tests missing
 - [ ] Consider explicitly marking your function with #[inline] or #[inline(always)] to see if it improves performance. (source: https://softwaremill.com/rust-static-vs-dynamic-dispatch/)
-
+- [ ] Fix Fresnel computations done twice, see comments or commits for thoughts on it.
 - [ ] Every shape in this class has material_idx so there could be a struct
     dedicated to such data unrelated to shapes but required for HitRecord. But
     Rust does not allow implicit inheritance so we cannot just:
