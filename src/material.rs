@@ -44,6 +44,7 @@ pub trait Material : Debug + Send + Sync  {
     fn ambient(&self) -> Vector3; 
 
     //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
+    fn attenuate(&self) -> Vector3;
     fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Ray;
 }
 
@@ -101,6 +102,11 @@ impl Material for DiffuseMaterial{
         todo!()
     }
 
+    fn attenuate(&self) -> Vector3 {
+        warn!("Attenuate not implemented for Diffuse! Only use shadow rays for now.");
+        todo!()
+    }
+
     //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
     //    
     //    let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
@@ -140,6 +146,7 @@ impl Material for DiffuseMaterial{
         let cos_a = n.dot(h).max(0.0);
         self.specular_rf * cos_a.powf(p)
     }   
+    
 
 }
 
@@ -179,10 +186,8 @@ impl Default for MirrorMaterial {
     }
 }
 
-// TODO: apologies for the duplicate code here (copy pasted from Diffuse Material above)
 impl MirrorMaterial {
 
-    
     fn reflected_radiance(&self) -> Vector3 {
         self.mirror_rf 
     }
@@ -192,6 +197,10 @@ impl Material for MirrorMaterial {
 
     fn get_type(&self) -> &str {
         "mirror"
+    }
+
+    fn attenuate(&self) -> Vector3 {
+        self.reflected_radiance()
     }
 
     fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Ray {

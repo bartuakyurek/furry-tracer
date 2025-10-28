@@ -77,7 +77,6 @@ pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, 
             let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
                 let irradiance = point_light.rgb_intensity / shadow_ray.squared_distance_at(interval.max); // TODO interval is confusing here
-                //color += mat.get_attenuiation(ray, &mut Some(shadow_ray), hit_record) * irradiance;
                 let n = hit_record.normal;
                 let w_i = shadow_ray.direction;
                 let w_o = -ray_in.direction;
@@ -109,7 +108,7 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
             "mirror" => {
                     let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? 
                     let reflected_ray: Ray = mat.scatter(ray_in, &hit_record, epsilon);
-                    shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + get_color(&reflected_ray, scene, shapes, depth + 1)
+                    shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + get_color(&reflected_ray, scene, shapes, depth + 1) * mat.attenuate()
             }, 
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)
