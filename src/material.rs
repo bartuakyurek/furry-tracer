@@ -397,7 +397,13 @@ impl Material for DielectricMaterial {
             debug_assert!(refracted_direction.is_normalized());
 
             let ray = Ray::new(hit_record.point - n * epsilon, refracted_direction);
-            let attenuation = frd.f_t *self.get_beers_law_attenuation(ray_in, hit_record.ray_t);
+            let mut attenuation = frd.f_t * Vector3::ONE;
+            if !hit_record.is_front_face {
+                // Attenuate as it goes out of object 
+                // assumes glass object is empty
+                attenuation *= self.get_beers_law_attenuation(ray_in, hit_record.ray_t);
+            } 
+           
             Some((ray, attenuation))
         }
         else {
