@@ -12,8 +12,6 @@
 
 */
 use std::fmt::Debug;
-use std::cmp::max;
-use bevy_math::ops::cos;
 use tracing::{error, info, warn};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
@@ -409,6 +407,105 @@ impl Material for DielectricMaterial {
         else {
             None // Total internal reflection
         }
+       
+        
+    }
+    fn ambient(&self) -> Vector3 {
+        self.ambient_rf  
+    }
+
+    fn diffuse(&self, w_i: Vector3, n: Vector3) -> Vector3 {
+        // TODO: these are copy paste from Diffuse material,
+        // should we refactor them into a single function within
+        // this crate?
+        // Actually a better implementation would be to create a struct
+        // for diffuse, specular, ambient, and phong as these four are common
+        // and then just store them in material, that way you can move diffuse
+        // and other common functions inside Material trait! I believe this is 
+        // a Rusty way to implement it but before that I better decouple json
+        // parser from these material structs...
+        
+        debug_assert!(w_i.is_normalized());
+        debug_assert!(n.is_normalized());
+
+        let cos_theta = w_i.dot(n).max(0.0);
+        self.diffuse_rf * cos_theta  
+    }
+
+    fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.80)
+        debug_assert!(w_o.is_normalized());
+        debug_assert!(w_i.is_normalized());
+        debug_assert!(n.is_normalized());
+
+        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
+        debug_assert!(h.is_normalized());
+        
+        let p = self.phong_exponent;
+        let cos_a = n.dot(h).max(0.0);
+        self.specular_rf * cos_a.powf(p)  
+    }   
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// 
+/// CONDUCTOR
+/// 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(default)]
+pub struct ConductorMaterial {
+    #[serde(deserialize_with = "deser_usize")]
+    pub _id: usize,
+    #[serde(rename = "AmbientReflectance", deserialize_with = "deser_vec3")]
+    pub ambient_rf: Vector3,
+    #[serde(rename = "DiffuseReflectance", deserialize_with = "deser_vec3")]
+    pub diffuse_rf: Vector3,
+    #[serde(rename = "SpecularReflectance", deserialize_with = "deser_vec3")]
+    pub specular_rf: Vector3,
+    #[serde(rename = "MirrorReflectance", deserialize_with = "deser_vec3")]
+    pub mirror_rf: Vector3,
+    #[serde(rename = "PhongExponent", deserialize_with = "deser_float")]
+    pub phong_exponent: Float,
+    #[serde(rename = "AbsorptionIndex", deserialize_with = "deser_float")]
+    pub absorption_index: Float,
+    #[serde(rename = "RefractionIndex", deserialize_with = "deser_float")]
+    pub refraction_index: Float,
+}
+
+impl Default for ConductorMaterial {
+    fn default() -> Self {
+        Self {
+            _id: 0,
+            ambient_rf: Vector3::new(0., 0., 0.),
+            diffuse_rf: Vector3::new(0., 0., 0.),
+            specular_rf: Vector3::new(0., 0., 0.),
+            mirror_rf: Vector3::new(1., 1., 1.),
+            phong_exponent: 1., // TODO: Is that a good default? WARNING: cornellbox_recursive missing phong 
+            absorption_index: 2.82,
+            refraction_index: 0.37,
+        }
+    }
+}
+
+
+impl Material for ConductorMaterial {
+
+    fn get_type(&self) -> &str {
+        "dielectric"
+    }
+    
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)> {
+        
+         todo!()
+    }
+
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray, Vector3)> {
+        
+        todo!()
        
         
     }
