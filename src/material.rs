@@ -43,7 +43,7 @@ pub trait Material : Debug + Send + Sync  {
     fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3;
     fn ambient(&self) -> Vector3; 
 
-    fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
+    //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
     fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray;
 }
 
@@ -101,14 +101,14 @@ impl Material for DiffuseMaterial{
         todo!()
     }
 
-    fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
-
-        let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
-        let  w_i = ray_out.direction;
-        let w_o = - ray_in.direction;
-        let n = hit_record.normal;
-        self.diffuse(w_i, n) + self.specular(w_o, w_i, n)
-    }
+    //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
+    //    
+    //    let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
+    //    let  w_i = ray_out.direction;
+    //    let w_o = - ray_in.direction;
+    //    let n = hit_record.normal;
+    //    self.diffuse(w_i, n) + self.specular(w_o, w_i, n)
+    //}
 
     fn ambient(&self) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.75)
@@ -228,13 +228,13 @@ impl Material for MirrorMaterial {
         self.specular_rf * cos_a.powf(p)  
     }   
 
-    fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
-        let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
-        let w_i = ray_out.direction;
-        let w_o = - ray_in.direction;
-        let n = hit_record.normal;
-        self.diffuse(w_i, n) + self.specular(w_o, w_i, n)  + self.reflected_radiance()
-    }
+    //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
+    //    let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
+    //    let w_i = ray_out.direction;
+    //    let w_o = - ray_in.direction;
+    //    let n = hit_record.normal;
+    //    self.diffuse(w_i, n) + self.specular(w_o, w_i, n)  + self.reflected_radiance()
+    //}
 
 }
 

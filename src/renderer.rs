@@ -70,14 +70,19 @@ pub fn get_shadow_ray(point_light: &PointLight, hit_record: &HitRecord, epsilon:
 }
 
 // TODO: Wait why there is both scene and shapes where scene already should contain shapes?
-pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, ray: &Ray, mat: &HeapAllocMaterial) -> Vector3 {
+pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, ray_in: &Ray, mat: &HeapAllocMaterial) -> Vector3 {
     let mut color = Vector3::ZERO;
     for point_light in scene.lights.point_lights.all() {
             
             let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
                 let irradiance = point_light.rgb_intensity / shadow_ray.squared_distance_at(interval.max); // TODO interval is confusing here
-                color += mat.get_attenuiation(ray, &mut Some(shadow_ray), hit_record) * irradiance; 
+                //color += mat.get_attenuiation(ray, &mut Some(shadow_ray), hit_record) * irradiance;
+                let n = hit_record.normal;
+                let w_i = shadow_ray.direction;
+                let w_o = -ray_in.direction;
+                color += mat.diffuse(w_i, n) * irradiance;
+                color += mat.specular(w_o, w_i, n) * irradiance; 
             }
     }
     color
@@ -95,14 +100,14 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
    if let Some(hit_record) = closest_hit(ray, &t_interval, shapes, &scene.vertex_data) {
         
         let mat: &HeapAllocMaterial = &scene.materials.materials[hit_record.material - 1];
-        let mut color = mat.get_ambient() * scene.lights.ambient_light;
+        let mut color = mat.ambient() * scene.lights.ambient_light;
         let mat_type = mat.get_type();
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => {
                 shade_diffuse(scene, shapes, &hit_record, &ray, mat)
             },
             "mirror" => {
-
+                    Vector3::ZERO
                 
             }, 
             _ => {
