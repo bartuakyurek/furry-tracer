@@ -116,14 +116,19 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
                     }
             }, 
             "dielectric" => {
-                if !hit_record.is_front_face { 
-                    info!("Backface! Do not use shade_diffuse( ) here! Only L^r + L^t "); 
-                    info!("Don't forget to use epsilon but in *negative* normal direction!");
+                let mut tot_radiance = Vector3::ZERO;
+                if hit_record.is_front_face { 
+                    // Only add diffuse, specular, and ambient components if front face (see slides 02, p.29)
+                    tot_radiance += shade_diffuse(scene, shapes, &hit_record, &ray_in, mat);
                 }
-                else { 
-                    // Front face, use shade_diffuse( ) here + L^r + L^t
-                }
-                Vector3::ZERO // TODO obviously delete this
+                // Reflected
+                tot_radiance += 
+                
+
+                // Refracted
+                tot_radiance +=
+
+                tot_radiance
             }
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)
