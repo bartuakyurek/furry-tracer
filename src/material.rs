@@ -233,6 +233,7 @@ impl Material for MirrorMaterial {
         let w_o = -ray_in.direction;  // TODO: This is also computed in lightcontext... 
         let w_r = -w_o + 2. * hit_record.normal * (hit_record.normal.dot(w_o));
         let new_ray = Ray::new(hit_record.point, w_r.normalize()); // TODO: is normalize necessary?
+        let dist_sqrd = ray_in.squared_distance_at(hit_record.ray_t);
         true
     }
 }

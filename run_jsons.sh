@@ -2,10 +2,10 @@
 
 # List of JSON files to run
 json_files=(
-    "./assets/test.json"
-    "./assets/simple.json"
-    "./assets/spheres.json"
-    "./assets/two_spheres.json"
+    "./input/test.json"
+    "./input/simple.json"
+    "./input/spheres.json"
+    "./input/two_spheres.json"
 )
 
 for json_file in "${json_files[@]}"; do
