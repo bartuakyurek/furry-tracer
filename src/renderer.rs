@@ -115,6 +115,10 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
                         Vector3::ZERO // Perfect mirror always reflects so this hopefully is not triggered
                     }
             }, 
+            "dielectric" => {
+                if !hit_record.is_front_face { info!("Backface!"); }
+                Vector3::ZERO
+            }
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)
                 panic!(">> Unknown material type '{}'! Shading function for this material is missing.", mat_type); 

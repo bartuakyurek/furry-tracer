@@ -184,10 +184,7 @@ impl Default for MirrorMaterial {
 }
 
 impl MirrorMaterial {
-
-    fn reflected_radiance(&self) -> Vector3 {
-        self.mirror_rf 
-    }
+ 
 }
 
 impl Material for MirrorMaterial {
@@ -197,7 +194,7 @@ impl Material for MirrorMaterial {
     }
 
     fn attenuate(&self) -> Vector3 {
-        self.reflected_radiance()
+        self.mirror_rf 
     }
 
     fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
@@ -246,3 +243,98 @@ impl Material for MirrorMaterial {
     }   
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// 
+/// DIELECTRIC (GLASS)
+/// 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(default)]
+pub struct DielectricMaterial {
+    #[serde(deserialize_with = "deser_usize")]
+    pub _id: usize,
+    #[serde(rename = "AmbientReflectance", deserialize_with = "deser_vec3")]
+    pub ambient_rf: Vector3,
+    #[serde(rename = "DiffuseReflectance", deserialize_with = "deser_vec3")]
+    pub diffuse_rf: Vector3,
+    #[serde(rename = "SpecularReflectance", deserialize_with = "deser_vec3")]
+    pub specular_rf: Vector3,
+    #[serde(rename = "MirrorReflectance", deserialize_with = "deser_vec3")]
+    pub mirror_rf: Vector3,
+    #[serde(rename = "PhongExponent", deserialize_with = "deser_float")]
+    pub phong_exponent: Float,
+    #[serde(rename = "AbsorptionCoefficient", deserialize_with = "deser_vec3")]
+    pub absorption_coeff: Vector3,
+    #[serde(rename = "RefractionIndex", deserialize_with = "deser_float")]
+    pub refraction_index: Float,
+}
+
+impl Default for DielectricMaterial {
+    fn default() -> Self {
+        Self {
+            _id: 0,
+            ambient_rf: Vector3::new(0.0, 0.0, 0.0),
+            diffuse_rf: Vector3::new(0.5, 0.5, 0.5),
+            specular_rf: Vector3::new(0.0, 0.0, 0.0),
+            mirror_rf: Vector3::new(0.5, 0.5, 0.5),
+            phong_exponent: 1.0,
+            absorption_coeff: Vector3::new(0.01, 0.01, 0.01),
+            refraction_index: 1.5,
+        }
+    }
+}
+
+impl DielectricMaterial {
+ 
+}
+
+
+impl Material for DielectricMaterial {
+
+    fn get_type(&self) -> &str {
+        "dielectric"
+    }
+
+    fn attenuate(&self) -> Vector3 {
+        todo!()
+    }
+
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+        todo!()
+    }
+
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+        todo!()
+    }
+    
+    fn ambient(&self) -> Vector3 {
+        self.ambient_rf  
+    }
+
+    fn diffuse(&self, w_i: Vector3, n: Vector3) -> Vector3 {
+        // TODO: these are copy paste from Diffuse material,
+        // should we refactor them into a single function within
+        // this crate?
+        
+        debug_assert!(w_i.is_normalized());
+        debug_assert!(n.is_normalized());
+
+        let cos_theta = w_i.dot(n).max(0.0);
+        self.diffuse_rf * cos_theta  
+    }
+
+    fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.80)
+        debug_assert!(w_o.is_normalized());
+        debug_assert!(w_i.is_normalized());
+        debug_assert!(n.is_normalized());
+
+        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
+        debug_assert!(h.is_normalized());
+        
+        let p = self.phong_exponent;
+        let cos_a = n.dot(h).max(0.0);
+        self.specular_rf * cos_a.powf(p)  
+    }   
+}
