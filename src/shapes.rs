@@ -7,6 +7,7 @@
     @author: bartu
 */
 
+use std::sync::Arc;
 
 use bevy_math::NormedVectorSpace;
 use serde::{Deserialize};
@@ -18,7 +19,11 @@ use crate::dataforms::{VertexData};
 use crate::numeric::{approx_zero, Float, Matrix3, Vector3};
 use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
-pub trait Shape {
+pub type HeapAllocatedShape = Arc<dyn Shape>;
+pub type ShapeList = Vec<HeapAllocatedShape>; 
+
+
+pub trait Shape : Send + Sync  {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
 }
 

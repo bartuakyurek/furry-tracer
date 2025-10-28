@@ -35,7 +35,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
         warn!("No arguments were provided, setting default scene path...");
-        &String::from("./input/bunny_with_plane.json")
+        &String::from("./input/scienceTree_glass.json")
     } else if args.len() == 2 {
         &args[1]
     } else {
@@ -54,7 +54,7 @@ fn main() {
             return;
         }
     };
-    root.scene.setup_after_json(); // TODO: This created actural structs for materials etc. but should be done in a different way
+    root.scene.setup_after_json(); // TODO: This should be done in a different way
     debug!("Scene is setup successfully.\n {:#?}", root);
     let root = root; // Shadow mutatability before render
 

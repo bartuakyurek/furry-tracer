@@ -29,6 +29,7 @@
     @author: Bartu
 */
 use std::{rc::Rc};
+use std::sync::Arc;
 use serde_json::{self, Value};
 use serde::{Deserialize};
 use tracing::{warn, error, debug};
@@ -36,7 +37,7 @@ use tracing::{warn, error, debug};
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{ConductorMaterial, DielectricMaterial, DiffuseMaterial, HeapAllocMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
-use crate::shapes::{Shape, Plane, Sphere, Triangle};
+use crate::shapes::{HeapAllocatedShape, Plane, Shape, ShapeList, Sphere, Triangle};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec, VertexData, DataField};
@@ -96,11 +97,11 @@ impl Scene {
         // then it can impl Default for Scene and there we can specify default values
         // without secretly changing like we do below:
         if self.shadow_ray_epsilon < 1e-16 {
-            self.shadow_ray_epsilon = 1e-6; 
+            self.shadow_ray_epsilon = 1e-10; 
             warn!("Shadow Ray epsilon found 0, setting it to default: {}.", self.shadow_ray_epsilon);
         }
         if self.intersection_test_epsilon < 1e-16 {
-            self.intersection_test_epsilon = 1e-6;
+            self.intersection_test_epsilon = 1e-10;
             warn!("Intersection Ray epsilon found 0, setting it to default: {}.", self.intersection_test_epsilon);
         }
 
@@ -250,20 +251,20 @@ pub struct SceneObjects {
 
 impl SceneObjects {
 
-    pub fn all(&self) -> Vec<Rc<dyn Shape>> {
+    pub fn all(&self) -> ShapeList {
         // Return a vector of all shapes in the scene
         warn!("SceneObjects.all( ) assumes there are only triangles, spheres, planes, and meshes. If there are other Shape trait implementations they are not added yet.");
-        let mut shapes: Vec<Rc<dyn Shape>> = Vec::new();
+        let mut shapes: ShapeList = Vec::new();
 
-        shapes.extend(self.triangles.all().into_iter().map(|t| Rc::new(t) as Rc<dyn Shape>));
-        shapes.extend(self.spheres.all().into_iter().map(|s| Rc::new(s) as Rc<dyn Shape>));
-        shapes.extend(self.planes.all().into_iter().map(|p| Rc::new(p) as Rc<dyn Shape>));
+        shapes.extend(self.triangles.all().into_iter().map(|t| Arc::new(t) as HeapAllocatedShape));
+        shapes.extend(self.spheres.all().into_iter().map(|s| Arc::new(s) as HeapAllocatedShape));
+        shapes.extend(self.planes.all().into_iter().map(|p| Arc::new(p) as HeapAllocatedShape));
         //shapes.extend(self.meshes.all().into_iter().map(|m| Rc::new(m) as Rc<dyn Shape>));
 
         // Convert meshes to triangles 
         for mesh in self.meshes.all() {
             let triangles = mesh_to_triangles(&mesh);
-            shapes.extend(triangles.into_iter().map(|t| Rc::new(t) as Rc<dyn Shape>));
+            shapes.extend(triangles.into_iter().map(|t| Arc::new(t) as HeapAllocatedShape));
         }
 
         shapes

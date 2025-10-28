@@ -12,6 +12,7 @@
 */
 
 use std::rc::Rc;
+use rayon::prelude::*;
 use std::io::{self, Write};
 use bevy_math::{NormedVectorSpace, VectorSpace};
 use tracing::span::Record;
@@ -25,9 +26,9 @@ use crate::scene::{PointLight, Scene};
 use crate::numeric::{Float, Int, Vector3};
 use crate::image::{ImageData};
 use crate::interval::{Interval, FloatConst};
-use crate::shapes::{Shape};
+use crate::shapes::{Shape, ShapeList};
 
-type ShapeList = Vec<Rc<dyn Shape>>;
+
 
 pub fn closest_hit(ray: &Ray, t_interval: &Interval, shapes: &ShapeList, vertex_data: &VertexData) -> Option<HitRecord>{
     // Refers to p.91 of slide 01_b, lines 3-7
@@ -162,11 +163,19 @@ pub fn render(scene: &Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error
 
         let eye_rays = cam.generate_primary_rays();
         let shapes: ShapeList = scene.objects.all();
-        for (i, ray) in eye_rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
+        
+        
+        //for (i, ray) in eye_rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
            //eprint!("\rComputing {} / {}", i + 1, n_pixels); 
            //io::stdout().flush().unwrap(); TODO: how to do it with tracing crate?
-            pixel_colors[i] = get_color(ray, scene, &shapes, 0);
-        }
+           // pixel_colors[i] = get_color(ray, scene, &shapes, 0);
+        //}
+        // --- Rayon Multithreading ---
+        let pixel_colors: Vec<_> = eye_rays
+            .par_iter()
+            .map(|ray| get_color(ray, scene, &shapes, 0))
+            .collect();
+        // -----------------------------
        
         // -------------------------------------------------------------------- 
         
