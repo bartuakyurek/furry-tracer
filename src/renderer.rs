@@ -107,8 +107,9 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
             },
             "mirror" => {
                     let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? Seems like yes, visually checked with other epsilon vs. given output image 
-                    if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon){
-                        shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + mat.attenuate() * get_color(&reflected_ray, scene, shapes, depth + 1) 
+                    let mut attenuation = Vector3::ONE;
+                    if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon, &mut attenuation) {
+                        shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + attenuation * get_color(&reflected_ray, scene, shapes, depth + 1) 
                     }
                     else {
                         warn!("Mirror reflection is missing in 'mirror' arm in renderer.rs .");
@@ -116,6 +117,7 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
                     }
             }, 
             "dielectric" => {
+                //todo!( );
                 if !hit_record.is_front_face { info!("Backface!"); }
                 Vector3::ZERO
             }

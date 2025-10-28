@@ -45,11 +45,12 @@ pub trait Material : Debug + Send + Sync  {
 
     //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
     fn attenuate(&self) -> Vector3;
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray>;
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray>;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// 
@@ -90,7 +91,6 @@ impl DiffuseMaterial {
     
 }
 
-
 impl Material for DiffuseMaterial{
 
 
@@ -98,12 +98,12 @@ impl Material for DiffuseMaterial{
         "diffuse"
     }
 
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray> {
         warn!("Reflect not implemented for Diffuse! Only use shadow rays for now.");
         todo!()
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray> {
         warn!("There is no refract for DiffuseMaterial. If this is intentional please delete this warning.");
         None
     }
@@ -197,8 +197,8 @@ impl Material for MirrorMaterial {
         self.mirror_rf 
     }
 
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
-        // Reflected ray from Slides 02, p.4
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray> {
+        // Reflected ray from Slides 02, p.4 (Perfect Mirror)
         // wr ​= - wo ​+ 2 n (n . wo)
         // WARNING: Assume ray_in.direction = wi = - wo
         let n = hit_record.normal;
@@ -206,10 +206,11 @@ impl Material for MirrorMaterial {
         let w_r = w_i - 2. * n * (n.dot(w_i));
         debug_assert!(w_r.is_normalized());
 
+        *attenuation = self.attenuate();
         Some(Ray::new(hit_record.point + (n * epsilon), w_r)) // Always reflects
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray> {
         None // Never refract
     }
     
@@ -300,12 +301,15 @@ impl Material for DielectricMaterial {
         todo!()
     }
 
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<(Ray)> {
+        // Fresnel reflection 
         todo!()
+        // Don't forget to set attenuation
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<(Ray)> {
         todo!()
+        // Don't forget to set attenuation
     }
     
     fn ambient(&self) -> Vector3 {
@@ -316,6 +320,12 @@ impl Material for DielectricMaterial {
         // TODO: these are copy paste from Diffuse material,
         // should we refactor them into a single function within
         // this crate?
+        // Actually a better implementation would be to create a struct
+        // for diffuse, specular, ambient, and phong as these four are common
+        // and then just store them in material, that way you can move diffuse
+        // and other common functions inside Material trait! I believe this is 
+        // a Rusty way to implement it but before that I better decouple json
+        // parser from these material structs...
         
         debug_assert!(w_i.is_normalized());
         debug_assert!(n.is_normalized());
