@@ -95,7 +95,6 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
    }
    
    let t_interval = Interval::positive(scene.intersection_test_epsilon);
-   //let mut color = Vector3::new(0.,0., 0.); // No background color here, otw it'll offset additional colors 
    if let Some(hit_record) = closest_hit(ray_in, &t_interval, shapes, &scene.vertex_data) {
         
         let mat: &HeapAllocMaterial = &scene.materials.materials[hit_record.material - 1];
@@ -117,9 +116,14 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
                     }
             }, 
             "dielectric" => {
-                //todo!( );
-                if !hit_record.is_front_face { info!("Backface!"); }
-                Vector3::ZERO
+                if !hit_record.is_front_face { 
+                    info!("Backface! Do not use shade_diffuse( ) here! Only L^r + L^t "); 
+                    info!("Don't forget to use epsilon but in *negative* normal direction!");
+                }
+                else { 
+                    // Front face, use shade_diffuse( ) here + L^r + L^t
+                }
+                Vector3::ZERO // TODO obviously delete this
             }
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)

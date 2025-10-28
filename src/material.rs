@@ -300,8 +300,8 @@ impl DielectricMaterial {
         debug_assert!(d.is_normalized());
         debug_assert!(n.is_normalized());
 
-        cos_theta = n.dot(-d);
-        cos_phi =  
+        let cos_theta = n.dot(-d);
+        let cos_phi = todo!();
     }
 }
 
