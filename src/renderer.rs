@@ -100,13 +100,16 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
         let mat: &HeapAllocMaterial = &scene.materials.materials[hit_record.material - 1];
         let mut color = mat.ambient() * scene.lights.ambient_light;
         let mat_type = mat.get_type();
+        let mut attenuation = Vector3::ONE; 
+        // TODO: Update attenuation logic (see below)
+        // What happens if a function *adds* something instead of overriding to attenuation? 
+        // Currently I assume attenuation is overridden, but we cannot guarantee that.
+        let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? Seems like yes, visually checked with other epsilon vs. given output image 
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => {
                 shade_diffuse(scene, shapes, &hit_record, &ray_in, mat)
             },
             "mirror" => {
-                    let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? Seems like yes, visually checked with other epsilon vs. given output image 
-                    let mut attenuation = Vector3::ONE;
                     if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon, &mut attenuation) {
                         shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + attenuation * get_color(&reflected_ray, scene, shapes, depth + 1) 
                     }
@@ -117,16 +120,21 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
             }, 
             "dielectric" => {
                 let mut tot_radiance = Vector3::ZERO;
+
+                // Only add diffuse, specular, and ambient components if front face (see slides 02, p.29)
                 if hit_record.is_front_face { 
-                    // Only add diffuse, specular, and ambient components if front face (see slides 02, p.29)
                     tot_radiance += shade_diffuse(scene, shapes, &hit_record, &ray_in, mat);
                 }
-                // Reflected
-                tot_radiance += 
-                
 
-                // Refracted
-                tot_radiance +=
+                // Reflected
+                if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon, &mut attenuation) {
+                        tot_radiance +=  attenuation * get_color(&reflected_ray, scene, shapes, depth + 1) 
+                }
+
+                // Refracted 
+                //if let Some(refracted_ray) = mat.refract(ray_in, &hit_record, epsilon, &mut attenuation) {
+                //        tot_radiance +=  attenuation * get_color(&refracted_ray, scene, shapes, depth + 1) 
+                //}
 
                 tot_radiance
             }
