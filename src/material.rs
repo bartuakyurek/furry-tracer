@@ -17,7 +17,6 @@ use tracing::{error, info};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
 use crate::numeric::{approx_zero, Float, Vector3};
-use crate::lights::LightContext;
 use crate::ray::{Ray, HitRecord}; // TODO: rename it to light or lighting, not lights?
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,9 +39,9 @@ pub trait Material : Debug + Send + Sync  {
         }
     }
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3; // TODO: whould ambient_shade be a better name? 
-    fn radiance(&self, light_context: &LightContext) -> Vector3;
+    fn radiance(&self, ray_in: &Ray, ray_out: &Ray, hit_record: &HitRecord) -> Vector3;
     fn get_type(&self) -> &str;
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool;
+    //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
@@ -83,30 +82,26 @@ impl Default for DiffuseMaterial {
 
 impl DiffuseMaterial {
 
-    fn diffuse(&self, light_context: &LightContext) -> Vector3 {
+    fn diffuse(&self, w_i: Vector3, n: Vector3) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.73)
         // TODO: reduce the verbosity here
-        let w_i = light_context.out_dir;
+        
         debug_assert!(w_i.is_normalized());
-        let n = light_context.normal;
         debug_assert!(n.is_normalized());
 
         let cos_theta = w_i.dot(n).max(0.0);
         self.diffuse_rf * cos_theta //* light_context.irradiance
     }
 
-    fn specular(&self, light_context: &LightContext) -> Vector3 {
+    fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.80)
-        let w_o = light_context.view_dir;
-        let w_i = light_context.out_dir;
         debug_assert!(w_o.is_normalized());
         debug_assert!(w_i.is_normalized());
-
-        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
-        let n = light_context.normal;
-        debug_assert!(h.is_normalized());
         debug_assert!(n.is_normalized());
 
+        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
+        debug_assert!(h.is_normalized());
+        
         let p = self.phong_exponent;
         let cos_a = n.dot(h).max(0.0);
         self.specular_rf * cos_a.powf(p) //* light_context.irradiance
@@ -120,8 +115,11 @@ impl Material for DiffuseMaterial{
         "diffuse"
     }
 
-    fn radiance(&self, light_context: &LightContext) -> Vector3 {
-        self.diffuse(light_context) + self.specular(light_context)
+    fn radiance(&self, ray_in: &Ray, ray_out: &Ray, hit_record: &HitRecord) -> Vector3 {
+        let w_i = ray_out.direction;
+        let w_o = - ray_in.direction;
+        let n = hit_record.normal;
+        self.diffuse(w_i, n) + self.specular(w_o, w_i, n)
     }
 
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
@@ -130,10 +128,10 @@ impl Material for DiffuseMaterial{
         self.ambient_rf * ambient_light // * 10. -> this was to debug there exists ambient light
     }
 
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool {
+    //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool {
         // TODO: shadow rays here
-        false
-    }
+    //    false
+    //}
 
 }
 
@@ -176,39 +174,33 @@ impl Default for MirrorMaterial {
 // TODO: apologies for the duplicate code here (copy pasted from Diffuse Material above)
 impl MirrorMaterial {
 
-    fn diffuse(&self, light_context: &LightContext) -> Vector3 {
+    fn diffuse(&self, w_i: Vector3, n: Vector3) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.73)
         // TODO: reduce the verbosity here
-        let w_i = light_context.out_dir;
+        
         debug_assert!(w_i.is_normalized());
-        let n = light_context.normal;
         debug_assert!(n.is_normalized());
 
         let cos_theta = w_i.dot(n).max(0.0);
         self.diffuse_rf * cos_theta //* light_context.irradiance
     }
 
-    fn specular(&self, light_context: &LightContext) -> Vector3 {
+    fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.80)
-        let w_o = light_context.view_dir;
-        let w_i = light_context.out_dir;
         debug_assert!(w_o.is_normalized());
         debug_assert!(w_i.is_normalized());
-
-        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
-        let n = light_context.normal;
-        debug_assert!(h.is_normalized());
         debug_assert!(n.is_normalized());
 
+        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
+        debug_assert!(h.is_normalized());
+        
         let p = self.phong_exponent;
         let cos_a = n.dot(h).max(0.0);
         self.specular_rf * cos_a.powf(p) //* light_context.irradiance
-    }
+    }   
 
-    fn reflected_radiance(&self, light_context: &LightContext) -> Vector3 {
-        // TODO: irradiance is inferred from LightContext but wouldn't it be better if Material
-        // was responsible from generating the new rays given incoming ray and surface normal?
-        self.mirror_rf //* light_context.irradiance
+    fn reflected_radiance(&self) -> Vector3 {
+        self.mirror_rf 
     }
 }
 
@@ -223,18 +215,20 @@ impl Material for MirrorMaterial {
         self.ambient_rf * ambient_light 
     }
 
-    fn radiance(&self, light_context: &LightContext) -> Vector3 {
-        //info!("Computing outgoing radiance for Mirror ...");
-        self.diffuse(light_context) + self.specular(light_context) + self.reflected_radiance(light_context)
+    fn radiance(&self, ray_in: &Ray, ray_out: &Ray, hit_record: &HitRecord) -> Vector3 {
+        let w_i = ray_out.direction;
+        let w_o = - ray_in.direction;
+        let n = hit_record.normal;
+        self.diffuse(w_i, n) + self.specular(w_o, w_i, n)  + self.reflected_radiance()
     }
 
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool {
-        
-        let w_o = -ray_in.direction;  // TODO: This is also computed in lightcontext... 
-        let w_r = -w_o + 2. * hit_record.normal * (hit_record.normal.dot(w_o));
-        let new_ray = Ray::new(hit_record.point, w_r.normalize()); // TODO: is normalize necessary?
-        let dist_sqrd = ray_in.squared_distance_at(hit_record.ray_t);
-        true
-    }
+    //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool {
+    //    
+    //    let w_o = -ray_in.direction;  // TODO: This is also computed in lightcontext... 
+    //    let w_r = -w_o + 2. * hit_record.normal * (hit_record.normal.dot(w_o));
+    //    let new_ray = Ray::new(hit_record.point, w_r.normalize()); // TODO: is normalize necessary?
+    //    let dist_sqrd = ray_in.squared_distance_at(hit_record.ray_t);
+    //    true
+    //}
 }
 

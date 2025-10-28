@@ -77,12 +77,8 @@ pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, 
             
             let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
-                let (shadow_dir, eye_dir) = (shadow_ray.direction, ray.direction); 
-                let irradiance = point_light.rgb_intensity / shadow_ray.squared_distance_at(interval.max);
-                let light_context = LightContext::from_shadow(shadow_dir, eye_dir, hit_record.normal); 
-                // WARNING: w_o is reverse of primary ray, see slide 01_B p.78
-                // TODO WARNING: This assumes ray interval has light distance information inside... prone to error. 
-                color += mat.radiance(&light_context) * irradiance; 
+                let irradiance = point_light.rgb_intensity / shadow_ray.squared_distance_at(interval.max); // TODO interval is confusing here
+                color += mat.radiance(ray, &shadow_ray, hit_record) * irradiance; 
             }
     }
     color
@@ -104,20 +100,20 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
         let mat_type = mat.get_type();
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => shade_diffuse(scene, shapes, &hit_record, &ray, mat),
-            "mirror" => {
-               
-                let mut attenuation = Vector3::ZERO;
-                let mut rays_out: Vec<Ray> = Vec::new();
-                let mut color_tmp= Vector3::ZERO;
-                if mat.scatter(ray, &hit_record, &mut attenuation, &mut rays_out) {
-                    for new_ray in rays_out {
-                        let received_irrad = get_color(&new_ray, scene, shapes, depth + 1); // L_i
-                        let light_context = LightContext::from_mirror(ray.direction, hit_record.normal);
-                        color_tmp = mat.radiance(&light_context) * received_irrad;
-                    }
-                }
-                color_tmp
-            }, 
+            //"mirror" => {
+            //   
+            //    let mut attenuation = Vector3::ZERO;
+            //    let mut rays_out: Vec<Ray> = Vec::new();
+            //    let mut color_tmp= Vector3::ZERO;
+            //    if mat.scatter(ray, &hit_record, &mut attenuation, &mut rays_out) {
+            //        for new_ray in rays_out {
+            //            let received_irrad = get_color(&new_ray, scene, shapes, depth + 1); // L_i
+            //            let light_context = LightContext::from_mirror(ray.direction, hit_record.normal);
+            //            color_tmp = mat.radiance(&light_context) * received_irrad;
+            //        }
+            //    }
+            //    color_tmp
+            //}, 
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)
                 panic!(">> Unknown material type '{}'! Shading function for this material is missing.", mat_type); 
