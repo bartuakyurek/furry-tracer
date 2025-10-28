@@ -45,7 +45,8 @@ pub trait Material : Debug + Send + Sync  {
 
     //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
     fn attenuate(&self) -> Vector3;
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Ray;
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
@@ -97,9 +98,14 @@ impl Material for DiffuseMaterial{
         "diffuse"
     }
 
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Ray {
-        warn!("Scatter not implemented for Diffuse! Only use shadow rays for now.");
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+        warn!("Reflect not implemented for Diffuse! Only use shadow rays for now.");
         todo!()
+    }
+
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+        warn!("There is no refract for DiffuseMaterial. If this is intentional please delete this warning.");
+        None
     }
 
     fn attenuate(&self) -> Vector3 {
@@ -203,8 +209,7 @@ impl Material for MirrorMaterial {
         self.reflected_radiance()
     }
 
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Ray {
-        
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
         // Reflected ray from Slides 02, p.4
         // wr ​= - wo ​+ 2 n (n . wo)
         // WARNING: Assume ray_in.direction = wi = - wo
@@ -213,7 +218,11 @@ impl Material for MirrorMaterial {
         let w_r = w_i - 2. * n * (n.dot(w_i));
         debug_assert!(w_r.is_normalized());
 
-        Ray::new(hit_record.point + epsilon, w_r)
+        Some(Ray::new(hit_record.point + (n * epsilon), w_r)) // Always reflects
+    }
+
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
+        None // Never refract
     }
     
     fn ambient(&self) -> Vector3 {
@@ -245,13 +254,6 @@ impl Material for MirrorMaterial {
         self.specular_rf * cos_a.powf(p)  
     }   
 
-    //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
-    //    let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
-    //    let w_i = ray_out.direction;
-    //    let w_o = - ray_in.direction;
-    //    let n = hit_record.normal;
-    //    self.diffuse(w_i, n) + self.specular(w_o, w_i, n)  + self.reflected_radiance()
-    //}
 
 }
 

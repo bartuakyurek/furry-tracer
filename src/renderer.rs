@@ -106,9 +106,14 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
                 shade_diffuse(scene, shapes, &hit_record, &ray_in, mat)
             },
             "mirror" => {
-                    let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? 
-                    let reflected_ray: Ray = mat.scatter(ray_in, &hit_record, epsilon);
-                    shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + mat.attenuate() * get_color(&reflected_ray, scene, shapes, depth + 1) 
+                    let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? Seems like yes, visually checked with other epsilon vs. given output image 
+                    if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon){
+                        shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + mat.attenuate() * get_color(&reflected_ray, scene, shapes, depth + 1) 
+                    }
+                    else {
+                        warn!("Mirror reflection is missing in 'mirror' arm in renderer.rs .");
+                        Vector3::ZERO // Perfect mirror always reflects so this hopefully is not triggered
+                    }
             }, 
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)

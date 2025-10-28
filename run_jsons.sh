@@ -2,10 +2,13 @@
 
 # List of JSON files to run
 json_files=(
-    "./input/test.json"
+    "./input/spheres_mirror.json"
     "./input/simple.json"
     "./input/spheres.json"
     "./input/two_spheres.json"
+    "./input/cornellbox.json"
+    #"./input/cornellbox_recursive.json"
+
 )
 
 for json_file in "${json_files[@]}"; do
