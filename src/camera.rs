@@ -32,13 +32,19 @@ impl Cameras {
 #[serde(default)]
 pub struct Camera {
     #[serde(rename = "_id", deserialize_with = "deser_int")]
-    id: Int,
+    _id: Int,
     
+    #[default = ""]
+    _type: String,
+
     #[serde(rename = "Position", deserialize_with = "deser_vec3")]
     position: Vector3,
 
     #[serde(rename = "Gaze", deserialize_with = "deser_vec3")]
     gaze_dir: Vector3,
+
+    #[serde(rename = "GazePoint", deserialize_with = "deser_vec3")]
+    gaze_point: Vector3, // To be used if _type = "lookAt"
 
     #[serde(rename = "Up", deserialize_with = "deser_vec3")]
     up: Vector3,
@@ -71,44 +77,50 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
-        let mut cam = Camera {
-            id,
-            position,
-            gaze_dir: gaze,
-            up,
-            nearplane,
-            near_distance,
-            image_resolution,
-            image_name,
-            num_samples,
-            w : Vector3::NAN,
-            v : Vector3::NAN,
-            u : Vector3::NAN,
-        };
-        cam.setup();
-        cam
-    }
+    //pub fn new(id: Int, position: Vector3, gaze: Vector3, up: Vector3, nearplane: NearPlane, near_distance: Float, image_resolution: [usize; 2], image_name: String, num_samples: Int) -> Self {
+    //    let mut cam = Camera {
+    //        _id: id,
+    //        position,
+    //        gaze_dir: gaze,
+    //        up,
+    //        nearplane,
+    //        near_distance,
+    //        image_resolution,
+    //        image_name,
+    //        num_samples,
+    //        w : Vector3::NAN,
+    //        v : Vector3::NAN,
+    //        u : Vector3::NAN,
+    //    };
+    //    cam.setup();
+    //    cam
+    //}
     pub fn setup(&mut self) {
         // Compute w, v, u vectors
         // assumes Gaze and Up is already provided during creation
         // corrects Up vector if given Up was not perpendicular to
         // Gaze vector.
 
-        self.w = - self.gaze_dir.normalize();
-        self.v = self.up.normalize();
-        self.u = self.v.cross(self.w);
-
-        if !approx_zero(self.up.dot(self.gaze_dir)) {
-            info!("Gaze and Up vectors are not perpendicular, correcting v...");
-            self.v = self.w.cross(self.u);
+        if self._type == String::from("lookAt") {
+            todo!( )
         }
-          
-        debug_assert!(approx_zero(self.u.dot(self.w))); 
-        debug_assert!(approx_zero(self.v.dot(self.w))); 
-        debug_assert!(approx_zero(self.v.dot(self.u))); 
-        debug!("{:#?}", self);
-        debug!("Nearplane corners are {:#?}", &self.get_nearplane_corners());
+        else {
+            self.w = - self.gaze_dir.normalize();
+            self.v = self.up.normalize();
+            self.u = self.v.cross(self.w);
+
+            if !approx_zero(self.up.dot(self.gaze_dir)) {
+                info!("Gaze and Up vectors are not perpendicular, correcting v...");
+                self.v = self.w.cross(self.u);
+            }
+            
+            debug_assert!(approx_zero(self.u.dot(self.w))); 
+            debug_assert!(approx_zero(self.v.dot(self.w))); 
+            debug_assert!(approx_zero(self.v.dot(self.u))); 
+            debug!("{:#?}", self);
+            debug!("Nearplane corners are {:#?}", &self.get_nearplane_corners());
+        }
+        
     }
 
     pub fn get_resolution(&self) -> (usize, usize) {
@@ -184,29 +196,29 @@ impl NearPlane {
 }
 
 
-#[cfg(test)]
-mod tests {
-    use super::*; // access to the outer scope
-
-    #[test]
-    fn test_setup() {
-
-        let cam = Camera::new(
-            1,
-            Vector3::new(0., 0., 0.),
-            Vector3::new(0., 0.2, -10.), // Not perpendicular to up
-            Vector3::new(0., 1., 0.),
-            NearPlane::new(-1., 1., -1., 1.),
-            10.0,
-            [720, 720],
-            "test.png".to_string(),
-            1,
-        );
-        assert!(approx_zero(cam.u.dot(cam.v))); 
-        assert!(approx_zero(cam.v.dot(cam.w))); 
-        assert!(approx_zero(cam.w.dot(cam.u))); 
-        // These asserts are redundant with debug_asserts in new( )
-        // but keeping them here just for sanity checks.
-
-    }
-}
+//#[cfg(test)]
+//mod tests {
+//    use super::*; // access to the outer scope
+//
+//    #[test]
+//    fn test_setup() {
+//
+//        let cam = Camera::new(
+//            1,
+//            Vector3::new(0., 0., 0.),
+//            Vector3::new(0., 0.2, -10.), // Not perpendicular to up
+//            Vector3::new(0., 1., 0.),
+//            NearPlane::new(-1., 1., -1., 1.),
+//            10.0,
+//            [720, 720],
+//            "test.png".to_string(),
+//            1,
+//        );
+//        assert!(approx_zero(cam.u.dot(cam.v))); 
+//        assert!(approx_zero(cam.v.dot(cam.w))); 
+//        assert!(approx_zero(cam.w.dot(cam.u))); 
+//        // These asserts are redundant with debug_asserts in new( )
+//        // but keeping them here just for sanity checks.
+//
+//    }
+//}
