@@ -44,7 +44,8 @@ pub trait Material : Debug + Send + Sync  {
     fn ambient(&self) -> Vector3; 
 
     //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
-    fn attenuate(&self, ray_in: &Ray, ray_t: Float) -> Vector3;
+    fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3;
+    fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3;
     fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
     fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
 }
@@ -108,7 +109,12 @@ impl Material for DiffuseMaterial{
         None
     }
 
-    fn attenuate(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
+    fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
+        //warn!("Attenuate not implemented for Diffuse! Only use shadow rays for now.");
+        Vector3::ONE // No attenuation for diffuse
+    }
+
+    fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
         //warn!("Attenuate not implemented for Diffuse! Only use shadow rays for now.");
         Vector3::ONE // No attenuation for diffuse
     }
@@ -193,9 +199,12 @@ impl Material for MirrorMaterial {
         "mirror"
     }
 
-    fn attenuate(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
-        // TODO: How to return mirror reflectance outside of attenuation? 
+    fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
         self.mirror_rf 
+    }
+
+    fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
+        Vector3::ONE  
     }
 
     fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
@@ -312,8 +321,20 @@ impl Material for DielectricMaterial {
         "dielectric"
     }
 
-    fn attenuate(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
-        todo!()
+    fn attenuate_reflect(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
+        // Slides 02, p.27, only e^(-Cx) part
+        // where C is the absorption coefficient
+        // WARNING: ray_in.origin is assumed to be the location of the last hit point
+        // i.e. point in p.28 with arrow to L(x)
+        self.mirror_rf
+    }
+
+    fn attenuate_refract(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
+        // Slides 02, p.27, only e^(-Cx) part
+        // where C is the absorption coefficient
+        // WARNING: ray_in.origin is assumed to be the location of the last hit point
+        // i.e. point in p.28 with arrow to L(x)
+        (- self.absorption_coeff * ray_in.distance_at(ray_t)).exp() 
     }
 
     fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray)> {

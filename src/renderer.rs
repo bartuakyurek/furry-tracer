@@ -76,6 +76,9 @@ pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, 
             
             let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
+                // TODO: We can implement attenuate( ) for diffuse by taking 
+                // denominator part out of irradiance and use it in attenuate( )
+                // that way get_shadow_ray( ) can return ray_t: Float, instead of interval
                 let irradiance = point_light.rgb_intensity / shadow_ray.squared_distance_at(interval.max); // TODO interval is confusing here
                 let n = hit_record.normal;
                 let w_i = shadow_ray.direction;
@@ -105,12 +108,12 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
         // What happens if a function *adds* something instead of overriding to attenuation? 
         // Currently I assume attenuation is overridden, but we cannot guarantee that.
         let epsilon = scene.intersection_test_epsilon; // TODO: Is this the correct epsilon? Seems like yes, visually checked with other epsilon vs. given output image 
-        let attenuation = mat.attenuate(ray_in, hit_record.ray_t); 
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => {
                 shade_diffuse(scene, shapes, &hit_record, &ray_in, mat)
             },
             "mirror" => {
+                    let attenuation = mat.attenuate_reflect(ray_in, hit_record.ray_t); 
                     if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon) {
                         shade_diffuse(scene, shapes, &hit_record, &ray_in, mat) + attenuation * get_color(&reflected_ray, scene, shapes, depth + 1) 
                     }
@@ -129,11 +132,13 @@ pub fn get_color(ray_in: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) 
 
                 // Reflected
                 if let Some(reflected_ray) = mat.reflect(ray_in, &hit_record, epsilon) {
+                        let attenuation = mat.attenuate_reflect(ray_in, hit_record.ray_t); 
                         tot_radiance +=  attenuation * get_color(&reflected_ray, scene, shapes, depth + 1) 
                 }
 
                 // Refracted 
                 if let Some(refracted_ray) = mat.refract(ray_in, &hit_record, epsilon) {
+                        let attenuation = mat.attenuate_refract(ray_in, hit_record.ray_t); 
                         tot_radiance +=  attenuation * get_color(&refracted_ray, scene, shapes, depth + 1) 
                 }
 
