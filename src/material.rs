@@ -38,10 +38,12 @@ pub trait Material : Debug + Send + Sync  {
             }
         }
     }
-    fn get_ambient(&self) -> Vector3; // TODO: whould ambient_shade be a better name? 
-    fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
     fn get_type(&self) -> &str;
-    //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool;
+    fn diffuse(&self, w_i: Vector3, n: Vector3) -> Vector3;
+    fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3;
+    fn ambient(&self) -> Vector3; 
+
+    fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
     fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray;
 }
 
@@ -83,34 +85,12 @@ impl Default for DiffuseMaterial {
 
 impl DiffuseMaterial {
 
-    fn diffuse(&self, w_i: Vector3, n: Vector3) -> Vector3 {
-        // Returns outgoing radiance (see Slides 01_B, p.73)
-        // TODO: reduce the verbosity here
-        
-        debug_assert!(w_i.is_normalized());
-        debug_assert!(n.is_normalized());
-
-        let cos_theta = w_i.dot(n).max(0.0);
-        self.diffuse_rf * cos_theta //* light_context.irradiance
-    }
-
-    fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3 {
-        // Returns outgoing radiance (see Slides 01_B, p.80)
-        debug_assert!(w_o.is_normalized());
-        debug_assert!(w_i.is_normalized());
-        debug_assert!(n.is_normalized());
-
-        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
-        debug_assert!(h.is_normalized());
-        
-        let p = self.phong_exponent;
-        let cos_a = n.dot(h).max(0.0);
-        self.specular_rf * cos_a.powf(p) //* light_context.irradiance
-    }   
+    
 }
 
 
 impl Material for DiffuseMaterial{
+
 
     fn get_type(&self) -> &str {
         "diffuse"
@@ -130,11 +110,36 @@ impl Material for DiffuseMaterial{
         self.diffuse(w_i, n) + self.specular(w_o, w_i, n)
     }
 
-    fn get_ambient(&self) -> Vector3 {
+    fn ambient(&self) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.75)
         // e.g. for test.json it is [25, 25, 25]
         self.ambient_rf 
     }
+
+    fn diffuse(&self, w_i: Vector3, n: Vector3) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.73)
+        // TODO: reduce the verbosity here
+        
+        debug_assert!(w_i.is_normalized());
+        debug_assert!(n.is_normalized());
+
+        let cos_theta = w_i.dot(n).max(0.0);
+        self.diffuse_rf * cos_theta 
+    }
+
+    fn specular(&self, w_o: Vector3, w_i: Vector3, n: Vector3) -> Vector3 {
+        // Returns outgoing radiance (see Slides 01_B, p.80)
+        debug_assert!(w_o.is_normalized());
+        debug_assert!(w_i.is_normalized());
+        debug_assert!(n.is_normalized());
+
+        let h = (w_i + w_o).normalize(); //(w_i + w_o) / (w_i + w_o).norm();
+        debug_assert!(h.is_normalized());
+        
+        let p = self.phong_exponent;
+        let cos_a = n.dot(h).max(0.0);
+        self.specular_rf * cos_a.powf(p)
+    }   
 
 }
 
@@ -177,6 +182,27 @@ impl Default for MirrorMaterial {
 // TODO: apologies for the duplicate code here (copy pasted from Diffuse Material above)
 impl MirrorMaterial {
 
+    
+
+    fn reflected_radiance(&self) -> Vector3 {
+        self.mirror_rf 
+    }
+}
+
+impl Material for MirrorMaterial {
+
+    fn get_type(&self) -> &str {
+        "mirror"
+    }
+
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray {
+        todo!()
+    }
+    
+    fn ambient(&self) -> Vector3 {
+        self.ambient_rf  
+    }
+
     fn diffuse(&self, w_i: Vector3, n: Vector3) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.73)
         // TODO: reduce the verbosity here
@@ -201,25 +227,6 @@ impl MirrorMaterial {
         let cos_a = n.dot(h).max(0.0);
         self.specular_rf * cos_a.powf(p)  
     }   
-
-    fn reflected_radiance(&self) -> Vector3 {
-        self.mirror_rf 
-    }
-}
-
-impl Material for MirrorMaterial {
-
-    fn get_type(&self) -> &str {
-        "mirror"
-    }
-
-    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray {
-        todo!()
-    }
-    
-    fn get_ambient(&self) -> Vector3 {
-        self.ambient_rf  
-    }
 
     fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
         let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
