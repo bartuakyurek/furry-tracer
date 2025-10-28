@@ -23,7 +23,7 @@ use crate::ray::{Ray, HitRecord}; // TODO: rename it to light or lighting, not l
 /// 
 /// MATERIAL TRAIT
 /// 
-/// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 pub trait Material : Debug + Send + Sync  {
     
     fn new_from(value: &serde_json::Value) -> Self 
@@ -55,7 +55,7 @@ pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will
 /// 
 /// DIFFUSE
 /// 
-/// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
@@ -113,15 +113,6 @@ impl Material for DiffuseMaterial{
         todo!()
     }
 
-    //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3 {
-    //    
-    //    let ray_out: &mut Ray = ray_out.get_or_insert_with(|| self.scatter(ray_in, hit_record));
-    //    let  w_i = ray_out.direction;
-    //    let w_o = - ray_in.direction;
-    //    let n = hit_record.normal;
-    //    self.diffuse(w_i, n) + self.specular(w_o, w_i, n)
-    //}
-
     fn ambient(&self) -> Vector3 {
         // Returns outgoing radiance (see Slides 01_B, p.75)
         // e.g. for test.json it is [25, 25, 25]
@@ -160,7 +151,7 @@ impl Material for DiffuseMaterial{
 /// 
 /// MIRROR
 /// 
-/// ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
@@ -253,7 +244,5 @@ impl Material for MirrorMaterial {
         let cos_a = n.dot(h).max(0.0);
         self.specular_rf * cos_a.powf(p)  
     }   
-
-
 }
 
