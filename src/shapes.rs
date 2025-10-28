@@ -55,7 +55,9 @@ impl Shape for Triangle {
             let [v1, v2, v3] = self.indices.map(|i| verts[i]);
             let tri_normal = get_tri_normal(&v1, &v2, &v3);
             let front_face = ray.is_front_face(tri_normal);
-            Some(HitRecord::new(p, tri_normal, t, self.material_idx, front_face)) 
+
+            let normal = if front_face { tri_normal } else { -tri_normal };
+            Some(HitRecord::new(p, normal, t, self.material_idx, front_face)) 
         }
         else {
             None
@@ -251,7 +253,9 @@ impl Shape for Sphere {
             let point = ray.at(t); // Note that this computation is done inside new_from as well
             let normal = (point - center).normalize(); // TODO: is this correct?
             
-            Some(HitRecord::new_from(ray, normal, t, self.material_idx))
+            let is_front_face = ray.is_front_face(normal);
+            let normal = if is_front_face { normal } else { -normal };
+            Some(HitRecord::new(point, normal, t, self.material_idx, is_front_face))
             
         }
     }
@@ -278,7 +282,10 @@ impl Shape for Plane {
 
         if t_interval.contains(t) {
             // Construct Hit Record
-            Some(HitRecord::new_from(ray, self.normal, t, self.material_idx))
+            let front_face = ray.is_front_face(self.normal);
+
+            let normal = if front_face { self.normal } else { -self.normal };
+            Some(HitRecord::new(ray.at(t), normal, t, self.material_idx, front_face))
         }
         else {
             None // t is not within the limits
