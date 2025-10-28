@@ -44,9 +44,9 @@ pub trait Material : Debug + Send + Sync  {
     fn ambient(&self) -> Vector3; 
 
     //fn get_attenuiation(&self, ray_in: &Ray, ray_out: &mut Option<Ray>, hit_record: &HitRecord) -> Vector3;
-    fn attenuate(&self) -> Vector3;
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray>;
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray>;
+    fn attenuate(&self, ray_in: &Ray, ray_t: Float) -> Vector3;
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray>;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
@@ -98,19 +98,19 @@ impl Material for DiffuseMaterial{
         "diffuse"
     }
 
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray> {
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
         warn!("Reflect not implemented for Diffuse! Only use shadow rays for now.");
         todo!()
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray> {
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
         warn!("There is no refract for DiffuseMaterial. If this is intentional please delete this warning.");
         None
     }
 
-    fn attenuate(&self) -> Vector3 {
-        warn!("Attenuate not implemented for Diffuse! Only use shadow rays for now.");
-        todo!()
+    fn attenuate(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
+        //warn!("Attenuate not implemented for Diffuse! Only use shadow rays for now.");
+        Vector3::ONE // No attenuation for diffuse
     }
 
     fn ambient(&self) -> Vector3 {
@@ -193,11 +193,12 @@ impl Material for MirrorMaterial {
         "mirror"
     }
 
-    fn attenuate(&self) -> Vector3 {
+    fn attenuate(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
+        // TODO: How to return mirror reflectance outside of attenuation? 
         self.mirror_rf 
     }
 
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray> {
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
         // Reflected ray from Slides 02, p.4 (Perfect Mirror)
         // wr ​= - wo ​+ 2 n (n . wo)
         // WARNING: Assume ray_in.direction = wi = - wo
@@ -206,11 +207,10 @@ impl Material for MirrorMaterial {
         let w_r = w_i - 2. * n * (n.dot(w_i));
         debug_assert!(w_r.is_normalized());
 
-        *attenuation = self.attenuate();
         Some(Ray::new(hit_record.point + (n * epsilon), w_r)) // Always reflects
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<Ray> {
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<Ray> {
         None // Never refract
     }
     
@@ -312,17 +312,17 @@ impl Material for DielectricMaterial {
         "dielectric"
     }
 
-    fn attenuate(&self) -> Vector3 {
+    fn attenuate(&self, ray_in: &Ray, ray_t: Float) -> Vector3 {
         todo!()
     }
 
-    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<(Ray)> {
+    fn reflect(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray)> {
         // Fresnel reflection 
         todo!()
         // Don't forget to set attenuation
     }
 
-    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float, attenuation: &mut Vector3) -> Option<(Ray)> {
+    fn refract(&self, ray_in: &Ray, hit_record: &HitRecord, epsilon: Float) -> Option<(Ray)> {
         todo!()
         // Don't forget to set attenuation
     }
