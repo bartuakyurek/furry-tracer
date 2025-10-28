@@ -49,6 +49,9 @@ pub struct Camera {
     #[serde(rename = "Up", deserialize_with = "deser_vec3")]
     up: Vector3,
 
+    #[serde(rename = "FovY", deserialize_with = "deser_float")]
+    fovy: Float,
+
     #[serde(rename = "NearPlane", deserialize_with = "deser_nearplane")]
     pub nearplane: NearPlane,
 
@@ -102,25 +105,33 @@ impl Camera {
         // Gaze vector.
 
         if self._type == String::from("lookAt") {
-            todo!( )
+            info!("Found camera _type = lookAt, constructing nearplane...");
+            // (From h1.pdf) You can fnd the gaze direction by subtracting the camera position from this gaze point
+            self.gaze_dir = self.gaze_point - self.position;
+           
+            // (From hw1.pdf) FovY parameter specifies the field of view in **degrees** that the image plane 
+            // covers in its vertical direction. The aspect ratio is implicitly defined by the resolution of the image plane.
+            let fovy_rad = self.fovy.to_radians();
+            let aspect = self.image_resolution[0] / self.image_resolution[1];
+            let top = self.near_distance * (fovy_rad / 2.0).tan();
+            let bottom = -top;
+            let right = top * aspect as Float;
+            let left = -right;
+            self.nearplane = NearPlane::new(left, right, bottom, top);
         }
-        else {
-            self.w = - self.gaze_dir.normalize();
-            self.v = self.up.normalize();
-            self.u = self.v.cross(self.w);
-
-            if !approx_zero(self.up.dot(self.gaze_dir)) {
-                info!("Gaze and Up vectors are not perpendicular, correcting v...");
-                self.v = self.w.cross(self.u);
-            }
-            
-            debug_assert!(approx_zero(self.u.dot(self.w))); 
-            debug_assert!(approx_zero(self.v.dot(self.w))); 
-            debug_assert!(approx_zero(self.v.dot(self.u))); 
-            debug!("{:#?}", self);
-            debug!("Nearplane corners are {:#?}", &self.get_nearplane_corners());
+        self.w = - self.gaze_dir.normalize();
+        self.v = self.up.normalize();
+        self.u = self.v.cross(self.w);
+        if !approx_zero(self.up.dot(self.gaze_dir)) {
+            info!("Gaze and Up vectors are not perpendicular, correcting v...");
+            self.v = self.w.cross(self.u);
         }
         
+        debug_assert!(approx_zero(self.u.dot(self.w))); 
+        debug_assert!(approx_zero(self.v.dot(self.w))); 
+        debug_assert!(approx_zero(self.v.dot(self.u))); 
+        debug!("{:#?}", self);
+        debug!("Nearplane corners are {:#?}", &self.get_nearplane_corners());
     }
 
     pub fn get_resolution(&self) -> (usize, usize) {
