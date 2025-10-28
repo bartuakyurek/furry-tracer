@@ -155,6 +155,7 @@ pub fn render(scene: &Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error
     let mut images: Vec<ImageData> = Vec::new();
     for mut cam in scene.cameras.all() {
         cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
+        if cam.num_samples != 1 { warn!("Found num_samples = '{}' > 1, sampling is not implemented yet...", cam.num_samples); }
         
         let n_pixels: usize =  cam.image_resolution[0] * cam.image_resolution[1];
         let mut pixel_colors = vec![scene.background_color; n_pixels]; // Colors range [0, 255], not [0, 1]
