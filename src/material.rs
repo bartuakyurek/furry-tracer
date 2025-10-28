@@ -12,6 +12,7 @@
 
 */
 use std::fmt::Debug;
+use bevy_math::ops::cos;
 use tracing::{error, info, warn};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
@@ -495,7 +496,7 @@ impl Default for ConductorMaterial {
 impl ConductorMaterial {
 
     fn fresnel(&self, ray_in: &Ray, hit_record: &HitRecord, fresnel: &mut FresnelData) {
-        // Slides 02, p.21
+        // Refer to slides 02, p.21 for notation
         // d: incoming normalized ray
         // n: surface normal
         let d = ray_in.direction;
@@ -507,10 +508,17 @@ impl ConductorMaterial {
         let n2 = self.refraction_index;
         let k2 = self.absorption_index; // TODO: Why this is named as _index but not _coefficient as in p.21?
         
+        let sum_nk = n2.powi(2) + k2.powi(2); 
+        let two_n_cos = 2. * n2 * cos_theta;
+        let cos_squared = cos_theta.powi(2);
+        let sum_nk_cos = sum_nk * cos_squared;
+
+        let r_s = (sum_nk - two_n_cos + cos_squared) / (sum_nk + two_n_cos + cos_squared);
+        let r_p = (sum_nk_cos - two_n_cos + 1.) / (sum_nk_cos + two_n_cos + 1.);
+
         fresnel.cos_theta = cos_theta; 
-        fresnel.f_r = f_r;
+        fresnel.f_r =  0.5 * (r_s + r_p); // Reflection ratio
         fresnel.f_t = 0.;
-        true
     }
 }
 
