@@ -36,6 +36,10 @@ For more suggestions to improve code:
 - [ ] Unit tests missing
 - [ ] Consider explicitly marking your function with #[inline] or #[inline(always)] to see if it improves performance. (source: https://softwaremill.com/rust-static-vs-dynamic-dispatch/)
 - [ ] Fix Fresnel computations done twice, see comments or commits for thoughts on it.
+- [ ] I think boilerplate required for implementing material can be reduced if material trait had default ambient( ) diffuse( ) specular( )
+but what is missing is the struct to hold these coefficients, so maybe we could add &MaterialCommon, a struct to hold these info and then
+pass it to the trait function so it knows what data to access. But the problem is we do not know which material struct to call at renderer
+it is dyn Material so ... I guess this wouldn't work. 
 - [ ] Every shape in this class has material_idx so there could be a struct
     dedicated to such data unrelated to shapes but required for HitRecord. But
     Rust does not allow implicit inheritance so we cannot just:
