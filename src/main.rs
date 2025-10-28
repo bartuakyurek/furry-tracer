@@ -15,7 +15,6 @@ mod ray;
 mod image;
 mod scene;
 mod camera;
-mod lights;
 mod shapes;
 mod numeric;
 mod interval;
@@ -36,7 +35,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
         warn!("No arguments were provided, setting default scene path...");
-        &String::from("./input/test.json")
+        &String::from("./input/bunny.json")
     } else if args.len() == 2 {
         &args[1]
     } else {

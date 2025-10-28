@@ -39,9 +39,10 @@ pub trait Material : Debug + Send + Sync  {
         }
     }
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3; // TODO: whould ambient_shade be a better name? 
-    fn radiance(&self, ray_in: &Ray, ray_out: &Ray, hit_record: &HitRecord) -> Vector3;
+    fn radiance(&self, ray_in: &Ray, ray_out: &Option<Ray>, hit_record: &HitRecord) -> Vector3;
     fn get_type(&self) -> &str;
     //fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool;
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
@@ -115,8 +116,21 @@ impl Material for DiffuseMaterial{
         "diffuse"
     }
 
-    fn radiance(&self, ray_in: &Ray, ray_out: &Ray, hit_record: &HitRecord) -> Vector3 {
-        let w_i = ray_out.direction;
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord) -> Ray {
+
+    }
+
+    fn radiance(&self, ray_in: &Ray, ray_out: &Option<Ray>, hit_record: &HitRecord) -> Vector3 {
+
+        
+        if let Some(ray_out) = ray_out{
+           
+        }
+        else {
+            let ray_out = self.scatter(ray_in, hit_record, ray_out)
+        }
+
+        let  w_i = ray_out.direction;
         let w_o = - ray_in.direction;
         let n = hit_record.normal;
         self.diffuse(w_i, n) + self.specular(w_o, w_i, n)
@@ -215,7 +229,7 @@ impl Material for MirrorMaterial {
         self.ambient_rf * ambient_light 
     }
 
-    fn radiance(&self, ray_in: &Ray, ray_out: &Ray, hit_record: &HitRecord) -> Vector3 {
+    fn radiance(&self, ray_in: &Ray, ray_out: &Option<Ray>, hit_record: &HitRecord) -> Vector3 {
         let w_i = ray_out.direction;
         let w_o = - ray_in.direction;
         let n = hit_record.normal;

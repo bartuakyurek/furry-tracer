@@ -19,7 +19,6 @@ use tracing::{debug, info, warn, error};
 
 use crate::camera::Camera;
 use crate::dataforms::VertexData;
-use crate::lights::LightContext;
 use crate::material::{DiffuseMaterial, Material, HeapAllocMaterial};
 use crate::ray::{HitRecord, Ray};
 use crate::scene::{PointLight, Scene};
@@ -78,7 +77,7 @@ pub fn shade_diffuse(scene: &Scene, shapes: &ShapeList, hit_record: &HitRecord, 
             let (shadow_ray, interval) = get_shadow_ray(&point_light, hit_record, scene.shadow_ray_epsilon);
             if !any_hit(&shadow_ray, &interval, shapes, &scene.vertex_data) {
                 let irradiance = point_light.rgb_intensity / shadow_ray.squared_distance_at(interval.max); // TODO interval is confusing here
-                color += mat.radiance(ray, &shadow_ray, hit_record) * irradiance; 
+                color += mat.radiance(ray, &Some(shadow_ray), hit_record) * irradiance; 
             }
     }
     color
