@@ -106,13 +106,20 @@ pub fn get_color(ray: &Ray, scene: &Scene, shapes: &ShapeList, depth: usize) -> 
         color += match mat_type{ // WARNING: Expecting lowercase material
             "diffuse" => shade_diffuse(scene, shapes, &hit_record, &ray, mat),
             "mirror" => {
-                let w_o = -ray.direction;  // TODO: This is also computed in lightcontext... 
-                let w_r = -w_o + 2. * hit_record.normal * (hit_record.normal.dot(w_o));
-                let new_ray = Ray::new(hit_record.point, w_r.normalize()); // TODO: is normalize necessary?
-                let mut received = Vector3::ZERO;
-                received += get_color(&new_ray, scene, shapes, depth + 1); // L_i
-                let light_context = LightContext::from_mirror(ray.direction, hit_record.normal, received);
-                mat.radiance(&light_context) 
+               
+                let mut attenuation = Vector3::ZERO;
+                let mut rays_out: Vec<Ray>;
+                if mat.scatter(ray, &hit_record, &mut attenuation, &mut rays_out) {
+                    for new_ray in rays_out {
+                        get_color(&new_ray, scene, shapes, depth + 1); // L_i
+                        let light_context = LightContext::from_mirror(ray.direction, hit_record.normal, received);
+                        mat.radiance(&light_context) 
+                    }
+                }
+                else {
+                    Vector3::ZERO // TODO: Background?
+                }
+                
             }, 
             _ => {
                 // WARNING: Below does not panic when json has unknown material because parser defaults it to Diffuse (however it does panic if you make a typo or not implement shading function)

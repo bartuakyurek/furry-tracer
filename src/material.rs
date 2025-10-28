@@ -13,12 +13,12 @@
 */
 use std::fmt::Debug;
 use std::cmp::max;
-use bevy_math::{NormedVectorSpace, VectorSpace};
 use tracing::{error, info};
 use serde::{Deserialize, de::DeserializeOwned};
 use crate::json_parser::*;
 use crate::numeric::{approx_zero, Float, Vector3};
-use crate::lights::LightContext; // TODO: rename it to light or lighting, not lights?
+use crate::lights::LightContext;
+use crate::ray::{Ray, HitRecord}; // TODO: rename it to light or lighting, not lights?
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// 
@@ -42,6 +42,7 @@ pub trait Material : Debug + Send + Sync  {
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3; // TODO: whould ambient_shade be a better name? 
     fn radiance(&self, light_context: &LightContext) -> Vector3;
     fn get_type(&self) -> &str;
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool;
 }
 
 pub type HeapAllocMaterial = Box<dyn Material>; // Box, Rc, Arc -> Probably will be Arc when we use rayon
@@ -129,6 +130,11 @@ impl Material for DiffuseMaterial{
         self.ambient_rf * ambient_light // * 10. -> this was to debug there exists ambient light
     }
 
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool {
+        // TODO: shadow rays here
+        false
+    }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,13 +220,20 @@ impl Material for MirrorMaterial {
     
     fn ambient_radiance(&self, ambient_light: Vector3) -> Vector3 {
         //info!("Computing ambient radiance for Mirror ...");
-        self.ambient_rf * ambient_light
+        self.ambient_rf * ambient_light 
     }
 
     fn radiance(&self, light_context: &LightContext) -> Vector3 {
         //info!("Computing outgoing radiance for Mirror ...");
         self.diffuse(light_context) + self.specular(light_context) + self.reflected_radiance(light_context)
     }
+
+    fn scatter(&self, ray_in: &Ray, hit_record: &HitRecord, attenuation: &mut Vector3, rays_out: &mut Vec<Ray>) -> bool {
+        
+        let w_o = -ray_in.direction;  // TODO: This is also computed in lightcontext... 
+        let w_r = -w_o + 2. * hit_record.normal * (hit_record.normal.dot(w_o));
+        let new_ray = Ray::new(hit_record.point, w_r.normalize()); // TODO: is normalize necessary?
+        true
+    }
 }
 
-// TODO: impl Default for Mirrorclear
