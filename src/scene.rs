@@ -105,7 +105,7 @@ impl Scene {
         }
 
         if self.max_recursion_depth == 0 {
-            self.max_recursion_depth = 1;
+            self.max_recursion_depth = 5;
             warn!("Found max recursion depth 0, setting it to {} as default. If that zero was intentional please update your code.", self.max_recursion_depth);
         }
     }
