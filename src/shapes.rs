@@ -90,7 +90,8 @@ impl PrimitiveShape for Triangle {
                         let v1_n = cache.vertex_normal(self.indices[0]);
                         let v2_n = cache.vertex_normal(self.indices[1]);
                         let v3_n = cache.vertex_normal(self.indices[2]);
-                        todo!()
+                        let w = 1. - u - v;
+                        (v1_n * u + v2_n * v + v3_n * w).normalize() // Smooth normal
                     }
                     else {
                         cache.triangle_normal(self._id)
