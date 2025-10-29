@@ -37,7 +37,48 @@ impl Default for VertexCache {
         Self {
             vertex_data: VertexData::default(),
             vertex_normals: Vec::new(),
-            is_smooth,
+        }
+    }
+}
+
+impl VertexCache {
+    
+    pub fn build(verts: &VertexData, triangles: &Vec<Triangle>) -> VertexCache {
+        // Computes per-vertex normals by averaging adjacent triangle normals
+
+        let vertex_data = verts.clone();
+        let mut vertex_normals: Vec<Vector3> = vec![Vector3::ZERO; vertex_data._data.len()];
+        for tri in triangles.iter() {
+            let indices = tri.indices;
+            // Check if indices are in bounds of vertex_data
+            if indices.iter().any(|&i| i >= vertex_data._data.len()) {
+                continue;
+            }
+            let v1 = vertex_data._data[indices[0]];
+            let v2 = vertex_data._data[indices[1]];
+            let v3 = vertex_data._data[indices[2]];
+            let edge_ab = v2 - v1;
+            let edge_ac = v3 - v1;
+            let face_n = edge_ab.cross(edge_ac); // Be careful, not normalized yet!
+
+            // Add the area-weighted face normal to each vertex normal
+            for &idx in &indices {
+                if idx < vertex_normals.len() {
+                    vertex_normals[idx] += face_n;
+                }
+            }
+        }
+
+        // Normalize accumulated normals
+        for n in vertex_normals.iter_mut() {
+            if n.norm_squared() > 0.0 { 
+                *n = n.normalize();
+            }
+        }
+
+        VertexCache {
+            vertex_data,
+            vertex_normals,
         }
     }
 }
