@@ -23,8 +23,25 @@ use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathe
 pub type HeapAllocatedShape = Arc<dyn Shape>;
 pub type ShapeList = Vec<HeapAllocatedShape>; 
 
+#[derive(Default)]
+struct PrimitiveCache {
+    vertices: VertexData,
+    face_normals: Vec<Vector3>, // Shape._id corresponds 
+    vertex_normals: Vec<Vector3>,
+}
+
+impl PrimitiveCache {
+    pub fn new_from(vertices: &VertexData) -> Self {
+        Self {
+            vertices: vertices.clone(),
+            face_normals: Vec::new(),
+            vertex_normals: Vec::new(),
+        }
+    }
+}
 
 pub trait Shape : Debug + Send + Sync  {
+    fn normal(&self, verts: &VertexData, surface_point: Vector3) -> Vector3;
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
 }
 
