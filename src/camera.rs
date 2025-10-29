@@ -112,7 +112,7 @@ impl Camera {
             // (From hw1.pdf) FovY parameter specifies the field of view in **degrees** that the image plane 
             // covers in its vertical direction. The aspect ratio is implicitly defined by the resolution of the image plane.
             let fovy_rad = self.fovy.to_radians();
-            let aspect = self.image_resolution[0] / self.image_resolution[1];
+            let aspect = self.image_resolution[0] as Float / self.image_resolution[1] as Float;
             let top = self.near_distance * (fovy_rad / 2.0).tan();
             let bottom = -top;
             let right = top * aspect as Float;
