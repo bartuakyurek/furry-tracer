@@ -7,7 +7,7 @@
 
 */
 
-use std::{self, env, time::Instant};
+use std::{self, env, time::Instant, path::Path};
 use tracing::{info, warn, error, debug};
 use tracing_subscriber;
 
@@ -26,7 +26,7 @@ mod json_parser;
 use crate::{json_parser::parse_json795};
 // TODO: How to group these mods better to declutter main?
 
-fn main() {
+fn main()  -> Result<(), Box<dyn std::error::Error>> {
 
     // Logging on console
     tracing_subscriber::fmt::init(); 
@@ -35,7 +35,10 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let json_path: &String = if args.len() == 1 {
         warn!("No arguments were provided, setting default scene path...");
-        &String::from("./input/chinese_dragon.json")
+        //&String::from("./inputs/deniz_sayin/lobster.json")
+        &String::from("./inputs/other_dragon.json")
+        //        &String::from("./input/chinese_dragon.json")
+
     } else if args.len() == 2 {
         &args[1]
     } else {
@@ -45,25 +48,19 @@ fn main() {
     
     // Parse JSON
     info!("Loading scene from {}...", json_path);
-    let mut root =  match parse_json795(json_path) {
-        Ok(root) => {
-            root
-        }
-        Err(e) => {
-            error!("Failed to load scene: {}", e);
-            return;
-        }
-    };
-    root.scene.setup_after_json(); // TODO: This should be done in a different way
+    let mut root = parse_json795(json_path).map_err(|e| {
+        error!("Failed to load scene: {}", e);
+        Box::<dyn std::error::Error>::from(e)
+    })?;
+
+    let json_path = Path::new(json_path).canonicalize()?;
+    root.scene.setup_after_json(&json_path)?; // TODO: This should be done in a different way
     debug!("Scene is setup successfully.\n {:#?}", root);
     let root = root; // Shadow mutatability before render
 
     // Render image and return array of RGB
     let start = Instant::now();
-    let images = match renderer::render(&root.scene) {
-        Ok(image_data) => {info!("Render completed."); image_data}
-        Err(e) => {error!("Failed to render scene: {}", e); return;}
-    };
+    let images = renderer::render(&root.scene)?;
     info!("Rendering of {} image(s) took: {:?}", images.len(), start.elapsed()); 
 
     // Write images to .png files
@@ -74,4 +71,5 @@ fn main() {
         }
     }
     info!("Finished execution.");
+    Ok(())
 }

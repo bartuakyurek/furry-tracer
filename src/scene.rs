@@ -28,11 +28,15 @@
     @date: 2 Oct, 2025
     @author: Bartu
 */
-use std::{rc::Rc};
+use std::fs::File;
+use std::error::Error;
+use std::io::BufReader;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use serde_json::{self, Value};
 use serde::{Deserialize};
 use tracing::{warn, error, debug, info};
+use smart_default::SmartDefault;
 
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{ConductorMaterial, DielectricMaterial, DiffuseMaterial, HeapAllocMaterial, Material, MirrorMaterial};
@@ -76,7 +80,7 @@ pub struct Scene {
 impl Scene {
     //pub fn new() {
     //}
-    pub fn setup_after_json(&mut self) {
+    pub fn setup_after_json(&mut self, jsonpath: &Path) -> Result<(), Box<dyn Error>>{
         // Implement required adjustments after loading from a JSON file
 
         // 1- Convert materials serde_json values to actual structs
@@ -90,7 +94,7 @@ impl Scene {
         if self.vertex_data.normalize_to_xyz() { warn!("VertexData _type is changed from '{}' to '{}'", previous_type, self.vertex_data._type); }
 
         // 
-        self.objects.setup(&mut self.vertex_data); // Appends new vertices if mesh is from PLY
+        self.objects.setup(&mut self.vertex_data,  jsonpath)?; // Appends new vertices if mesh is from PLY
 
         // 3- Add a dummy vertex at index 0 because JSON vertex ids start from 1
         self.vertex_data.insert_dummy_at_the_beginning();
@@ -112,7 +116,9 @@ impl Scene {
             self.max_recursion_depth = 5;
             warn!("Found max recursion depth 0, setting it to {} as default. If that zero was intentional please update your code.", self.max_recursion_depth);
         }
+        Ok(())
     }
+
 }
 
 
@@ -212,7 +218,8 @@ fn parse_material(value: serde_json::Value) -> Vec<HeapAllocMaterial> {
 
 
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone)]
+#[derive(SmartDefault)]
 #[serde(default)]
 pub struct Mesh {
     #[serde(deserialize_with = "deser_usize")]
@@ -221,6 +228,11 @@ pub struct Mesh {
     pub material_idx: usize,
     #[serde(rename = "Faces")]
     pub faces: FaceType,
+
+    #[serde(rename = "_shadingMode")]
+    #[default = "flat"]
+    pub _shading_mode: String,
+
 }
 
 type FaceType = DataField<usize>;
@@ -257,7 +269,7 @@ pub struct SceneObjects {
 
 impl SceneObjects {
 
-    pub fn setup(&mut self, verts: &mut VertexData) {
+    pub fn setup(&mut self, verts: &mut VertexData, jsonpath: &Path) -> Result<(), Box<dyn Error>> {
         // Return a vector of all shapes in the scene
         warn!("SceneObjects.all( ) assumes there are only triangles, spheres, planes, and meshes. If there are other Shape trait implementations they are not added yet.");
         let mut shapes: ShapeList = Vec::new();
@@ -269,20 +281,52 @@ impl SceneObjects {
 
         // Convert meshes to triangles 
         for mesh in self.meshes.all() {
-            let offset = verts._data.len();
-            let triangles = if !mesh.faces._ply_file.is_empty() { // If Ply path specified, use it
+            let mut mesh = mesh;
+            if !mesh.faces._ply_file.is_empty() { 
+                
+                // Get path containing the JSON (_plyFile in json is relative to that json)
+                let json_dir = Path::new(jsonpath)
+                    .parent()
+                    .unwrap_or(Path::new("."));
+                let ply_file = &mesh.faces._ply_file;
+                let ply_path = json_dir.join(ply_file);
+
+                if ply_path.exists() {
+                    info!("PLY file exists: {:?}", ply_path);
+                } else {
+                    error!("PLY file NOT found at: {:?}", ply_path);
+                }
+
+                info!("Loading mesh {} from PLY file path: {:?}", mesh._id, ply_path);
+                
+                let file = File::open(ply_path)?;
+                let reader = BufReader::new(file);
+                let plymesh: PlyMesh = serde_ply::from_reader(reader)?;
+                let old_vertex_count = verts._data.len();
                 // TODO: append loaded ply to vertexdata 
+                for v in &plymesh.vertex {
+                    verts._data.push(Vector3::new(v.x as Float, v.y as Float, v.z as Float));
+                }
                 // TODO: shift faces._data by offset
+                //let faces = &mut mesh.faces;
+
+                mesh.faces._type = String::from("triangle");
+                mesh.faces._data = mesh.faces
+                ._data
+                .iter()
+                .map(|&idx| idx + old_vertex_count)
+                .collect::<Vec<_>>();
+                info!(">> Mesh {} has {} faces.", mesh._id, mesh.faces._data.len());
             }
-            else {
-                 mesh_to_triangles(&mesh, offset)
-            };
+            let offset = verts._data.len();
+            let triangles: Vec<Triangle> = mesh_to_triangles(&mesh, offset);
+            
             
             shapes.extend(triangles.into_iter().map(|t| Arc::new(t) as HeapAllocatedShape));
         }
-
+        info!(">> There are {} vertices in the scene.", verts._data.len());
         self.all_shapes = shapes;
-
+        Ok(())
     }
 
 }
@@ -310,15 +354,21 @@ fn mesh_to_triangles(mesh: &Mesh, id_offset: usize) -> Vec<Triangle> {
     
     triangles
 }
-
+ 
 #[derive(Deserialize)]
 struct Vertex {
-    x: Float,
-    y: Float,
-    z: Float,
+    x: f32,
+    y: f32,
+    z: f32,
+}
+
+#[derive(Deserialize)]
+struct Face {
+    vertex_indices: Vec<usize>, // assuming property list uchar int vertex_indices
 }
 
 #[derive(Deserialize)]
 struct PlyMesh {
     vertex: Vec<Vertex>,
+    face: Option<Vec<Face>>, // make optional if you don't always need it
 }
