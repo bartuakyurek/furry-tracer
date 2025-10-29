@@ -8,6 +8,7 @@
 */
 
 use std::sync::Arc;
+use std::fmt::Debug;
 
 use bevy_math::NormedVectorSpace;
 use serde::{Deserialize};
@@ -23,7 +24,7 @@ pub type HeapAllocatedShape = Arc<dyn Shape>;
 pub type ShapeList = Vec<HeapAllocatedShape>; 
 
 
-pub trait Shape : Send + Sync  {
+pub trait Shape : Debug + Send + Sync  {
     fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
 }
 

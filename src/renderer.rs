@@ -158,27 +158,16 @@ pub fn render(scene: &Scene) -> Result<Vec<ImageData>, Box<dyn std::error::Error
         cam.setup(); // TODO: Could this be integrated to deserialization? Because it's easy to forget calling it
         if cam.num_samples != 1 { warn!("Found num_samples = '{}' > 1, sampling is not implemented yet...", cam.num_samples); }
         
-        let n_pixels: usize =  cam.image_resolution[0] * cam.image_resolution[1];
-        let mut pixel_colors = vec![scene.background_color; n_pixels]; // Colors range [0, 255], not [0, 1]
-
         let eye_rays = cam.generate_primary_rays();
-        let shapes: ShapeList = scene.objects.all();
+        let shapes: &ShapeList = &scene.objects.all_shapes;
         
-        
-        //for (i, ray) in eye_rays.iter().enumerate(){ // TODO: parallelize with rayon, for each pixel 
-           //eprint!("\rComputing {} / {}", i + 1, n_pixels); 
-           //io::stdout().flush().unwrap(); TODO: how to do it with tracing crate?
-           // pixel_colors[i] = get_color(ray, scene, &shapes, 0);
-        //}
         // --- Rayon Multithreading ---
         let pixel_colors: Vec<_> = eye_rays
             .par_iter()
-            .map(|ray| get_color(ray, scene, &shapes, 0))
+            .map(|ray| get_color(ray, scene, shapes, 0))
             .collect();
         // -----------------------------
-       
-        // -------------------------------------------------------------------- 
-        
+            
         let im = ImageData::new_from_colors(cam.image_resolution, cam.image_name, pixel_colors);
         images.push(im);
     }

@@ -8,9 +8,11 @@
 */
 
 
+use std::fs::File;
+use std::io::BufReader;
 use void::Void;
 use std::{ops::Index, str::FromStr};
-use tracing::{warn};
+use tracing::{warn, info};
 use serde::{Deserialize, de::{Deserializer}};
 use crate::numeric::{Vector3};
 use crate::json_parser::{deser_vertex_data, deser_usize_vec, parse_string_vecvec3};
@@ -106,6 +108,14 @@ impl<T: Clone> SingleOrVec<T>  {
             SingleOrVec::Multiple(vec) => vec.clone(),
         }
     }
+
+    pub fn all_mut(&mut self) -> Vec<&mut T> {
+        match self {
+            SingleOrVec::Empty => vec![],
+            SingleOrVec::Single(t) => vec![t],
+            SingleOrVec::Multiple(vec) => vec.iter_mut().collect(),
+        }
+    }
 }
 
 impl<T: Default> Default for SingleOrVec<T> {
@@ -175,3 +185,4 @@ impl VertexData{
         return true;
     }
 }
+

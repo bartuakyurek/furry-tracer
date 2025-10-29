@@ -32,7 +32,7 @@ use std::{rc::Rc};
 use std::sync::Arc;
 use serde_json::{self, Value};
 use serde::{Deserialize};
-use tracing::{warn, error, debug};
+use tracing::{warn, error, debug, info};
 
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{ConductorMaterial, DielectricMaterial, DiffuseMaterial, HeapAllocMaterial, Material, MirrorMaterial};
@@ -88,6 +88,9 @@ impl Scene {
         // 2- Fix VertexData if _type is not "xyz" 
         let previous_type = self.vertex_data._type.clone();
         if self.vertex_data.normalize_to_xyz() { warn!("VertexData _type is changed from '{}' to '{}'", previous_type, self.vertex_data._type); }
+
+        // 
+        self.objects.setup(&mut self.vertex_data); // Appends new vertices if mesh is from PLY
 
         // 3- Add a dummy vertex at index 0 because JSON vertex ids start from 1
         self.vertex_data.insert_dummy_at_the_beginning();
@@ -247,11 +250,14 @@ pub struct SceneObjects {
     pub planes: SingleOrVec<Plane>,
     #[serde(rename = "Mesh")]
     pub meshes: SingleOrVec<Mesh>,
+
+    #[serde(skip)]
+    pub all_shapes: ShapeList,
 }
 
 impl SceneObjects {
 
-    pub fn all(&self) -> ShapeList {
+    pub fn setup(&mut self, verts: &mut VertexData) {
         // Return a vector of all shapes in the scene
         warn!("SceneObjects.all( ) assumes there are only triangles, spheres, planes, and meshes. If there are other Shape trait implementations they are not added yet.");
         let mut shapes: ShapeList = Vec::new();
@@ -263,20 +269,28 @@ impl SceneObjects {
 
         // Convert meshes to triangles 
         for mesh in self.meshes.all() {
-            let triangles = mesh_to_triangles(&mesh);
+            let offset = verts._data.len();
+            let triangles = if !mesh.faces._ply_file.is_empty() { // If Ply path specified, use it
+                // TODO: append loaded ply to vertexdata 
+                // TODO: shift faces._data by offset
+            }
+            else {
+                 mesh_to_triangles(&mesh, offset)
+            };
+            
             shapes.extend(triangles.into_iter().map(|t| Arc::new(t) as HeapAllocatedShape));
         }
 
-        shapes
+        self.all_shapes = shapes;
+
     }
 
 }
 
 
 // Helper function to convert a Mesh into individual Triangles
-fn mesh_to_triangles(mesh: &Mesh) -> Vec<Triangle> {
+fn mesh_to_triangles(mesh: &Mesh, id_offset: usize) -> Vec<Triangle> {
     
-    let id_offset = 10_000_000 * mesh._id; // TODO: crates for creating unique ids? this fails if mesh faces exceed that magic number
     if mesh.faces._type != "triangle" {
         panic!(">> Expected triangle faces in mesh_to_triangles, got '{}'.", mesh.faces._type);
     }
@@ -295,4 +309,16 @@ fn mesh_to_triangles(mesh: &Mesh) -> Vec<Triangle> {
     }
     
     triangles
+}
+
+#[derive(Deserialize)]
+struct Vertex {
+    x: Float,
+    y: Float,
+    z: Float,
+}
+
+#[derive(Deserialize)]
+struct PlyMesh {
+    vertex: Vec<Vertex>,
 }
