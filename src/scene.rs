@@ -303,20 +303,23 @@ impl SceneObjects {
                 let reader = BufReader::new(file);
                 let plymesh: PlyMesh = serde_ply::from_reader(reader)?;
                 let old_vertex_count = verts._data.len();
-                // TODO: append loaded ply to vertexdata 
+                // Append loaded ply to vertexdata 
                 for v in &plymesh.vertex {
                     verts._data.push(Vector3::new(v.x as Float, v.y as Float, v.z as Float));
                 }
-                // TODO: shift faces._data by offset
-                //let faces = &mut mesh.faces;
-
+                // Shift faces._data by offset
                 mesh.faces._type = String::from("triangle");
-                mesh.faces._data = mesh.faces
-                ._data
-                .iter()
-                .map(|&idx| idx + old_vertex_count)
-                .collect::<Vec<_>>();
-                info!(">> Mesh {} has {} faces.", mesh._id, mesh.faces._data.len());
+                if let Some(faces) = &plymesh.face {
+                    mesh.faces._data = faces
+                        .iter()
+                        .flat_map(|f| f.vertex_indices.clone()) // each face is a list of 3 indices
+                        .map(|idx| idx + old_vertex_count)      // shift by existing vertices
+                        .collect();
+                    info!(">> Mesh {} has {} faces.", mesh._id, mesh.faces._data.len());
+                } 
+                else {
+                    warn!("PLY mesh {} has no face data!", mesh._id);
+                }
             }
             let offset = verts._data.len();
             let triangles: Vec<Triangle> = mesh_to_triangles(&mesh, offset);
