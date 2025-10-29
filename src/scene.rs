@@ -38,13 +38,15 @@ use serde::{Deserialize};
 use tracing::{warn, error, debug, info};
 use smart_default::SmartDefault;
 
+use crate::geometry::get_tri_normal;
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{ConductorMaterial, DielectricMaterial, DiffuseMaterial, HeapAllocMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
-use crate::shapes::{HeapAllocatedShape, Plane, PrimitiveShape, ShapeList, Sphere, Triangle};
+use crate::shapes::{HeapAllocatedShape, Plane, PrimitiveShape, ShapeList, Sphere, Triangle, VertexCache};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec, VertexData, DataField};
+use crate::shapes::HeapAllocatedVerts;
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
@@ -70,6 +72,9 @@ pub struct Scene {
 
     #[serde(deserialize_with = "deser_string_or_struct")]
     pub vertex_data: VertexData, 
+
+    #[serde(skip)]
+    pub vertex_cache: HeapAllocatedVerts,
 
     pub cameras: Cameras,
     pub lights: SceneLights,
@@ -98,7 +103,9 @@ impl Scene {
         warn!("Inserted a dummy vertex at the beginning to use vertex IDs beginning from 1.");
 
         // 
-        self.objects.setup(&mut self.vertex_data,  jsonpath)?; // Appends new vertices if mesh is from PLY
+    // Build shapes and the vertex cache (returned by setup)
+    let cache = self.objects.setup(&mut self.vertex_data,  jsonpath)?; // Appends new vertices if mesh is from PLY
+    self.vertex_cache = Arc::new(cache);
 
        
 
@@ -271,10 +278,11 @@ pub struct SceneObjects {
 
 impl SceneObjects {
 
-    pub fn setup(&mut self, verts: &mut VertexData, jsonpath: &Path) -> Result<(), Box<dyn Error>> {
+    pub fn setup(&mut self, verts: &mut VertexData, jsonpath: &Path) -> Result<VertexCache, Box<dyn Error>> {
         // Return a vector of all shapes in the scene
         warn!("SceneObjects.all( ) assumes there are only triangles, spheres, planes, and meshes. If there are other Shape trait implementations they are not added yet.");
         let mut shapes: ShapeList = Vec::new();
+        let mut all_triangles: Vec<Triangle> = self.triangles.all();
 
         shapes.extend(self.triangles.all().into_iter().map(|t| Arc::new(t) as HeapAllocatedShape));
         shapes.extend(self.spheres.all().into_iter().map(|s| Arc::new(s) as HeapAllocatedShape));
@@ -324,21 +332,21 @@ impl SceneObjects {
                 }
             }
             let offset = verts._data.len();
-            let triangles: Vec<Triangle> = mesh_to_triangles(&mesh, offset);
-            
-            
+            let triangles: Vec<Triangle> = mesh_to_triangles(&mesh, verts, offset);
+            all_triangles.extend(triangles.iter().cloned());
             shapes.extend(triangles.into_iter().map(|t| Arc::new(t) as HeapAllocatedShape));
         }
         info!(">> There are {} vertices in the scene.", verts._data.len());
         self.all_shapes = shapes;
-        Ok(())
+        let cache = VertexCache::build(&verts, &all_triangles);   
+        Ok(cache)
     }
 
 }
 
 
 // Helper function to convert a Mesh into individual Triangles
-fn mesh_to_triangles(mesh: &Mesh, id_offset: usize) -> Vec<Triangle> {
+fn mesh_to_triangles(mesh: &Mesh, verts: &VertexData, id_offset: usize) -> Vec<Triangle> {
     
     if mesh.faces._type != "triangle" {
         panic!(">> Expected triangle faces in mesh_to_triangles, got '{}'.", mesh.faces._type);
@@ -349,10 +357,13 @@ fn mesh_to_triangles(mesh: &Mesh, id_offset: usize) -> Vec<Triangle> {
     
     for i in 0..n_faces {
         let indices = mesh.faces.get_indices(i);
+        let [v1, v2, v3] = indices.map(|i| verts[i]);
         triangles.push(Triangle {
             _id: id_offset + i, 
             indices,
             material_idx: mesh.material_idx,
+            is_smooth: mesh._shading_mode.to_ascii_lowercase() == "smooth",
+            normal: get_tri_normal(&v1, &v2, &v3),
             //cache: None, // TODO: Fill cache
         });
     }
