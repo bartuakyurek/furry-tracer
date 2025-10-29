@@ -20,29 +20,34 @@ use crate::dataforms::{VertexData};
 use crate::numeric::{approx_zero, Float, Matrix3, Vector3};
 use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathering shapes.rs, ray.rs?
 
-pub type HeapAllocatedShape = Arc<dyn Shape>;
+pub type HeapAllocatedShape = Arc<dyn PrimitiveShape>;
 pub type ShapeList = Vec<HeapAllocatedShape>; 
 
-#[derive(Default)]
-struct PrimitiveCache {
-    vertices: VertexData,
+//#[derive(Default)]
+pub struct PrimitiveCache {
+    verts: Vec<Vector3>,
     face_normals: Vec<Vector3>, // Shape._id corresponds 
     vertex_normals: Vec<Vector3>,
+    is_smooth: bool,
 }
 
 impl PrimitiveCache {
-    pub fn new_from(vertices: &VertexData) -> Self {
+    pub fn new_from(vertices: &VertexData, is_smooth: bool) -> Self {
         Self {
-            vertices: vertices.clone(),
+            verts: vertices._data.clone(),
             face_normals: Vec::new(),
             vertex_normals: Vec::new(),
+            is_smooth,
         }
     }
 }
 
-pub trait Shape : Debug + Send + Sync  {
-    fn normal(&self, verts: &VertexData, surface_point: Vector3) -> Vector3;
-    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord>;
+pub trait PrimitiveShape : Debug + Send + Sync  {
+    //fn normal(&self, _: &VertexData) -> Option<Vector3> {
+    //    None
+    //}
+    fn indices(&self) -> Vec<usize>;
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData, cache: Option<PrimitiveCache>) -> Option<HitRecord>;
 }
 
 // Raw data deserialized from .JSON file
@@ -58,8 +63,12 @@ pub struct Triangle {
     pub material_idx: usize,
 }
 
-impl Shape for Triangle {
-    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
+impl PrimitiveShape for Triangle {
+    fn indices(&self) -> Vec<usize> {
+        self.indices.to_vec()
+    }
+
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData, cache: Option<PrimitiveCache>) -> Option<HitRecord> {
 
         // TODO: cache vertex / face normals
         // WARNING: vertex normals are tricky because if the same vertex was used by multiple 
@@ -73,12 +82,19 @@ impl Shape for Triangle {
         
         //info!("todo: convert u,v barycentric to coords");
         if let Some((p, t)) = moller_trumbore_intersection(ray, t_interval, self.indices, verts) {
-            // TODO: Cache tri normals
-            // Normal of the triangle (WARNING: no vertex normal used here)
-            let [v1, v2, v3] = self.indices.map(|i| verts[i]);
-            let tri_normal = get_tri_normal(&v1, &v2, &v3);
+            
+            let tri_normal = {
+                if let Some(cache) = cache {
+                    Vector3::ZERO
+                } 
+                else {
+                    info!("No cache provided, using flat shading by default...");
+                    let [v1, v2, v3] = self.indices.map(|i| verts[i]);
+                    get_tri_normal(&v1, &v2, &v3)
+                }
+            };
+           
             let front_face = ray.is_front_face(tri_normal);
-
             let normal = if front_face { tri_normal } else { -tri_normal };
             Some(HitRecord::new(p, normal, t, self.material_idx, front_face)) 
         }
@@ -247,8 +263,13 @@ pub struct Sphere {
     pub material_idx: usize,
 }
 
-impl Shape for Sphere {
-    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
+impl PrimitiveShape for Sphere {
+
+    fn indices(&self) -> Vec<usize> {
+        [self.center_idx].to_vec()
+    }
+
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData, _: Option<PrimitiveCache>) -> Option<HitRecord> {
         
         // Based on Slides 01_B, p.11, Ray-Sphere Intersection 
         let center = verts[self.center_idx];
@@ -296,8 +317,13 @@ pub struct Plane {
     pub material_idx: usize,
 }
 
-impl Shape for Plane {
-    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData) -> Option<HitRecord> {
+impl PrimitiveShape for Plane {
+
+    fn indices(&self) -> Vec<usize> {
+        [self.point_idx].to_vec()
+    }
+    
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData, _: Option<PrimitiveCache>) -> Option<HitRecord> {
        // Based on Slides 01_B, p.9, Ray-Plane Intersection 
         let a_point_on_plane = verts[self.point_idx];
         let dist = a_point_on_plane - ray.origin;

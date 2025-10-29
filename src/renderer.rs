@@ -26,7 +26,7 @@ use crate::scene::{PointLight, Scene};
 use crate::numeric::{Float, Int, Vector3};
 use crate::image::{ImageData};
 use crate::interval::{Interval, FloatConst};
-use crate::shapes::{Shape, ShapeList};
+use crate::shapes::{PrimitiveShape, ShapeList};
 
 
 

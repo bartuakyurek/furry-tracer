@@ -41,7 +41,7 @@ use smart_default::SmartDefault;
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{ConductorMaterial, DielectricMaterial, DiffuseMaterial, HeapAllocMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
-use crate::shapes::{HeapAllocatedShape, Plane, Shape, ShapeList, Sphere, Triangle};
+use crate::shapes::{HeapAllocatedShape, Plane, PrimitiveShape, ShapeList, Sphere, Triangle};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec, VertexData, DataField};
