@@ -28,18 +28,25 @@
     @date: 2 Oct, 2025
     @author: Bartu
 */
-use std::{rc::Rc};
+use std::fs::File;
+use std::error::Error;
+use std::io::BufReader;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use serde_json::{self, Value};
 use serde::{Deserialize};
-use tracing::{warn, error, debug};
+use tracing::{warn, error, debug, info};
+use smart_default::SmartDefault;
 
+use crate::geometry::get_tri_normal;
 use crate::json_parser::{deser_string_or_struct};
 use crate::material::{ConductorMaterial, DielectricMaterial, DiffuseMaterial, HeapAllocMaterial, Material, MirrorMaterial};
 use crate::numeric::{Int, Float, Vector3};
-use crate::shapes::{Shape, Plane, Sphere, Triangle};
+use crate::shapes::{HeapAllocatedShape, Plane, PrimitiveShape, ShapeList, Sphere, Triangle, VertexCache};
 use crate::camera::{Cameras};
 use crate::json_parser::*;
 use crate::dataforms::{SingleOrVec, VertexData, DataField};
+use crate::shapes::HeapAllocatedVerts;
 
 #[derive(Debug, Deserialize)]
 pub struct RootScene {
@@ -66,6 +73,9 @@ pub struct Scene {
     #[serde(deserialize_with = "deser_string_or_struct")]
     pub vertex_data: VertexData, 
 
+    #[serde(skip)]
+    pub vertex_cache: HeapAllocatedVerts,
+
     pub cameras: Cameras,
     pub lights: SceneLights,
     pub materials: SceneMaterials,
@@ -75,7 +85,7 @@ pub struct Scene {
 impl Scene {
     //pub fn new() {
     //}
-    pub fn setup_after_json(&mut self) {
+    pub fn setup_after_json(&mut self, jsonpath: &Path) -> Result<(), Box<dyn Error>>{
         // Implement required adjustments after loading from a JSON file
 
         // 1- Convert materials serde_json values to actual structs
@@ -92,15 +102,22 @@ impl Scene {
         self.vertex_data.insert_dummy_at_the_beginning();
         warn!("Inserted a dummy vertex at the beginning to use vertex IDs beginning from 1.");
 
+        // 
+    // Build shapes and the vertex cache (returned by setup)
+    let cache = self.objects.setup(&mut self.vertex_data,  jsonpath)?; // Appends new vertices if mesh is from PLY
+    self.vertex_cache = Arc::new(cache);
+
+       
+
         // TODO: Below is a terrible way to set defaults, if Scene is decoupled from JSON
         // then it can impl Default for Scene and there we can specify default values
         // without secretly changing like we do below:
         if self.shadow_ray_epsilon < 1e-16 {
-            self.shadow_ray_epsilon = 1e-6; 
+            self.shadow_ray_epsilon = 1e-10; 
             warn!("Shadow Ray epsilon found 0, setting it to default: {}.", self.shadow_ray_epsilon);
         }
         if self.intersection_test_epsilon < 1e-16 {
-            self.intersection_test_epsilon = 1e-6;
+            self.intersection_test_epsilon = 1e-10;
             warn!("Intersection Ray epsilon found 0, setting it to default: {}.", self.intersection_test_epsilon);
         }
 
@@ -108,7 +125,9 @@ impl Scene {
             self.max_recursion_depth = 5;
             warn!("Found max recursion depth 0, setting it to {} as default. If that zero was intentional please update your code.", self.max_recursion_depth);
         }
+        Ok(())
     }
+
 }
 
 
@@ -208,7 +227,8 @@ fn parse_material(value: serde_json::Value) -> Vec<HeapAllocMaterial> {
 
 
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone)]
+#[derive(SmartDefault)]
 #[serde(default)]
 pub struct Mesh {
     #[serde(deserialize_with = "deser_usize")]
@@ -217,6 +237,11 @@ pub struct Mesh {
     pub material_idx: usize,
     #[serde(rename = "Faces")]
     pub faces: FaceType,
+
+    #[serde(rename = "_shadingMode")]
+    #[default = "flat"]
+    pub _shading_mode: String,
+
 }
 
 type FaceType = DataField<usize>;
@@ -246,36 +271,83 @@ pub struct SceneObjects {
     pub planes: SingleOrVec<Plane>,
     #[serde(rename = "Mesh")]
     pub meshes: SingleOrVec<Mesh>,
+
+    #[serde(skip)]
+    pub all_shapes: ShapeList,
 }
 
 impl SceneObjects {
 
-    pub fn all(&self) -> Vec<Rc<dyn Shape>> {
+    pub fn setup(&mut self, verts: &mut VertexData, jsonpath: &Path) -> Result<VertexCache, Box<dyn Error>> {
         // Return a vector of all shapes in the scene
         warn!("SceneObjects.all( ) assumes there are only triangles, spheres, planes, and meshes. If there are other Shape trait implementations they are not added yet.");
-        let mut shapes: Vec<Rc<dyn Shape>> = Vec::new();
+        let mut shapes: ShapeList = Vec::new();
+        let mut all_triangles: Vec<Triangle> = self.triangles.all();
 
-        shapes.extend(self.triangles.all().into_iter().map(|t| Rc::new(t) as Rc<dyn Shape>));
-        shapes.extend(self.spheres.all().into_iter().map(|s| Rc::new(s) as Rc<dyn Shape>));
-        shapes.extend(self.planes.all().into_iter().map(|p| Rc::new(p) as Rc<dyn Shape>));
+        shapes.extend(self.triangles.all().into_iter().map(|t| Arc::new(t) as HeapAllocatedShape));
+        shapes.extend(self.spheres.all().into_iter().map(|s| Arc::new(s) as HeapAllocatedShape));
+        shapes.extend(self.planes.all().into_iter().map(|p| Arc::new(p) as HeapAllocatedShape));
         //shapes.extend(self.meshes.all().into_iter().map(|m| Rc::new(m) as Rc<dyn Shape>));
 
         // Convert meshes to triangles 
         for mesh in self.meshes.all() {
-            let triangles = mesh_to_triangles(&mesh);
-            shapes.extend(triangles.into_iter().map(|t| Rc::new(t) as Rc<dyn Shape>));
-        }
+            let mut mesh = mesh;
+            if !mesh.faces._ply_file.is_empty() { 
+                
+                // Get path containing the JSON (_plyFile in json is relative to that json)
+                let json_dir = Path::new(jsonpath)
+                    .parent()
+                    .unwrap_or(Path::new("."));
+                let ply_file = &mesh.faces._ply_file;
+                let ply_path = json_dir.join(ply_file);
 
-        shapes
+                if ply_path.exists() {
+                    info!("PLY file exists: {:?}", ply_path);
+                } else {
+                    error!("PLY file NOT found at: {:?}", ply_path);
+                }
+
+                info!("Loading mesh {} from PLY file path: {:?}", mesh._id, ply_path);
+                
+                let file = File::open(ply_path)?;
+                let reader = BufReader::new(file);
+                let plymesh: PlyMesh = serde_ply::from_reader(reader)?;
+                let old_vertex_count = verts._data.len();
+                // Append loaded ply to vertexdata 
+                for v in &plymesh.vertex {
+                    verts._data.push(Vector3::new(v.x as Float, v.y as Float, v.z as Float));
+                }
+                // Shift faces._data by offset
+                mesh.faces._type = String::from("triangle");
+                if let Some(faces) = &plymesh.face {
+                    mesh.faces._data = faces
+                        .iter()
+                        .flat_map(|f| f.vertex_indices.clone()) // each face is a list of 3 indices
+                        .map(|idx| idx + old_vertex_count)      // shift by existing vertices
+                        .collect();
+                    info!(">> Mesh {} has {} faces.", mesh._id, mesh.faces._data.len());
+                } 
+                else {
+                    warn!("PLY mesh {} has no face data!", mesh._id);
+                }
+            }
+            let offset = verts._data.len();
+            let triangles: Vec<Triangle> = mesh_to_triangles(&mesh, verts, offset);
+            all_triangles.extend(triangles.iter().cloned());
+            shapes.extend(triangles.into_iter().map(|t| Arc::new(t) as HeapAllocatedShape));
+        }
+        info!(">> There are {} vertices in the scene.", verts._data.len());
+        self.all_shapes = shapes;
+        let cache = VertexCache::build(&verts, &all_triangles);   
+        Ok(cache)
     }
 
 }
 
 
 // Helper function to convert a Mesh into individual Triangles
-fn mesh_to_triangles(mesh: &Mesh) -> Vec<Triangle> {
+fn mesh_to_triangles(mesh: &Mesh, verts: &VertexData, id_offset: usize) -> Vec<Triangle> {
     
-    let id_offset = 10_000_000 * mesh._id; // TODO: crates for creating unique ids? this fails if mesh faces exceed that magic number
     if mesh.faces._type != "triangle" {
         panic!(">> Expected triangle faces in mesh_to_triangles, got '{}'.", mesh.faces._type);
     }
@@ -285,13 +357,34 @@ fn mesh_to_triangles(mesh: &Mesh) -> Vec<Triangle> {
     
     for i in 0..n_faces {
         let indices = mesh.faces.get_indices(i);
+        let [v1, v2, v3] = indices.map(|i| verts[i]);
         triangles.push(Triangle {
             _id: id_offset + i, 
             indices,
             material_idx: mesh.material_idx,
+            is_smooth: mesh._shading_mode.to_ascii_lowercase() == "smooth",
+            normal: get_tri_normal(&v1, &v2, &v3),
             //cache: None, // TODO: Fill cache
         });
     }
     
     triangles
+}
+ 
+#[derive(Deserialize)]
+struct Vertex {
+    x: f32,
+    y: f32,
+    z: f32,
+}
+
+#[derive(Deserialize)]
+struct Face {
+    vertex_indices: Vec<usize>, // assuming property list uchar int vertex_indices
+}
+
+#[derive(Deserialize)]
+struct PlyMesh {
+    vertex: Vec<Vertex>,
+    face: Option<Vec<Face>>, // make optional if you don't always need it
 }

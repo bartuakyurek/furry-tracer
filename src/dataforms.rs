@@ -8,9 +8,11 @@
 */
 
 
+use std::fs::File;
+use std::io::BufReader;
 use void::Void;
 use std::{ops::Index, str::FromStr};
-use tracing::{warn};
+use tracing::{warn, info};
 use serde::{Deserialize, de::{Deserializer}};
 use crate::numeric::{Vector3};
 use crate::json_parser::{deser_vertex_data, deser_usize_vec, parse_string_vecvec3};
@@ -35,8 +37,6 @@ impl<T> Index<usize> for DataField<T> {
         &self._data[index]
     }
 }
-
-
 impl<'de> Deserialize<'de> for DataField<Vector3> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -44,12 +44,11 @@ impl<'de> Deserialize<'de> for DataField<Vector3> {
     {
         #[derive(Deserialize)]
         struct Helper {
-            #[serde(rename = "_data", deserialize_with = "deser_vertex_data")]
+            #[serde(rename = "_data", default, deserialize_with = "deser_vertex_data")]
             _data: Vec<Vector3>,
-            #[serde(rename = "_type")]
+            #[serde(rename = "_type", default)]
             _type: String,
-            #[serde(rename = "_plyFile")]
-            #[serde(default)]
+            #[serde(rename = "_plyFile", default)]
             _ply_file: String,
         }
 
@@ -69,12 +68,11 @@ impl<'de> Deserialize<'de> for DataField<usize> {
     {
         #[derive(Deserialize)]
         struct Helper {
-            #[serde(rename = "_data", deserialize_with = "deser_usize_vec")]
+            #[serde(rename = "_data", default, deserialize_with = "deser_usize_vec")]
             _data: Vec<usize>,
-            #[serde(rename = "_type")]
+            #[serde(rename = "_type", default)]
             _type: String,
-             #[serde(rename = "_plyFile")]
-             #[serde(default)]
+            #[serde(rename = "_plyFile", default)]
             _ply_file: String,
         }
 
@@ -86,7 +84,7 @@ impl<'de> Deserialize<'de> for DataField<usize> {
         })
     }
 }
- 
+
 
 // To handle JSON file having a single <object>
 // or an array of <object>s 
@@ -104,6 +102,14 @@ impl<T: Clone> SingleOrVec<T>  {
             SingleOrVec::Empty => vec![],
             SingleOrVec::Single(t) => vec![t.clone()],
             SingleOrVec::Multiple(vec) => vec.clone(),
+        }
+    }
+
+    pub fn all_mut(&mut self) -> Vec<&mut T> {
+        match self {
+            SingleOrVec::Empty => vec![],
+            SingleOrVec::Single(t) => vec![t],
+            SingleOrVec::Multiple(vec) => vec.iter_mut().collect(),
         }
     }
 }
@@ -175,3 +181,4 @@ impl VertexData{
         return true;
     }
 }
+
