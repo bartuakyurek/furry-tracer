@@ -122,13 +122,12 @@ impl Camera {
         
         self.w = - self.gaze_dir.normalize();
         self.v = self.up.normalize();
-        self.u = self.v.cross(self.w);
+        self.u = self.v.cross(self.w).normalize();
         if !approx_zero(self.up.dot(self.gaze_dir)) {
             info!("Gaze and Up vectors are not perpendicular, correcting v...");
             self.v = self.w.cross(self.u).normalize();
         }
 
-        
         debug_assert!(approx_zero(self.u.dot(self.w))); 
         debug_assert!(approx_zero(self.v.dot(self.w))); 
         debug_assert!(approx_zero(self.v.dot(self.u))); 
