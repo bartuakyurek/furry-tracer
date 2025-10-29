@@ -4,7 +4,7 @@
 </div>
 
 
-This is a ray tracer developed for METU graduate level course CENG 795.
+This is a ray tracer developed for METU graduate level course CENG 795. If you'd like to read learning logs of this work, see [my Notion page](https://almondine-egg-e28.notion.site/Journey-of-a-Rust-Ray-Tracer-29bf07c7cdad8045ae34f2f68f4d7301).
 
 Author: Bartu
 
@@ -30,6 +30,7 @@ For more suggestions to improve code:
 
 # TODO 
 ---
+- [ ] Glass material looks less bright than expected, why?
 - [x] Vertex indices start from 1, not 0, make sure to handle that correctly
 - [x] Ambient light is declared only once, change implementation to return a single vec3, Not vector of vec3. 
 - [ ] Consider utilizing CoordLike implementation in geometry.rs  
