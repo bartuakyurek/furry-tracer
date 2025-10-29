@@ -93,12 +93,14 @@ impl Scene {
         let previous_type = self.vertex_data._type.clone();
         if self.vertex_data.normalize_to_xyz() { warn!("VertexData _type is changed from '{}' to '{}'", previous_type, self.vertex_data._type); }
 
-        // 
-        self.objects.setup(&mut self.vertex_data,  jsonpath)?; // Appends new vertices if mesh is from PLY
-
         // 3- Add a dummy vertex at index 0 because JSON vertex ids start from 1
         self.vertex_data.insert_dummy_at_the_beginning();
         warn!("Inserted a dummy vertex at the beginning to use vertex IDs beginning from 1.");
+
+        // 
+        self.objects.setup(&mut self.vertex_data,  jsonpath)?; // Appends new vertices if mesh is from PLY
+
+       
 
         // TODO: Below is a terrible way to set defaults, if Scene is decoupled from JSON
         // then it can impl Default for Scene and there we can specify default values
