@@ -12,6 +12,7 @@ use std::fmt::Debug;
 
 use bevy_math::NormedVectorSpace;
 use serde::{Deserialize};
+use smart_default::SmartDefault;
 use tracing::{info, error};
 use crate::geometry::get_tri_normal;
 use crate::json_parser::*;
@@ -22,20 +23,19 @@ use crate::ray::{Ray, HitRecord}; // TODO: Can we create a small crate for gathe
 
 pub type HeapAllocatedShape = Arc<dyn PrimitiveShape>;
 pub type ShapeList = Vec<HeapAllocatedShape>; 
+pub type HeapAllocatedVerts = Arc<VertexCache>;
 
 //#[derive(Default)]
-pub struct PrimitiveCache {
-    verts: Vec<Vector3>,
-    face_normals: Vec<Vector3>, // Shape._id corresponds 
+#[derive(Debug, Clone)]
+pub struct VertexCache {
+    vertex_data: VertexData,
     vertex_normals: Vec<Vector3>,
-    is_smooth: bool,
 }
 
-impl PrimitiveCache {
-    pub fn new_from(vertices: &VertexData, is_smooth: bool) -> Self {
+impl Default for VertexCache {
+    fn default() -> Self {
         Self {
-            verts: vertices._data.clone(),
-            face_normals: Vec::new(),
+            vertex_data: VertexData::default(),
             vertex_normals: Vec::new(),
             is_smooth,
         }
@@ -47,13 +47,13 @@ pub trait PrimitiveShape : Debug + Send + Sync  {
     //    None
     //}
     fn indices(&self) -> Vec<usize>;
-    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData, cache: Option<PrimitiveCache>) -> Option<HitRecord>;
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, vertex_cache: &HeapAllocatedVerts) -> Option<HitRecord>;
 }
 
 // Raw data deserialized from .JSON file
 // WARNING: it assumes vertex indices start from 1
 // TODO: How to convert this struct into V, F matrices, for both array of triangles and Mesh objects in the scene?
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone, SmartDefault)]
 pub struct Triangle {
     #[serde(deserialize_with = "deser_usize")]
     pub _id: usize,
@@ -61,6 +61,13 @@ pub struct Triangle {
     pub indices: [usize; 3],
     #[serde(rename = "Material", deserialize_with = "deser_usize")]
     pub material_idx: usize,
+
+    #[serde(skip)]
+    #[default = false]
+    pub is_smooth: bool,
+
+    #[serde(skip)]
+    pub normal: Vector3,
 }
 
 impl PrimitiveShape for Triangle {
@@ -68,7 +75,7 @@ impl PrimitiveShape for Triangle {
         self.indices.to_vec()
     }
 
-    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData, cache: Option<PrimitiveCache>) -> Option<HitRecord> {
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, vertex_cache: &HeapAllocatedVerts) -> Option<HitRecord> {
 
         // TODO: cache vertex / face normals
         // WARNING: vertex normals are tricky because if the same vertex was used by multiple 
@@ -81,27 +88,37 @@ impl PrimitiveShape for Triangle {
         // shape refers to this data for their coordinates. 
         
         //info!("todo: convert u,v barycentric to coords");
+        let verts = &vertex_cache.vertex_data;
         if let Some((u, v, t)) = moller_trumbore_intersection(ray, t_interval, self.indices, verts) {
             
             let p = ray.at(t); // Construct hit point p // TODO: would it be faster to use barycentric u,v here? 
             let tri_normal = {
-                if let Some(cache) = cache {
-                    if cache.is_smooth {
-                        let v1_n = cache.vertex_normal(self.indices[0]);
-                        let v2_n = cache.vertex_normal(self.indices[1]);
-                        let v3_n = cache.vertex_normal(self.indices[2]);
+                //if let Some(cache) = cache {
+                    if self.is_smooth {
+                        let v1_n = vertex_cache.vertex_normals[self.indices[0]];
+                        let v2_n = vertex_cache.vertex_normals[self.indices[1]];
+                        let v3_n = vertex_cache.vertex_normals[self.indices[2]];
                         let w = 1. - u - v;
-                        (v1_n * u + v2_n * v + v3_n * w).normalize() // Smooth normal
+                        (v1_n * w + v2_n * u + v3_n * v).normalize() // WARNING: Be careful with interpolation order!
                     }
                     else {
-                        cache.triangle_normal(self._id)
+                        // If triangle has a stored normal (from mesh creation) use it,
+                        // otherwise compute face normal from vertex positions as fallback.
+                        if self.normal.norm_squared() > 0.0 {
+                            self.normal
+                        } else {
+                            let verts = &vertex_cache.vertex_data;
+                            let [a, b, c] = self.indices.map(|i| verts[i]);
+                            get_tri_normal(&a, &b, &c)
+                        }
+                        //cache.triangle_normal(self._id)
                     }
-                } 
-                else {
-                    info!("No cache provided, using flat shading by default...");
-                    let [v1, v2, v3] = self.indices.map(|i| verts[i]);
-                    get_tri_normal(&v1, &v2, &v3)
-                }
+                //} 
+                //else {
+                //    info!("No cache provided, using flat shading by default...");
+                //    let [v1, v2, v3] = self.indices.map(|i| verts[i]);
+                //    get_tri_normal(&v1, &v2, &v3)
+                //}
             };
            
             let front_face = ray.is_front_face(tri_normal);
@@ -277,9 +294,10 @@ impl PrimitiveShape for Sphere {
         [self.center_idx].to_vec()
     }
 
-    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData, _: Option<PrimitiveCache>) -> Option<HitRecord> {
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, vertex_cache: &HeapAllocatedVerts) -> Option<HitRecord> {
         
         // Based on Slides 01_B, p.11, Ray-Sphere Intersection 
+        let verts = &vertex_cache.vertex_data;
         let center = verts[self.center_idx];
         let o_minus_c = ray.origin - center;
         let d_dot_d: Float = ray.direction.dot(ray.direction);
@@ -331,8 +349,9 @@ impl PrimitiveShape for Plane {
         [self.point_idx].to_vec()
     }
     
-    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, verts: &VertexData, _: Option<PrimitiveCache>) -> Option<HitRecord> {
+    fn intersects_with(&self, ray: &Ray, t_interval: &Interval, vertex_cache: &HeapAllocatedVerts) -> Option<HitRecord> {
        // Based on Slides 01_B, p.9, Ray-Plane Intersection 
+        let verts = &vertex_cache.vertex_data;
         let a_point_on_plane = verts[self.point_idx];
         let dist = a_point_on_plane - ray.origin;
         let  t = dist.dot(self.normal) / ray.direction.dot(self.normal);
