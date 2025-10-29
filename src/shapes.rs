@@ -81,11 +81,20 @@ impl PrimitiveShape for Triangle {
         // shape refers to this data for their coordinates. 
         
         //info!("todo: convert u,v barycentric to coords");
-        if let Some((p, t)) = moller_trumbore_intersection(ray, t_interval, self.indices, verts) {
+        if let Some((u, v, t)) = moller_trumbore_intersection(ray, t_interval, self.indices, verts) {
             
+            let p = ray.at(t); // Construct hit point p // TODO: would it be faster to use barycentric u,v here? 
             let tri_normal = {
                 if let Some(cache) = cache {
-                    Vector3::ZERO
+                    if cache.is_smooth {
+                        let v1_n = cache.vertex_normal(self.indices[0]);
+                        let v2_n = cache.vertex_normal(self.indices[1]);
+                        let v3_n = cache.vertex_normal(self.indices[2]);
+                        todo!()
+                    }
+                    else {
+                        cache.triangle_normal(self._id)
+                    }
                 } 
                 else {
                     info!("No cache provided, using flat shading by default...");
@@ -202,7 +211,7 @@ impl PrimitiveShape for Triangle {
 //    Some((p, t))
 //}
 
-fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<(Vector3, Float)> {
+fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [usize; 3], verts: &VertexData) -> Option<(Float, Float, Float)> {
     // Based on Möller-Trumbore algorithm
         //
         //     a (pivot)
@@ -246,9 +255,7 @@ fn moller_trumbore_intersection(ray: &Ray, t_interval: &Interval, tri_indices: [
             return None;
         }
 
-        // Construct hit point p
-        let p = ray.at(t); // TODO: would it be faster to use barycentric u,v here? 
-        Some((p, t))
+        Some((barycentric_u, barycentric_v, t))
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
